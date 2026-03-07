@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, ChevronRight, Thermometer, Sofa, Monitor, ChefHat, Dumbbell } from 'lucide-react'
+import Link from 'next/link'
+import { Bell, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AssetDrawer } from '@/components/twin/AssetDrawer'
 
@@ -130,6 +131,8 @@ function Hotspot({ id, label, x, y, icon, status, onSelect }: HotspotProps) {
 export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<AssetKey | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [showNotif, setShowNotif] = useState(false)
+  const [show3D, setShow3D] = useState(false)
 
   function handleSelect(id: AssetKey) {
     setSelectedId(id)
@@ -150,7 +153,10 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white">Oberoi Residences</h1>
             <p className="text-sm text-vault-text-muted mt-0.5">Unit 12B, Tower A • Worli, Mumbai</p>
           </div>
-          <button className="relative w-10 h-10 rounded-xl glass gold-border flex items-center justify-center mt-1">
+          <button
+            onClick={() => setShowNotif(v => !v)}
+            className="relative w-10 h-10 rounded-xl glass gold-border flex items-center justify-center mt-1"
+          >
             <Bell size={18} className="text-gold-500" />
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold-500 rounded-full text-[9px] font-bold text-charcoal-300 flex items-center justify-center">
               2
@@ -178,8 +184,11 @@ export default function DashboardPage() {
       <div className="px-5 mt-2">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-white">Interactive Home Twin</h2>
-          <button className="flex items-center gap-1 text-xs text-gold-500 font-semibold">
-            3D View <ChevronRight size={14} />
+          <button
+            onClick={() => setShow3D(v => !v)}
+            className="flex items-center gap-1 text-xs text-gold-500 font-semibold"
+          >
+            {show3D ? '3D Coming Soon ✨' : <>3D View <ChevronRight size={14} /></>}
           </button>
         </div>
 
@@ -243,18 +252,18 @@ export default function DashboardPage() {
         <h2 className="text-sm font-bold text-white mb-3">Recent Activity</h2>
         <div className="space-y-2.5">
           {[
-            { icon: '🔧', text: 'AC Service scheduled', sub: '3 days ago', color: 'text-gold-500' },
-            { icon: '📄', text: 'Sale Deed uploaded', sub: 'Yesterday', color: 'text-green-400' },
-            { icon: '⚠️', text: 'Warranty expiring: Sony Bravia', sub: 'In 48 days', color: 'text-yellow-400' },
+            { icon: '🔧', text: 'AC Service scheduled', sub: '3 days ago', color: 'text-gold-500', href: '/warranty/a1' },
+            { icon: '📄', text: 'Sale Deed uploaded', sub: 'Yesterday', color: 'text-green-400', href: '/vault/ownership/doc-001' },
+            { icon: '⚠️', text: 'Warranty expiring: Sony Bravia', sub: 'In 48 days', color: 'text-yellow-400', href: '/warranty/a2' },
           ].map((item) => (
-            <div key={item.text} className="card p-3.5 flex items-center gap-3 card-hover">
+            <Link key={item.text} href={item.href} className="card p-3.5 flex items-center gap-3 card-hover block">
               <span className="text-xl">{item.icon}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-vault-text truncate">{item.text}</p>
                 <p className={cn('text-xs font-medium mt-0.5', item.color)}>{item.sub}</p>
               </div>
               <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0" />
-            </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -266,6 +275,47 @@ export default function DashboardPage() {
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
         />
+      )}
+
+      {/* Notifications panel */}
+      {showNotif && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowNotif(false)} />
+          <div className="fixed top-0 inset-x-0 z-50 bg-vault-surface border-b border-vault-border rounded-b-3xl shadow-card px-5 pt-14 pb-6 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white">Notifications</h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-500 text-charcoal-300">2 new</span>
+              </div>
+              <button onClick={() => setShowNotif(false)} className="w-8 h-8 rounded-xl glass flex items-center justify-center">
+                <X size={16} className="text-vault-text-muted" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {[
+                { icon: '⚠️', title: 'Sony Bravia 75" — Warranty expiring in 48 days', sub: 'Today 9:00 AM', accent: 'border-l-yellow-500', href: '/warranty/a2' },
+                { icon: '🔧', title: 'AC Service due 1 Oct 2026', sub: 'Reminder in 7 months', accent: 'border-l-blue-500', href: '/warranty/a1' },
+                { icon: '📄', title: 'Sale Deed uploaded successfully', sub: 'Yesterday 11:30 AM', accent: 'border-l-green-500', href: '/vault/ownership/doc-001' },
+              ].map((n) => (
+                <Link
+                  key={n.title}
+                  href={n.href}
+                  onClick={() => setShowNotif(false)}
+                  className={cn('flex items-start gap-3 p-3 rounded-xl bg-vault-card/50 border-l-2 border border-vault-border card-hover block', n.accent)}
+                >
+                  <span className="text-base flex-shrink-0 mt-0.5">{n.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-vault-text leading-snug">{n.title}</p>
+                    <p className="text-[10px] text-vault-text-muted mt-0.5">{n.sub}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Link href="/dashboard" onClick={() => setShowNotif(false)} className="block text-center text-xs font-bold text-gold-500 mt-4">
+              View all activity
+            </Link>
+          </div>
+        </>
       )}
     </div>
   )

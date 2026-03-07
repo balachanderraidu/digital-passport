@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { X, Phone, ExternalLink, Calendar, Zap, ShieldCheck, Paintbrush2, Info } from 'lucide-react'
 import { cn, formatDate, getWarrantyStatus } from '@/lib/utils'
 
@@ -25,6 +26,7 @@ interface AssetDrawerProps {
 }
 
 export function AssetDrawer({ asset, open, onClose }: AssetDrawerProps) {
+  const router = useRouter()
   if (!open) return null
 
   const status = asset.warrantyExpiry ? getWarrantyStatus(asset.warrantyExpiry) : null
@@ -138,14 +140,20 @@ export function AssetDrawer({ asset, open, onClose }: AssetDrawerProps) {
 
           {/* Actions */}
           <div className="grid grid-cols-2 gap-3 mt-6">
-            <button className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all">
+            <button
+              onClick={() => { onClose(); router.push(`/warranty/${asset.id}`) }}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all"
+            >
               <ExternalLink size={16} />
               View Details
             </button>
-            <button className="flex items-center justify-center gap-2 py-3.5 rounded-2xl glass gold-border text-vault-text font-semibold text-sm hover:gold-border-active transition-all">
+            <a
+              href="tel:+918001234567"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl glass gold-border text-vault-text font-semibold text-sm hover:gold-border-active transition-all"
+            >
               <Phone size={16} className="text-gold-500" />
               Call Support
-            </button>
+            </a>
           </div>
         </div>
       </div>

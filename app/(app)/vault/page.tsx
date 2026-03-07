@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Upload, HardDrive, ChevronRight, FileText, FileImage, File } from 'lucide-react'
+import { Upload, HardDrive, ChevronRight, FileText, FileImage, File, X, CloudUpload } from 'lucide-react'
 import { cn, formatDate, formatFileSize } from '@/lib/utils'
 
 const CATEGORIES = [
@@ -102,7 +102,7 @@ export default function VaultPage() {
       </div>
 
       {/* Recent documents */}
-      <div className="px-5 mt-5 pb-4">
+      <div className="px-5 mt-5 pb-28">
         <h2 className="text-sm font-bold text-white mb-3">Recent Documents</h2>
         <div className="space-y-2.5">
           {RECENT_DOCS.map((doc) => (
@@ -135,6 +135,65 @@ export default function VaultPage() {
           ))}
         </div>
       </div>
+
+      {/* Upload Drawer */}
+      {uploading && (
+        <>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 animate-fade-in" onClick={() => setUploading(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border animate-slide-up max-h-[90dvh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full bg-vault-muted" />
+            </div>
+            <div className="px-6 pb-10">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Upload Document</h3>
+                  <p className="text-xs text-vault-text-muted mt-0.5">Add to your secure vault</p>
+                </div>
+                <button onClick={() => setUploading(false)} className="w-8 h-8 rounded-xl glass flex items-center justify-center">
+                  <X size={16} className="text-vault-text-muted" />
+                </button>
+              </div>
+
+              {/* File picker area */}
+              <div className="border-2 border-dashed border-vault-border rounded-2xl p-8 flex flex-col items-center gap-3 mb-5 hover:border-gold-500/40 transition-all cursor-pointer">
+                <CloudUpload size={36} className="text-gold-500" />
+                <p className="text-sm font-bold text-vault-text">Tap to select file</p>
+                <p className="text-xs text-vault-text-muted">PDF, JPG, PNG up to 50 MB</p>
+              </div>
+
+              {/* Category selector */}
+              <div className="mb-5">
+                <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-3 block">Category</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'ownership', label: 'Ownership Docs' },
+                    { id: 'maintenance', label: 'Maintenance' },
+                    { id: 'interior', label: 'Interior Specs' },
+                    { id: 'tax', label: 'Tax & Invoices' },
+                    { id: 'manuals', label: 'Tech Manuals' },
+                    { id: 'warranties', label: 'Warranties' },
+                  ].map((cat) => (
+                    <button key={cat.id} className="py-2.5 px-3 rounded-xl border border-gold-500/30 text-xs font-semibold text-vault-text-muted hover:border-gold-500 hover:text-vault-text transition-all text-left">
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="mb-5">
+                <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Note (optional)</label>
+                <textarea className="w-full px-4 py-3.5 text-sm rounded-2xl resize-none" rows={3} placeholder="Add a description..."></textarea>
+              </div>
+
+              <button className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all">
+                Upload Document
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

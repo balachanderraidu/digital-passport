@@ -134,7 +134,7 @@ export default function SnagsPage() {
             </div>
           )}
           {filteredSnags.map((snag) => (
-            <div key={snag.id} className="card p-4 card-hover">
+            <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-4 card-hover block">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0">
                   <Camera size={18} className="text-vault-text-muted" />
@@ -161,7 +161,7 @@ export default function SnagsPage() {
                 </div>
                 <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

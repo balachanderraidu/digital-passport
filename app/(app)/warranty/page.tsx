@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck, ShieldAlert, ShieldOff, Plus, ChevronRight, Bell, FileText } from 'lucide-react'
+import Link from 'next/link'
+import { ShieldCheck, ShieldAlert, ShieldOff, Plus, ChevronRight, Bell, FileText, X } from 'lucide-react'
 import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 
 interface Asset {
@@ -48,6 +49,7 @@ const STATUS_LABEL = {
 
 export default function WarrantyPage() {
   const [filter, setFilter] = useState<FilterTab>('all')
+  const [showAddAsset, setShowAddAsset] = useState(false)
 
   const assetsWithStatus = DEMO_ASSETS.map(a => ({
     ...a,
@@ -61,7 +63,6 @@ export default function WarrantyPage() {
     ? assetsWithStatus
     : assetsWithStatus.filter(a => a.status === filter)
 
-  // Sort: expiring first, then active, then expired
   const sorted = [...filtered].sort((a, b) => a.daysLeft - b.daysLeft)
 
   return (
@@ -71,15 +72,17 @@ export default function WarrantyPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Warranty Center</h1>
-            <p className="text-sm text-vault-text-muted mt-0.5">Service & warranty automation</p>
+            <p className="text-sm text-vault-text-muted mt-0.5">Service &amp; warranty automation</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all">
+          <button
+            onClick={() => setShowAddAsset(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all"
+          >
             <Plus size={15} />
             Add Asset
           </button>
         </div>
 
-        {/* Alert banner */}
         {expiringSoon > 0 && (
           <div className="mt-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 p-4 flex items-center gap-3 animate-fade-in">
             <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
@@ -116,13 +119,10 @@ export default function WarrantyPage() {
 
         {/* Asset timeline */}
         <div className="relative">
-          {/* Timeline line */}
           <div className="absolute left-5 top-0 bottom-0 w-px bg-vault-border" />
-
-          <div className="space-y-4 pb-6">
+          <div className="space-y-4 pb-28">
             {sorted.map((asset) => (
               <div key={asset.id} className="relative flex gap-4">
-                {/* Timeline dot */}
                 <div className={cn(
                   'relative z-10 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl',
                   asset.status === 'active' ? 'bg-green-500/10 border border-green-500/30' :
@@ -132,8 +132,7 @@ export default function WarrantyPage() {
                   {asset.icon}
                 </div>
 
-                {/* Card */}
-                <div className="flex-1 card p-4 card-hover">
+                <Link href={`/warranty/${asset.id}`} className="flex-1 card p-4 card-hover block">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-vault-text leading-tight">{asset.name}</p>
@@ -179,12 +178,75 @@ export default function WarrantyPage() {
                     </div>
                     <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
                   </div>
-                </div>
+                </Link>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Add Asset Modal */}
+      {showAddAsset && (
+        <>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 animate-fade-in" onClick={() => setShowAddAsset(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border animate-slide-up max-h-[90dvh] overflow-y-auto">
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full bg-vault-muted" />
+            </div>
+            <div className="px-6 pb-10">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Add New Asset</h3>
+                  <p className="text-xs text-vault-text-muted mt-0.5">Track your home appliance or fixture</p>
+                </div>
+                <button onClick={() => setShowAddAsset(false)} className="w-8 h-8 rounded-xl glass flex items-center justify-center">
+                  <X size={16} className="text-vault-text-muted" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {[{ label: 'Asset Name', placeholder: 'e.g. Samsung Front Load Washer' }, { label: 'Brand', placeholder: 'e.g. Samsung' }, { label: 'Model Number', placeholder: 'e.g. WW80T3040BS' }].map(({ label, placeholder }) => (
+                  <div key={label}>
+                    <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">{label}</label>
+                    <input className="w-full px-4 py-3.5 text-sm rounded-2xl" placeholder={placeholder} />
+                  </div>
+                ))}
+
+                <div>
+                  <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Zone / Room</label>
+                  <select className="w-full px-4 py-3.5 text-sm rounded-2xl bg-vault-card border border-vault-border text-vault-text">
+                    {['Living Area', 'Kitchen', 'Master Bedroom', 'Room 2', 'Study', 'Utility', 'Balcony'].map(z => (
+                      <option key={z}>{z}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {[{ label: 'Purchase Date' }, { label: 'Warranty Expiry' }].map(({ label }) => (
+                  <div key={label}>
+                    <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">{label}</label>
+                    <input type="date" className="w-full px-4 py-3.5 text-sm rounded-2xl" />
+                  </div>
+                ))}
+
+                <div>
+                  <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Invoice (optional)</label>
+                  <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-vault-card border border-vault-border cursor-pointer hover:border-gold-500/40 transition-all">
+                    <FileText size={16} className="text-gold-500" />
+                    <span className="text-sm text-vault-text-muted">Attach invoice PDF</span>
+                  </div>
+                </div>
+
+                <button className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all mt-2">
+                  Save Asset
+                </button>
+                <button onClick={() => setShowAddAsset(false)} className="w-full py-3 rounded-2xl glass gold-border text-vault-text font-semibold text-sm">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -210,6 +210,14 @@ function CreateModal({ open, onClose }: CreateModalProps) {
 
 export default function SharePage() {
   const [showCreate, setShowCreate] = useState(false)
+  const [links, setLinks] = useState(ACTIVE_LINKS)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  function handleRevoke(id: string) {
+    if (confirm('Revoke this link? Recipients will lose access immediately.')) {
+      setLinks(prev => prev.filter(l => l.id !== id))
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-vault-bg">
@@ -235,12 +243,12 @@ export default function SharePage() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-white">Active Links</h2>
           <span className="text-xs text-gold-500 font-semibold">
-            {ACTIVE_LINKS.filter(l => l.status === 'active').length} active
+            {links.filter(l => l.status === 'active').length} active
           </span>
         </div>
 
         <div className="space-y-3">
-          {ACTIVE_LINKS.map((link) => (
+          {links.map((link) => (
             <div key={link.id} className={cn('card p-4', link.status === 'expired' && 'opacity-60')}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -269,7 +277,10 @@ export default function SharePage() {
                 </div>
 
                 {link.status === 'active' && (
-                  <button className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0 hover:bg-red-500/20 transition-all">
+                  <button
+                    onClick={() => handleRevoke(link.id)}
+                    className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0 hover:bg-red-500/20 transition-all"
+                  >
                     <Trash2 size={15} className="text-red-400" />
                   </button>
                 )}
