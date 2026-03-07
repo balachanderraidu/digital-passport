@@ -1,35 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Camera, MapPin, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { Plus, Camera, MapPin, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react'
 import { cn, formatDateTime } from '@/lib/utils'
+import { useAuth } from '@/lib/useAuth'
+import { subscribeSnags, type Snag } from '@/lib/firestore'
 
 type Urgency = 'low' | 'medium' | 'high'
 type SnagStatus = 'open' | 'in-progress' | 'fixed'
-
-interface Snag {
-  id: string
-  title: string
-  location: string
-  category: string
-  urgency: Urgency
-  status: SnagStatus
-  createdAt: string
-  photo?: string
-}
-
-const DEMO_SNAGS: Snag[] = [
-  { id: 's1', title: 'Paint peeling near bathroom door frame', location: 'Master Bathroom', category: 'Paint & Finish', urgency: 'high', status: 'open', createdAt: '2026-03-05T10:30:00Z' },
-  { id: 's2', title: 'Bedroom door not closing flush', location: 'Room 2', category: 'Doors & Windows', urgency: 'medium', status: 'in-progress', createdAt: '2026-03-03T14:00:00Z' },
-  { id: 's3', title: 'Kitchen exhaust fan noisy', location: 'Kitchen', category: 'Electrical & Fixtures', urgency: 'low', status: 'open', createdAt: '2026-03-01T09:00:00Z' },
-  { id: 's4', title: 'Tiles cracked in balcony', location: 'Balcony', category: 'Flooring', urgency: 'high', status: 'fixed', createdAt: '2026-02-28T16:00:00Z' },
-  { id: 's5', title: 'Water seepage in master bathroom ceiling', location: 'Master Bathroom', category: 'Plumbing', urgency: 'high', status: 'fixed', createdAt: '2026-02-25T11:00:00Z' },
-]
-
-const TOTAL = DEMO_SNAGS.length
-const FIXED = DEMO_SNAGS.filter(s => s.status === 'fixed').length
-const PROGRESS_PCT = Math.round((FIXED / TOTAL) * 100)
 
 const URGENCY_CONFIG: Record<Urgency, { label: string; cls: string }> = {
   low: { label: 'Low', cls: 'urgency-low' },
@@ -46,9 +25,33 @@ const STATUS_CONFIG: Record<SnagStatus, { label: string; color: string }> = {
 type Tab = 'open' | 'in-progress' | 'fixed'
 
 export default function SnagsPage() {
+  const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('open')
+  const [snags, setSnags] = useState<Snag[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredSnags = DEMO_SNAGS.filter(s => s.status === activeTab)
+  useEffect(() => {
+    if (!user) return
+    setLoading(true)
+    const unsub = subscribeSnags(user.uid, (data) => {
+      setSnags(data)
+      setLoading(false)
+    })
+    return unsub
+  }, [user])
+
+  const total = snags.length
+  const fixed = snags.filter((s) => s.status === 'fixed').length
+  const progressPct = total > 0 ? Math.round((fixed / total) * 100) : 0
+  const filteredSnags = snags.filter((s) => s.status === activeTab)
+
+  if (authLoading) {
+    return (
+      <div className="min-h-dvh bg-vault-bg flex items-center justify-center">
+        <Loader2 size={28} className="text-gold-500 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-dvh bg-vault-bg">
@@ -73,7 +76,7 @@ export default function SnagsPage() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest">Project Status</p>
-              <p className="text-2xl font-bold gold-text mt-0.5">{PROGRESS_PCT}% Resolved</p>
+              <p className="text-2xl font-bold gold-text mt-0.5">{progressPct}% Resolved</p>
             </div>
             <div className="relative w-16 h-16">
               <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
@@ -83,21 +86,21 @@ export default function SnagsPage() {
                   stroke="#FFD700" strokeWidth="6"
                   strokeLinecap="round"
                   strokeDasharray={`${2 * Math.PI * 28}`}
-                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - PROGRESS_PCT / 100)}`}
+                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - progressPct / 100)}`}
                   className="transition-all duration-500"
                 />
               </svg>
               <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gold-500">
-                {PROGRESS_PCT}%
+                {progressPct}%
               </span>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-2">
             {[
-              { label: 'Open', value: DEMO_SNAGS.filter(s=>s.status==='open').length, color: 'text-red-400' },
-              { label: 'In Progress', value: DEMO_SNAGS.filter(s=>s.status==='in-progress').length, color: 'text-yellow-400' },
-              { label: 'Fixed', value: FIXED, color: 'text-green-400' },
-            ].map(stat => (
+              { label: 'Open', value: snags.filter((s) => s.status === 'open').length, color: 'text-red-400' },
+              { label: 'In Progress', value: snags.filter((s) => s.status === 'in-progress').length, color: 'text-yellow-400' },
+              { label: 'Fixed', value: fixed, color: 'text-green-400' },
+            ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className={cn('text-lg font-bold', stat.color)}>{stat.value}</p>
                 <p className="text-[10px] text-vault-text-muted font-medium">{stat.label}</p>
@@ -110,7 +113,7 @@ export default function SnagsPage() {
       {/* Tabs */}
       <div className="px-5 mt-2">
         <div className="flex gap-1 p-1 glass rounded-xl mb-4">
-          {(['open', 'in-progress', 'fixed'] as Tab[]).map(tab => (
+          {(['open', 'in-progress', 'fixed'] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -126,18 +129,29 @@ export default function SnagsPage() {
           ))}
         </div>
 
-        <div className="space-y-3 pb-4">
-          {filteredSnags.length === 0 && (
+        {loading && (
+          <div className="flex flex-col items-center py-12 gap-3">
+            <Loader2 size={28} className="text-gold-500 animate-spin" />
+            <p className="text-sm text-vault-text-muted">Loading snags…</p>
+          </div>
+        )}
+
+        <div className="space-y-3 pb-28">
+          {!loading && filteredSnags.length === 0 && (
             <div className="text-center py-12 text-vault-text-muted">
               <CheckCircle2 size={40} className="mx-auto mb-3 text-green-500/40" />
               <p className="text-sm font-medium">No snags in this category</p>
             </div>
           )}
-          {filteredSnags.map((snag) => (
+          {!loading && filteredSnags.map((snag) => (
             <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-4 card-hover block">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0">
-                  <Camera size={18} className="text-vault-text-muted" />
+                <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {snag.photoUrl ? (
+                    <img src={snag.photoUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={18} className="text-vault-text-muted" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-vault-text leading-tight">{snag.title}</p>
@@ -148,14 +162,14 @@ export default function SnagsPage() {
                     <span className="text-xs text-vault-text-muted">{snag.category}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', URGENCY_CONFIG[snag.urgency].cls)}>
-                      {URGENCY_CONFIG[snag.urgency].label}
+                    <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', URGENCY_CONFIG[snag.urgency as Urgency].cls)}>
+                      {URGENCY_CONFIG[snag.urgency as Urgency].label}
                     </span>
-                    <span className={cn('text-[10px] font-semibold', STATUS_CONFIG[snag.status].color)}>
-                      {STATUS_CONFIG[snag.status].label}
+                    <span className={cn('text-[10px] font-semibold', STATUS_CONFIG[snag.status as SnagStatus].color)}>
+                      {STATUS_CONFIG[snag.status as SnagStatus].label}
                     </span>
                     <span className="text-[9px] text-vault-text-muted ml-auto">
-                      {formatDateTime(snag.createdAt)}
+                      {snag.createdAt ? formatDateTime(snag.createdAt.toDate().toISOString()) : '—'}
                     </span>
                   </div>
                 </div>

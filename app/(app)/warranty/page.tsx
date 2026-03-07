@@ -1,33 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ShieldCheck, ShieldAlert, ShieldOff, Plus, ChevronRight, Bell, FileText, X } from 'lucide-react'
+import { ShieldCheck, ShieldAlert, ShieldOff, Plus, ChevronRight, Bell, FileText, X, Loader2 } from 'lucide-react'
 import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
-
-interface Asset {
-  id: string
-  name: string
-  icon: string
-  zone: string
-  brand: string
-  model: string
-  purchaseDate: string
-  warrantyExpiry: string
-  invoiceLinked: boolean
-  nextService: string | null
-}
-
-const DEMO_ASSETS: Asset[] = [
-  { id: 'a1', name: 'Daikin 2.0T Inverter AC', icon: '❄️', zone: 'Living Area', brand: 'Daikin', model: 'FTKM60TV', purchaseDate: '2023-04-15', warrantyExpiry: '2028-04-15', invoiceLinked: true, nextService: '2026-10-01' },
-  { id: 'a2', name: 'Sony Bravia 75" OLED', icon: '📺', zone: 'Living Area', brand: 'Sony', model: 'XR-75A95L', purchaseDate: '2023-05-10', warrantyExpiry: '2026-05-10', invoiceLinked: true, nextService: null },
-  { id: 'a3', name: 'Elica 4-Burner Hob', icon: '🍳', zone: 'Kitchen', brand: 'Elica', model: 'EHB TF HC 4B DX', purchaseDate: '2023-03-12', warrantyExpiry: '2026-03-12', invoiceLinked: false, nextService: null },
-  { id: 'a4', name: 'Modular Wardrobe — Master', icon: '🚪', zone: 'Master Bedroom', brand: 'Spacewood', model: 'Elite 8×10', purchaseDate: '2023-02-28', warrantyExpiry: '2033-02-28', invoiceLinked: true, nextService: null },
-  { id: 'a5', name: 'Bosch Front Load Washer', icon: '🫧', zone: 'Utility', brand: 'Bosch', model: 'WAJ24268IN', purchaseDate: '2023-04-01', warrantyExpiry: '2028-04-01', invoiceLinked: true, nextService: '2026-04-01' },
-  { id: 'a6', name: 'Crompton Ceiling Fan', icon: '🌀', zone: 'Bedroom', brand: 'Crompton', model: 'HS Plus 1200mm', purchaseDate: '2023-01-15', warrantyExpiry: '2025-01-15', invoiceLinked: false, nextService: null },
-]
+import { useAuth } from '@/lib/useAuth'
+import { subscribeWarrantyAssets, addWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
+import { uploadInvoice } from '@/lib/storage'
 
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
+
+const ZONES = ['Living Area', 'Kitchen', 'Master Bedroom', 'Room 2', 'Study', 'Utility', 'Balcony']
+
+const ICONS = ['❄️', '📺', '🍳', '🚪', '🫧', '🌀', '💡', '🖥️', '🛁', '🔥', '📱', '🎮']
 
 const STATUS_ICON = {
   active: <ShieldCheck size={16} className="text-green-400" />,
@@ -47,23 +32,100 @@ const STATUS_LABEL = {
   expired: 'Expired',
 }
 
+interface AssetForm {
+  name: string
+  icon: string
+  zone: string
+  brand: string
+  model: string
+  serialNumber: string
+  purchaseDate: string
+  warrantyExpiry: string
+  nextService: string
+}
+
+const DEFAULT_FORM: AssetForm = {
+  name: '',
+  icon: '❄️',
+  zone: 'Living Area',
+  brand: '',
+  model: '',
+  serialNumber: '',
+  purchaseDate: '',
+  warrantyExpiry: '',
+  nextService: '',
+}
+
 export default function WarrantyPage() {
+  const { user, loading: authLoading } = useAuth()
   const [filter, setFilter] = useState<FilterTab>('all')
   const [showAddAsset, setShowAddAsset] = useState(false)
+  const [assets, setAssets] = useState<WarrantyAsset[]>([])
+  const [loadingAssets, setLoadingAssets] = useState(true)
+  const [form, setForm] = useState<AssetForm>(DEFAULT_FORM)
+  const [saving, setSaving] = useState(false)
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+  const invoiceRef = useRef<HTMLInputElement>(null)
 
-  const assetsWithStatus = DEMO_ASSETS.map(a => ({
+  useEffect(() => {
+    if (!user) return
+    setLoadingAssets(true)
+    const unsub = subscribeWarrantyAssets(user.uid, (data) => {
+      setAssets(data)
+      setLoadingAssets(false)
+    })
+    return unsub
+  }, [user])
+
+  const assetsWithStatus = assets.map((a) => ({
     ...a,
     status: getWarrantyStatus(a.warrantyExpiry),
     daysLeft: getDaysUntil(a.warrantyExpiry),
   }))
 
-  const expiringSoon = assetsWithStatus.filter(a => a.status === 'expiring').length
+  const expiringSoon = assetsWithStatus.filter((a) => a.status === 'expiring').length
 
-  const filtered = filter === 'all'
-    ? assetsWithStatus
-    : assetsWithStatus.filter(a => a.status === filter)
+  const filtered =
+    filter === 'all' ? assetsWithStatus : assetsWithStatus.filter((a) => a.status === filter)
 
   const sorted = [...filtered].sort((a, b) => a.daysLeft - b.daysLeft)
+
+  async function handleSave() {
+    if (!user || !form.name || !form.purchaseDate || !form.warrantyExpiry) return
+    setSaving(true)
+    try {
+      let invoiceUrl: string | null = null
+      if (invoiceFile) {
+        const tempId = `${Date.now()}`
+        invoiceUrl = await uploadInvoice(user.uid, tempId, invoiceFile)
+      }
+      await addWarrantyAsset(user.uid, {
+        name: form.name,
+        icon: form.icon,
+        zone: form.zone,
+        brand: form.brand,
+        model: form.model,
+        serialNumber: form.serialNumber,
+        purchaseDate: form.purchaseDate,
+        warrantyExpiry: form.warrantyExpiry,
+        nextService: form.nextService || null,
+        invoiceUrl,
+      })
+      setForm(DEFAULT_FORM)
+      setInvoiceFile(null)
+      setShowAddAsset(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-dvh bg-vault-bg flex items-center justify-center">
+        <Loader2 size={28} className="text-gold-500 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-dvh bg-vault-bg">
@@ -72,7 +134,7 @@ export default function WarrantyPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Warranty Center</h1>
-            <p className="text-sm text-vault-text-muted mt-0.5">Service &amp; warranty automation</p>
+            <p className="text-sm text-vault-text-muted mt-0.5">Service & warranty automation</p>
           </div>
           <button
             onClick={() => setShowAddAsset(true)}
@@ -101,7 +163,7 @@ export default function WarrantyPage() {
       {/* Filter tabs */}
       <div className="px-5 mt-2">
         <div className="flex gap-1 p-1 glass rounded-xl mb-4">
-          {(['all', 'active', 'expiring', 'expired'] as FilterTab[]).map(tab => (
+          {(['all', 'active', 'expiring', 'expired'] as FilterTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
@@ -117,72 +179,95 @@ export default function WarrantyPage() {
           ))}
         </div>
 
-        {/* Asset timeline */}
-        <div className="relative">
-          <div className="absolute left-5 top-0 bottom-0 w-px bg-vault-border" />
-          <div className="space-y-4 pb-28">
-            {sorted.map((asset) => (
-              <div key={asset.id} className="relative flex gap-4">
-                <div className={cn(
-                  'relative z-10 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl',
-                  asset.status === 'active' ? 'bg-green-500/10 border border-green-500/30' :
-                  asset.status === 'expiring' ? 'bg-yellow-500/10 border border-yellow-500/30' :
-                  'bg-red-500/10 border border-red-500/30'
-                )}>
-                  {asset.icon}
-                </div>
-
-                <Link href={`/warranty/${asset.id}`} className="flex-1 card p-4 card-hover block">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-vault-text leading-tight">{asset.name}</p>
-                      <p className="text-xs text-vault-text-muted mt-0.5">{asset.brand} · {asset.zone}</p>
-
-                      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                        <div className="flex items-center gap-1">
-                          {STATUS_ICON[asset.status]}
-                        </div>
-                        <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', STATUS_BADGE[asset.status])}>
-                          {STATUS_LABEL[asset.status]}
-                        </span>
-                        {asset.status !== 'expired' && (
-                          <span className="text-[9px] text-vault-text-muted font-medium">
-                            {asset.daysLeft > 0 ? `${asset.daysLeft}d remaining` : 'Today'}
-                          </span>
-                        )}
-                        {asset.invoiceLinked && (
-                          <span className="flex items-center gap-1 text-[9px] font-bold text-gold-500 bg-gold-500/10 px-1.5 py-0.5 rounded-md">
-                            <FileText size={9} /> Invoice linked
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 mt-3">
-                        <div>
-                          <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">Purchase</p>
-                          <p className="text-xs font-semibold text-vault-text">{formatDate(asset.purchaseDate)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">Expires</p>
-                          <p className={cn('text-xs font-semibold', asset.status === 'expired' ? 'text-red-400' : asset.status === 'expiring' ? 'text-yellow-400' : 'text-vault-text')}>
-                            {formatDate(asset.warrantyExpiry)}
-                          </p>
-                        </div>
-                        {asset.nextService && (
-                          <div className="col-span-2">
-                            <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">Next Service</p>
-                            <p className="text-xs font-semibold text-blue-400">{formatDate(asset.nextService)}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
-                  </div>
-                </Link>
-              </div>
-            ))}
+        {/* Loading state */}
+        {loadingAssets && (
+          <div className="flex flex-col items-center py-16 gap-3">
+            <Loader2 size={28} className="text-gold-500 animate-spin" />
+            <p className="text-sm text-vault-text-muted">Loading assets…</p>
           </div>
-        </div>
+        )}
+
+        {/* Empty state */}
+        {!loadingAssets && sorted.length === 0 && (
+          <div className="text-center py-16 text-vault-text-muted">
+            <span className="text-4xl block mb-3">🛡️</span>
+            <p className="text-sm font-medium">No assets yet</p>
+            <p className="text-xs mt-1">Tap Add Asset to start tracking warranties</p>
+          </div>
+        )}
+
+        {/* Asset timeline */}
+        {!loadingAssets && sorted.length > 0 && (
+          <div className="relative">
+            <div className="absolute left-5 top-0 bottom-0 w-px bg-vault-border" />
+            <div className="space-y-4 pb-28">
+              {sorted.map((asset) => (
+                <div key={asset.id} className="relative flex gap-4">
+                  <div
+                    className={cn(
+                      'relative z-10 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl',
+                      asset.status === 'active'
+                        ? 'bg-green-500/10 border border-green-500/30'
+                        : asset.status === 'expiring'
+                        ? 'bg-yellow-500/10 border border-yellow-500/30'
+                        : 'bg-red-500/10 border border-red-500/30'
+                    )}
+                  >
+                    {asset.icon}
+                  </div>
+
+                  <Link href={`/warranty/${asset.id}`} className="flex-1 card p-4 card-hover block">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-vault-text leading-tight">{asset.name}</p>
+                        <p className="text-xs text-vault-text-muted mt-0.5">
+                          {asset.brand} · {asset.zone}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                          <div className="flex items-center gap-1">{STATUS_ICON[asset.status]}</div>
+                          <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', STATUS_BADGE[asset.status])}>
+                            {STATUS_LABEL[asset.status]}
+                          </span>
+                          {asset.status !== 'expired' && (
+                            <span className="text-[9px] text-vault-text-muted font-medium">
+                              {asset.daysLeft > 0 ? `${asset.daysLeft}d remaining` : 'Today'}
+                            </span>
+                          )}
+                          {asset.invoiceUrl && (
+                            <span className="flex items-center gap-1 text-[9px] font-bold text-gold-500 bg-gold-500/10 px-1.5 py-0.5 rounded-md">
+                              <FileText size={9} /> Invoice linked
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          <div>
+                            <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">Purchase</p>
+                            <p className="text-xs font-semibold text-vault-text">{formatDate(asset.purchaseDate)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">Expires</p>
+                            <p className={cn('text-xs font-semibold', asset.status === 'expired' ? 'text-red-400' : asset.status === 'expiring' ? 'text-yellow-400' : 'text-vault-text')}>
+                              {formatDate(asset.warrantyExpiry)}
+                            </p>
+                          </div>
+                          {asset.nextService && (
+                            <div className="col-span-2">
+                              <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">Next Service</p>
+                              <p className="text-xs font-semibold text-blue-400">{formatDate(asset.nextService)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Asset Modal */}
@@ -205,39 +290,84 @@ export default function WarrantyPage() {
               </div>
 
               <div className="space-y-4">
-                {[{ label: 'Asset Name', placeholder: 'e.g. Samsung Front Load Washer' }, { label: 'Brand', placeholder: 'e.g. Samsung' }, { label: 'Model Number', placeholder: 'e.g. WW80T3040BS' }].map(({ label, placeholder }) => (
-                  <div key={label}>
+                {/* Icon picker */}
+                <div>
+                  <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Icon</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ICONS.map((ic) => (
+                      <button
+                        key={ic}
+                        onClick={() => setForm({ ...form, icon: ic })}
+                        className={cn('w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all', form.icon === ic ? 'bg-gold-500/20 border border-gold-500' : 'glass border border-vault-border')}
+                      >
+                        {ic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {[
+                  { label: 'Asset Name', key: 'name', placeholder: 'e.g. Samsung Front Load Washer' },
+                  { label: 'Brand', key: 'brand', placeholder: 'e.g. Samsung' },
+                  { label: 'Model Number', key: 'model', placeholder: 'e.g. WW80T3040BS' },
+                  { label: 'Serial Number', key: 'serialNumber', placeholder: 'e.g. SNB-20231223' },
+                ].map(({ label, key, placeholder }) => (
+                  <div key={key}>
                     <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">{label}</label>
-                    <input className="w-full px-4 py-3.5 text-sm rounded-2xl" placeholder={placeholder} />
+                    <input
+                      className="w-full px-4 py-3.5 text-sm rounded-2xl"
+                      placeholder={placeholder}
+                      value={(form as unknown as Record<string, string>)[key]}
+                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    />
                   </div>
                 ))}
 
                 <div>
                   <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Zone / Room</label>
-                  <select className="w-full px-4 py-3.5 text-sm rounded-2xl bg-vault-card border border-vault-border text-vault-text">
-                    {['Living Area', 'Kitchen', 'Master Bedroom', 'Room 2', 'Study', 'Utility', 'Balcony'].map(z => (
-                      <option key={z}>{z}</option>
-                    ))}
+                  <select
+                    className="w-full px-4 py-3.5 text-sm rounded-2xl bg-vault-card border border-vault-border text-vault-text"
+                    value={form.zone}
+                    onChange={(e) => setForm({ ...form, zone: e.target.value })}
+                  >
+                    {ZONES.map((z) => <option key={z}>{z}</option>)}
                   </select>
                 </div>
 
-                {[{ label: 'Purchase Date' }, { label: 'Warranty Expiry' }].map(({ label }) => (
-                  <div key={label}>
+                {[
+                  { label: 'Purchase Date', key: 'purchaseDate' },
+                  { label: 'Warranty Expiry', key: 'warrantyExpiry' },
+                  { label: 'Next Service Date (optional)', key: 'nextService' },
+                ].map(({ label, key }) => (
+                  <div key={key}>
                     <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">{label}</label>
-                    <input type="date" className="w-full px-4 py-3.5 text-sm rounded-2xl" />
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3.5 text-sm rounded-2xl"
+                      value={(form as unknown as Record<string, string>)[key]}
+                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    />
                   </div>
                 ))}
 
                 <div>
                   <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Invoice (optional)</label>
-                  <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-vault-card border border-vault-border cursor-pointer hover:border-gold-500/40 transition-all">
+                  <input ref={invoiceRef} type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setInvoiceFile(e.target.files?.[0] ?? null)} />
+                  <div
+                    onClick={() => invoiceRef.current?.click()}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-vault-card border border-vault-border cursor-pointer hover:border-gold-500/40 transition-all"
+                  >
                     <FileText size={16} className="text-gold-500" />
-                    <span className="text-sm text-vault-text-muted">Attach invoice PDF</span>
+                    <span className="text-sm text-vault-text-muted">{invoiceFile ? invoiceFile.name : 'Attach invoice PDF or image'}</span>
                   </div>
                 </div>
 
-                <button className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all mt-2">
-                  Save Asset
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !form.name || !form.purchaseDate || !form.warrantyExpiry}
+                  className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all mt-2 disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {saving ? <><Loader2 size={16} className="animate-spin" /> Saving…</> : 'Save Asset'}
                 </button>
                 <button onClick={() => setShowAddAsset(false)} className="w-full py-3 rounded-2xl glass gold-border text-vault-text font-semibold text-sm">
                   Cancel

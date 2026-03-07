@@ -2,8 +2,11 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Upload, ChevronRight, ChevronLeft, Check, MapPin, Tag, AlertTriangle } from 'lucide-react'
+import { Camera, Upload, ChevronRight, ChevronLeft, Check, MapPin, Tag, AlertTriangle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/useAuth'
+import { addSnag } from '@/lib/firestore'
+import { uploadSnagPhoto } from '@/lib/storage'
 
 const LOCATIONS = ['Living Area', 'Master Bedroom', 'Guest Room', 'Kitchen', 'Master Bathroom', 'Guest Bathroom', 'Balcony', 'Hallway', 'Study', 'Utility Room']
 const CATEGORIES = ['Paint & Finish', 'Flooring', 'Doors & Windows', 'Plumbing', 'Electrical & Fixtures', 'Structural', 'Carpentry & Furniture', 'HVAC']
@@ -15,9 +18,11 @@ const URGENCY_OPTS = [
 
 export default function NewSnagPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState(1)
-  const [photo, setPhoto] = useState<string | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [location, setLocation] = useState('')
   const [category, setCategory] = useState('')
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | ''>('')
@@ -27,16 +32,45 @@ export default function NewSnagPage() {
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setPhotoFile(file)
     const reader = new FileReader()
-    reader.onload = ev => setPhoto(ev.target?.result as string)
+    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
   }
 
   async function handleSubmit() {
+    if (!user || !location || !category || !urgency) return
     setSubmitting(true)
-    // In production: upload photo to Firebase Storage, write snag to Firestore
-    await new Promise(r => setTimeout(r, 1500))
-    router.push('/snags')
+    try {
+      // Build the snag title from location + category
+      const title = description || `${category} issue — ${location}`
+
+      // Add snag to Firestore first to get the ID
+      const docRef = await addSnag(user.uid, {
+        title,
+        location,
+        category,
+        urgency,
+        status: 'open',
+        photoUrl: null,
+      })
+
+      // Upload photo after we have the snag ID
+      if (photoFile) {
+        const photoUrl = await uploadSnagPhoto(user.uid, docRef.id, photoFile)
+        // Update the snag with the photo URL using updateSnagStatus won't work here
+        // Instead re-use Firestore directly via updateDoc
+        const { doc, updateDoc } = await import('firebase/firestore')
+        const { db } = await import('@/lib/firebase')
+        if (db) {
+          await updateDoc(doc(db, 'users', user.uid, 'snags', docRef.id), { photoUrl })
+        }
+      }
+
+      router.push('/snags')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -44,7 +78,7 @@ export default function NewSnagPage() {
       {/* Header */}
       <div className="px-5 pt-14 pb-4 bg-gradient-to-b from-vault-surface to-vault-bg flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => step > 1 ? setStep(s => (s - 1) as 1|2|3) : router.back()} className="w-9 h-9 rounded-xl glass flex items-center justify-center">
+          <button onClick={() => step > 1 ? setStep((s) => (s - 1) as 1|2|3) : router.back()} className="w-9 h-9 rounded-xl glass flex items-center justify-center">
             <ChevronLeft size={18} className="text-vault-text" />
           </button>
           <div>
@@ -52,32 +86,27 @@ export default function NewSnagPage() {
             <p className="text-xs text-vault-text-muted">Step {step} of 3</p>
           </div>
         </div>
-
-        {/* Step progress */}
         <div className="flex gap-1.5 mt-4">
-          {[1,2,3].map(s => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className={cn('h-1 flex-1 rounded-full transition-all duration-300', s <= step ? 'bg-gold-500' : 'bg-vault-muted')} />
           ))}
         </div>
       </div>
 
       <div className="flex-1 px-5 overflow-y-auto">
-        {/* Step 1: Photo Capture */}
+        {/* Step 1: Photo */}
         {step === 1 && (
           <div className="py-4 space-y-4 animate-fade-in">
             <div>
               <h2 className="text-lg font-bold text-white mb-1">Capture Evidence</h2>
               <p className="text-sm text-vault-text-muted">Take or upload a photo of the defect</p>
             </div>
-
             <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
-
-            {photo ? (
+            {photoPreview ? (
               <div className="relative rounded-2xl overflow-hidden" style={{ height: '280px' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt="Snag photo" className="w-full h-full object-cover" />
+                <img src={photoPreview} alt="Snag photo" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => setPhoto(null)}
+                  onClick={() => { setPhotoPreview(null); setPhotoFile(null) }}
                   className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-black/60 backdrop-blur-sm flex items-center justify-center"
                 >
                   <span className="text-white text-sm">✕</span>
@@ -89,7 +118,7 @@ export default function NewSnagPage() {
             ) : (
               <div
                 onClick={() => fileRef.current?.click()}
-                className="rounded-2xl border-2 border-dashed border-vault-border hover:border-gold-500/40 transition-all cursor-pointer flex flex-col items-center justify-center gap-3 py-12"
+                className="rounded-2xl border-2 border-dashed border-vault-border hover:border-gold-500/40 transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
                 style={{ height: '280px' }}
               >
                 <div className="w-16 h-16 rounded-2xl glass-gold gold-border flex items-center justify-center">
@@ -105,18 +134,21 @@ export default function NewSnagPage() {
                 </button>
               </div>
             )}
-
             <button
               onClick={() => setStep(2)}
-              disabled={!photo}
-              className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm disabled:opacity-40 hover:shadow-gold-glow transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all flex items-center justify-center gap-2"
             >
               Continue to Details <ChevronRight size={16} />
             </button>
+            {!photoPreview && (
+              <button onClick={() => setStep(2)} className="w-full py-2 text-xs text-vault-text-muted">
+                Skip photo for now
+              </button>
+            )}
           </div>
         )}
 
-        {/* Step 2: Details Form */}
+        {/* Step 2: Details */}
         {step === 2 && (
           <div className="py-4 space-y-5 animate-fade-in">
             <div>
@@ -124,13 +156,12 @@ export default function NewSnagPage() {
               <p className="text-sm text-vault-text-muted">Add location, category, and urgency</p>
             </div>
 
-            {/* Location */}
             <div>
               <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <MapPin size={12} /> Location
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {LOCATIONS.map(loc => (
+                {LOCATIONS.map((loc) => (
                   <button
                     key={loc}
                     onClick={() => setLocation(loc)}
@@ -147,13 +178,12 @@ export default function NewSnagPage() {
               </div>
             </div>
 
-            {/* Category */}
             <div>
               <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Tag size={12} /> Category
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {CATEGORIES.map(cat => (
+                {CATEGORIES.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setCategory(cat)}
@@ -170,13 +200,12 @@ export default function NewSnagPage() {
               </div>
             </div>
 
-            {/* Urgency */}
             <div>
               <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <AlertTriangle size={12} /> Urgency Level
               </label>
               <div className="space-y-2">
-                {URGENCY_OPTS.map(opt => (
+                {URGENCY_OPTS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setUrgency(opt.value as 'low' | 'medium' | 'high')}
@@ -197,14 +226,13 @@ export default function NewSnagPage() {
               </div>
             </div>
 
-            {/* Description */}
             <div>
               <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">Description (optional)</label>
               <textarea
                 className="w-full px-4 py-3 text-sm rounded-2xl resize-none h-24"
                 placeholder="Describe the defect in detail..."
                 value={description}
-                onChange={e => setDescription(e.target.value)}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
@@ -226,22 +254,19 @@ export default function NewSnagPage() {
               <p className="text-sm text-vault-text-muted">Confirm details before submitting</p>
             </div>
 
-            {/* Photo preview */}
-            {photo && (
+            {photoPreview && (
               <div className="rounded-2xl overflow-hidden h-40">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt="Snag" className="w-full h-full object-cover" />
+                <img src={photoPreview} alt="Snag" className="w-full h-full object-cover" />
               </div>
             )}
 
-            {/* Summary card */}
             <div className="card p-4 space-y-3">
               {[
                 { label: 'Location', value: location },
                 { label: 'Category', value: category },
                 { label: 'Urgency', value: urgency.charAt(0).toUpperCase() + urgency.slice(1) },
                 ...(description ? [{ label: 'Description', value: description }] : []),
-              ].map(row => (
+              ].map((row) => (
                 <div key={row.label} className="flex gap-3">
                   <span className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest w-20 mt-0.5 flex-shrink-0">{row.label}</span>
                   <span className="text-sm font-semibold text-vault-text">{row.value}</span>
@@ -252,10 +277,10 @@ export default function NewSnagPage() {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60 mb-6"
             >
               {submitting ? (
-                <>Submitting...</>
+                <><Loader2 size={16} className="animate-spin" /> Submitting…</>
               ) : (
                 <><Check size={16} /> Submit Snag Report</>
               )}
