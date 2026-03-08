@@ -405,3 +405,36 @@ export function subscribeDashboardStats(
     unsubSnags()
   }
 }
+
+// ─── User Profile ──────────────────────────────────────────────────────────────
+
+export interface UserProfile {
+  email: string | null
+  phone: string | null
+  emailVerified: boolean
+  phoneVerified: boolean
+  displayName: string | null
+  photoURL: string | null
+  profileCompletionSkipped: boolean
+}
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const firestore = requireDb()
+  const snap = await getDoc(doc(firestore, 'users', uid))
+  return snap.exists() ? (snap.data() as UserProfile) : null
+}
+
+export async function saveUserProfile(uid: string, data: Partial<UserProfile>) {
+  const firestore = requireDb()
+  await setDoc(doc(firestore, 'users', uid), data, { merge: true })
+}
+
+export function subscribeUserProfile(
+  uid: string,
+  callback: (profile: UserProfile | null) => void
+): Unsubscribe {
+  const firestore = requireDb()
+  return onSnapshot(doc(firestore, 'users', uid), (snap) => {
+    callback(snap.exists() ? (snap.data() as UserProfile) : null)
+  })
+}
