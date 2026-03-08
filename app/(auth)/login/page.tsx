@@ -1,20 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { useAuth } from '@/lib/useAuth'
+import { getProperty } from '@/lib/firestore'
 import { Eye, EyeOff, KeyRound, Sparkles, FlaskConical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+async function routeAfterSignIn(uid: string, router: ReturnType<typeof useRouter>) {
+  const property = await getProperty(uid)
+  router.replace(property ? '/dashboard' : '/onboarding')
+}
+
 export default function LoginPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'demo' | 'login'>('demo')
+
+  // Already logged in — redirect away from login page
+  useEffect(() => {
+    if (!authLoading && user) {
+      routeAfterSignIn(user.uid, router)
+    }
+  }, [user, authLoading, router])
 
   function handleDemoLogin() {
     // Set a demo flag in sessionStorage so the app knows we're in demo mode
@@ -31,8 +46,8 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      router.push('/dashboard')
+      const result = await signInWithEmailAndPassword(auth, email, password)
+      await routeAfterSignIn(result.user.uid, router)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed'
       setError(msg.replace('Firebase: ', '').replace(/\(auth\/.*\)\.?/, '').trim())
@@ -50,8 +65,8 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
-      router.push('/dashboard')
+      const result = await signInWithPopup(auth, provider)
+      await routeAfterSignIn(result.user.uid, router)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed'
       setError(msg.replace('Firebase: ', '').replace(/\(auth\/.*\)\.?/, '').trim())

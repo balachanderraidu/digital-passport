@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Shield, Hammer, Share2, Sparkles } from 'lucide-react'
+import { Home, Shield, Hammer, ShieldCheck, UserCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
-  { href: '/dashboard', label: 'Home',      Icon: Home },
-  { href: '/vault',     label: 'Vault',     Icon: Shield },
-  { href: '/snags',     label: 'Snags',     Icon: Hammer },
-  { href: '/warranty',  label: 'Warranty',  Icon: Share2 },
-  { href: '/assistant', label: 'AI',        Icon: Sparkles },
+  { href: '/dashboard', label: 'Home',     Icon: Home },
+  { href: '/vault',     label: 'Vault',    Icon: Shield },
+  { href: '/snags',     label: 'Snags',    Icon: Hammer },
+  { href: '/warranty',  label: 'Warranty', Icon: ShieldCheck },
+  { href: '/profile',   label: 'Profile',  Icon: UserCircle },
 ]
 
 export function BottomNav() {
