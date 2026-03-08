@@ -2,11 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Bell, ChevronRight, X, Loader2 } from 'lucide-react'
+import { Bell, ChevronRight, X, Loader2, Upload, Plus, Hammer, Sparkles } from 'lucide-react'
 import { cn, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { AssetDrawer } from '@/components/twin/AssetDrawer'
 import { useAuth } from '@/lib/useAuth'
-import { subscribeDashboardStats, subscribeWarrantyAssets, subscribeSnags, type DashboardStats, type WarrantyAsset, type Snag } from '@/lib/firestore'
+import {
+  subscribeDashboardStats,
+  subscribeWarrantyAssets,
+  subscribeSnags,
+  subscribeProperty,
+  subscribeEvents,
+  type DashboardStats,
+  type WarrantyAsset,
+  type Snag,
+  type Property,
+  type AppEvent,
+} from '@/lib/firestore'
 
 // Canonical hotspot definitions — positions are fixed layout-wise
 const HOTSPOT_DEFS = [
@@ -60,7 +71,6 @@ function Hotspot({ label, x, y, icon, status, onSelect }: HotspotProps) {
   )
 }
 
-// Derive warranty status for a zone by finding the worst-status asset in that zone
 function getZoneStatus(assets: WarrantyAsset[], zone: string): StatusType {
   const zoneAssets = assets.filter((a) => a.zone === zone && a.warrantyExpiry)
   if (zoneAssets.length === 0) return 'active'
@@ -70,9 +80,7 @@ function getZoneStatus(assets: WarrantyAsset[], zone: string): StatusType {
   return 'active'
 }
 
-// Build a synthetic asset for the AssetDrawer from Firestore data
 function buildDrawerAsset(hotspot: typeof HOTSPOT_DEFS[0], assets: WarrantyAsset[]) {
-  // Find the most relevant asset in this zone
   const match = assets.find((a) => a.zone === hotspot.zone) ?? null
   if (!match) return null
   return {
@@ -91,11 +99,21 @@ function buildDrawerAsset(hotspot: typeof HOTSPOT_DEFS[0], assets: WarrantyAsset
   }
 }
 
+const EVENT_ICONS: Record<string, string> = {
+  vault_upload: '📄',
+  asset_added: '🛡️',
+  snag_opened: '🔨',
+  snag_fixed: '✅',
+  link_created: '🔗',
+}
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({ assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 })
   const [warrantyAssets, setWarrantyAssets] = useState<WarrantyAsset[]>([])
   const [recentSnags, setRecentSnags] = useState<Snag[]>([])
+  const [property, setProperty] = useState<Property | null>(null)
+  const [events, setEvents] = useState<AppEvent[]>([])
   const [selectedHotspot, setSelectedHotspot] = useState<typeof HOTSPOT_DEFS[0] | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showNotif, setShowNotif] = useState(false)
@@ -106,10 +124,14 @@ export default function DashboardPage() {
     const unsubStats = subscribeDashboardStats(user.uid, setStats)
     const unsubWarranty = subscribeWarrantyAssets(user.uid, setWarrantyAssets)
     const unsubSnags = subscribeSnags(user.uid, setRecentSnags)
+    const unsubProperty = subscribeProperty(user.uid, setProperty)
+    const unsubEvents = subscribeEvents(user.uid, setEvents)
     return () => {
       unsubStats()
       unsubWarranty()
       unsubSnags()
+      unsubProperty()
+      unsubEvents()
     }
   }, [user])
 
@@ -118,7 +140,6 @@ export default function DashboardPage() {
     setDrawerOpen(true)
   }
 
-  // Get expiring warranty notifications
   const expiringWarranties = warrantyAssets
     .filter((a) => getWarrantyStatus(a.warrantyExpiry) === 'expiring')
     .slice(0, 2)
@@ -144,6 +165,15 @@ export default function DashboardPage() {
 
   const selectedAsset = selectedHotspot ? buildDrawerAsset(selectedHotspot, warrantyAssets) : null
 
+  // Greeting
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
+
+  // Property display
+  const propName = property?.name ?? 'My Residence'
+  const propUnit = property ? `${property.unit} · ${property.location}` : 'Set up your property →'
+  const isNewUser = stats.assetCount === 0 && !property
+
   if (authLoading) {
     return (
       <div className="min-h-dvh bg-vault-bg flex items-center justify-center">
@@ -159,10 +189,16 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs text-vault-text-muted font-medium uppercase tracking-widest mb-1">
-              Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'} ✦
+              Good {greeting} ✦
             </p>
-            <h1 className="text-2xl font-bold text-white">Oberoi Residences</h1>
-            <p className="text-sm text-vault-text-muted mt-0.5">Unit 12B, Tower A • Worli, Mumbai</p>
+            <h1 className="text-2xl font-bold text-white">{propName}</h1>
+            {property ? (
+              <p className="text-sm text-vault-text-muted mt-0.5">{propUnit}</p>
+            ) : (
+              <Link href="/onboarding" className="text-sm text-gold-500 font-semibold mt-0.5 block">
+                Set up your property →
+              </Link>
+            )}
           </div>
           <button
             onClick={() => setShowNotif((v) => !v)}
@@ -191,10 +227,45 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Quick actions */}
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          {[
+            { label: 'Upload Doc', icon: <Upload size={14} />, href: '/vault' },
+            { label: 'Add Asset', icon: <Plus size={14} />, href: '/warranty' },
+            { label: 'Log Snag', icon: <Hammer size={14} />, href: '/snags/new' },
+          ].map((action) => (
+            <Link
+              key={action.label}
+              href={action.href}
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl glass gold-border text-xs font-bold text-vault-text hover:border-gold-500 hover:text-gold-500 transition-all"
+            >
+              <span className="text-gold-500">{action.icon}</span>
+              {action.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
+      {/* New user CTA */}
+      {isNewUser && (
+        <div className="px-5 mt-3">
+          <Link
+            href="/onboarding"
+            className="card p-5 border-gold-500/20 bg-gold-500/5 flex items-center gap-4 card-hover block"
+          >
+            <div className="text-3xl">🏡</div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-white">Set Up Your Passport</p>
+              <p className="text-xs text-vault-text-muted mt-0.5">Add your property, sync receipts, and start tracking assets</p>
+            </div>
+            <ChevronRight size={18} className="text-gold-500 flex-shrink-0" />
+          </Link>
+        </div>
+      )}
+
       {/* Floor Plan Section */}
-      <div className="px-5 mt-2">
+      <div className="px-5 mt-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-white">Interactive Home Twin</h2>
           <button
@@ -206,7 +277,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Isometric floor plan */}
-        <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface" style={{ height: '320px' }}>
+        <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface" style={{ height: '300px' }}>
           <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="iso-grid" x="0" y="0" width="40" height="23" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
@@ -218,19 +289,18 @@ export default function DashboardPage() {
           </svg>
 
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg">
-              <rect x="20" y="20" width="220" height="160" rx="12" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="125" y="110" fill="rgba(255,215,0,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">LIVING AREA</text>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+              <rect x="20" y="20" width="220" height="140" rx="12" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+              <text x="125" y="97" fill="rgba(255,215,0,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">LIVING AREA</text>
               <rect x="260" y="20" width="120" height="100" rx="12" fill="rgba(34,197,94,0.03)" stroke="rgba(34,197,94,0.15)" strokeWidth="1" strokeDasharray="4 4" />
               <text x="320" y="75" fill="rgba(34,197,94,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">KITCHEN</text>
-              <rect x="20" y="200" width="180" height="100" rx="12" fill="rgba(99,102,241,0.04)" stroke="rgba(99,102,241,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="110" y="255" fill="rgba(99,102,241,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">MASTER BED</text>
-              <rect x="220" y="200" width="160" height="100" rx="12" fill="rgba(59,130,246,0.03)" stroke="rgba(59,130,246,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="300" y="255" fill="rgba(59,130,246,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">STUDY</text>
+              <rect x="20" y="180" width="180" height="100" rx="12" fill="rgba(99,102,241,0.04)" stroke="rgba(99,102,241,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+              <text x="110" y="234" fill="rgba(99,102,241,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">MASTER BED</text>
+              <rect x="220" y="180" width="160" height="100" rx="12" fill="rgba(59,130,246,0.03)" stroke="rgba(59,130,246,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+              <text x="300" y="234" fill="rgba(59,130,246,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">STUDY</text>
             </svg>
           </div>
 
-          {/* Live hotspots */}
           {HOTSPOT_DEFS.map((h) => (
             <Hotspot
               key={h.key}
@@ -252,11 +322,11 @@ export default function DashboardPage() {
         <p className="text-center text-xs text-vault-text-muted mt-2 mb-1">Tap any node to view asset details</p>
       </div>
 
-      {/* Recent Activity — live from Firestore */}
-      <div className="px-5 mt-5 pb-28">
+      {/* Open Snags */}
+      <div className="px-5 mt-4">
         <h2 className="text-sm font-bold text-white mb-3">Open Snags</h2>
         {recentSnags.filter((s) => s.status === 'open').length === 0 ? (
-          <div className="text-center py-8 text-vault-text-muted">
+          <div className="text-center py-6 text-vault-text-muted">
             <span className="text-3xl block mb-2">✅</span>
             <p className="text-sm font-medium">All snags resolved</p>
           </div>
@@ -274,25 +344,59 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-
-        {expiringWarranties.length > 0 && (
-          <>
-            <h2 className="text-sm font-bold text-white mb-3 mt-5">Expiring Warranties</h2>
-            <div className="space-y-2.5">
-              {expiringWarranties.map((asset) => (
-                <Link key={asset.id} href={`/warranty/${asset.id}`} className="card p-3.5 flex items-center gap-3 card-hover block">
-                  <span className="text-xl">{asset.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-vault-text truncate">{asset.name}</p>
-                    <p className="text-xs font-medium mt-0.5 text-yellow-400">Expiring in {getDaysUntil(asset.warrantyExpiry)} days</p>
-                  </div>
-                  <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0" />
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
       </div>
+
+      {/* Expiring Warranties */}
+      {expiringWarranties.length > 0 && (
+        <div className="px-5 mt-5">
+          <h2 className="text-sm font-bold text-white mb-3">Expiring Warranties</h2>
+          <div className="space-y-2.5">
+            {expiringWarranties.map((asset) => (
+              <Link key={asset.id} href={`/warranty/${asset.id}`} className="card p-3.5 flex items-center gap-3 card-hover block">
+                <span className="text-xl">{asset.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-vault-text truncate">{asset.name}</p>
+                  <p className="text-xs font-medium mt-0.5 text-yellow-400">Expiring in {getDaysUntil(asset.warrantyExpiry)} days</p>
+                </div>
+                <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Activity Timeline */}
+      {events.length > 0 && (
+        <div className="px-5 mt-5 pb-28">
+          <h2 className="text-sm font-bold text-white mb-3">Recent Activity</h2>
+          <div className="space-y-2">
+            {events.slice(0, 5).map((event) => (
+              <div key={event.id} className="card p-3.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-vault-muted/40 flex items-center justify-center flex-shrink-0 text-lg">
+                  {event.icon || EVENT_ICONS[event.type] || '📌'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-vault-text truncate">{event.title}</p>
+                  <p className="text-[10px] text-vault-text-muted mt-0.5">{event.subtitle}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {events.length === 0 && expiringWarranties.length === 0 && (
+        <div className="pb-28" />
+      )}
+
+      {/* AI Assistant shortcut fab */}
+      <Link
+        href="/assistant"
+        className="fixed right-5 bottom-24 w-14 h-14 rounded-2xl bg-gold-gradient text-charcoal-300 flex items-center justify-center shadow-gold-glow hover:scale-105 transition-all z-40"
+        title="Ask AI"
+      >
+        <Sparkles size={22} />
+      </Link>
 
       {/* Asset Drawer */}
       {selectedAsset && (

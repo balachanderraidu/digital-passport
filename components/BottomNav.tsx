@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Shield, Hammer, Share2, Award } from 'lucide-react'
+import { Home, Shield, Hammer, Share2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
-  { href: '/dashboard', label: 'Home', Icon: Home },
-  { href: '/vault', label: 'Vault', Icon: Shield },
-  { href: '/snags', label: 'Snags', Icon: Hammer },
-  { href: '/share', label: 'Share', Icon: Share2 },
-  { href: '/warranty', label: 'Warranty', Icon: Award },
+  { href: '/dashboard', label: 'Home',      Icon: Home },
+  { href: '/vault',     label: 'Vault',     Icon: Shield },
+  { href: '/snags',     label: 'Snags',     Icon: Hammer },
+  { href: '/warranty',  label: 'Warranty',  Icon: Share2 },
+  { href: '/assistant', label: 'AI',        Icon: Sparkles },
 ]
 
 export function BottomNav() {
@@ -26,7 +26,7 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-[56px]',
+                'flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-[48px]',
                 isActive
                   ? 'text-gold-500'
                   : 'text-vault-text-muted hover:text-vault-text'

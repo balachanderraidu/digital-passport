@@ -2,6 +2,8 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
+  getDoc,
   deleteDoc,
   updateDoc,
   getDocs,
@@ -9,6 +11,7 @@ import {
   query,
   orderBy,
   where,
+  limit,
   serverTimestamp,
   Timestamp,
   type Unsubscribe,
@@ -107,6 +110,9 @@ export async function deleteWarrantyAsset(uid: string, assetId: string) {
 
 // ─── Vault Docs ───────────────────────────────────────────────────────────────
 
+export const VAULT_CATEGORIES = ['ownership', 'maintenance', 'interior', 'tax', 'manuals', 'warranties'] as const
+export type VaultCategory = typeof VAULT_CATEGORIES[number]
+
 export function subscribeVaultDocs(
   uid: string,
   category: string,
@@ -119,6 +125,31 @@ export function subscribeVaultDocs(
     const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VaultDoc))
     callback(docs)
   })
+}
+
+/**
+ * Subscribes to all 6 vault categories simultaneously.
+ * Calls back with a map of { [category]: VaultDoc[] } on any change.
+ */
+export function subscribeAllVaultCategories(
+  uid: string,
+  callback: (data: Record<string, VaultDoc[]>) => void
+): Unsubscribe {
+  const firestore = requireDb()
+  const state: Record<string, VaultDoc[]> = {}
+  const unsubs: Unsubscribe[] = []
+
+  for (const cat of VAULT_CATEGORIES) {
+    const ref = collection(firestore, 'users', uid, 'vault', cat, 'docs')
+    const q = query(ref, orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(q, (snap) => {
+      state[cat] = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VaultDoc))
+      callback({ ...state })
+    })
+    unsubs.push(unsub)
+  }
+
+  return () => unsubs.forEach((u) => u())
 }
 
 export async function addVaultDoc(
@@ -193,7 +224,7 @@ export function subscribeShareLinks(
 
 export async function createShareLink(
   uid: string,
-  data: Omit<ShareLink, 'id' | 'createdAt' | 'views' | 'status' | 'token'>
+  data: Omit<ShareLink, 'id' | 'createdAt' | 'views' | 'status' | 'token'> & { categories?: string[] }
 ) {
   const firestore = requireDb()
   const ref = collection(firestore, 'users', uid, 'share_links')
@@ -202,18 +233,124 @@ export async function createShareLink(
     .join('')
     .toUpperCase()
     .slice(0, 10)
-  return addDoc(ref, {
+  const docRef = await addDoc(ref, {
     ...data,
     token,
     views: 0,
     status: 'active',
     createdAt: serverTimestamp(),
   })
+  // Mirror to top-level share_tokens for anonymous /view/[token] lookups
+  await setDoc(doc(firestore, 'share_tokens', token), {
+    uid,
+    linkId: docRef.id,
+    expiresAt: data.expiresAt,
+    status: 'active',
+    recipient: data.recipient,
+    scope: data.scope,
+    categories: (data as { categories?: string[] }).categories ?? [],
+    passwordProtected: data.passwordProtected,
+    watermark: data.watermark,
+  })
+  return docRef
 }
 
 export async function revokeShareLink(uid: string, linkId: string) {
   const firestore = requireDb()
   await deleteDoc(doc(firestore, 'users', uid, 'share_links', linkId))
+}
+
+// ─── Property ─────────────────────────────────────────────────────────────────
+
+export interface Property {
+  name: string          // e.g. "Oberoi Residences"
+  unit: string          // e.g. "12B, Tower A"
+  area: number          // sq ft
+  floorPlanType: string // e.g. "3BHK"
+  location: string      // e.g. "Worli, Mumbai"
+  gmailLinked: boolean
+  createdAt: Timestamp | null
+}
+
+export async function createProperty(
+  uid: string,
+  data: Omit<Property, 'createdAt'>
+) {
+  const firestore = requireDb()
+  await setDoc(doc(firestore, 'users', uid, 'properties', 'primary'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function getProperty(uid: string): Promise<Property | null> {
+  const firestore = requireDb()
+  const snap = await getDoc(doc(firestore, 'users', uid, 'properties', 'primary'))
+  return snap.exists() ? (snap.data() as Property) : null
+}
+
+export function subscribeProperty(
+  uid: string,
+  callback: (property: Property | null) => void
+): Unsubscribe {
+  const firestore = requireDb()
+  return onSnapshot(doc(firestore, 'users', uid, 'properties', 'primary'), (snap) => {
+    callback(snap.exists() ? (snap.data() as Property) : null)
+  })
+}
+
+// ─── App Events (Timeline) ────────────────────────────────────────────────────
+
+export interface AppEvent {
+  id: string
+  type: 'vault_upload' | 'asset_added' | 'snag_opened' | 'snag_fixed' | 'link_created'
+  title: string
+  subtitle: string
+  icon: string
+  createdAt: Timestamp | null
+}
+
+export async function addEvent(
+  uid: string,
+  data: Omit<AppEvent, 'id' | 'createdAt'>
+) {
+  const firestore = requireDb()
+  const ref = collection(firestore, 'users', uid, 'events')
+  return addDoc(ref, { ...data, createdAt: serverTimestamp() })
+}
+
+export function subscribeEvents(
+  uid: string,
+  callback: (events: AppEvent[]) => void
+): Unsubscribe {
+  const firestore = requireDb()
+  const ref = collection(firestore, 'users', uid, 'events')
+  const q = query(ref, orderBy('createdAt', 'desc'), limit(10))
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AppEvent)))
+  })
+}
+
+// ─── Share Tokens (top-level lookup for public /view route) ───────────────────
+
+export interface ShareTokenLookup {
+  uid: string
+  linkId: string
+  expiresAt: Timestamp
+  status: 'active' | 'revoked'
+  recipient: string
+  scope: string
+  categories: string[]
+  passwordProtected: boolean
+  watermark: boolean
+}
+
+export async function getShareLinkByToken(
+  token: string
+): Promise<ShareTokenLookup | null> {
+  const firestore = requireDb()
+  const snap = await getDoc(doc(firestore, 'share_tokens', token))
+  return snap.exists() ? (snap.data() as ShareTokenLookup) : null
 }
 
 // ─── Dashboard Live Stats ─────────────────────────────────────────────────────
