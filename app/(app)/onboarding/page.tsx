@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronRight, Building2, Loader2, Mail, CheckCircle2, Home, X, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -27,7 +27,7 @@ const DEFAULT_FORM: PropertyForm = {
   location: '',
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -344,3 +344,12 @@ export default function OnboardingPage() {
     </div>
   )
 }
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-vault-bg flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-gold-500 border-t-transparent animate-spin" /></div>}>
+      <OnboardingContent />
+    </Suspense>
+  )
+}
+
