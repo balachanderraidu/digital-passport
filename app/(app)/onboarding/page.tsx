@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronRight, Building2, Loader2, Mail, CheckCircle2, Home, X, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
-import { createProperty } from '@/lib/firestore'
+import { createProperty, createNewProperty, setActiveProperty } from '@/lib/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import app from '@/lib/firebase'
 
@@ -31,6 +31,7 @@ function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
+  const isNewProperty = searchParams?.get('new') === '1'
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<PropertyForm>(DEFAULT_FORM)
   const [gmailStatus, setGmailStatus] = useState<'idle' | 'linking' | 'syncing' | 'done' | 'error'>('idle')
@@ -93,14 +94,22 @@ function OnboardingContent() {
     if (!user) return
     setSaving(true)
     try {
-      await createProperty(user.uid, {
+      const propertyData = {
         name: form.name,
         unit: form.unit,
         area: parseFloat(form.area) || 0,
         floorPlanType: form.floorPlanType,
         location: form.location,
         gmailLinked: gmailStatus === 'done',
-      })
+      }
+      if (isNewProperty) {
+        // Adding an additional property — create with auto-ID and switch to it
+        const newPid = await createNewProperty(user.uid, propertyData)
+        await setActiveProperty(user.uid, newPid)
+      } else {
+        // First-time setup — creates / updates 'primary'
+        await createProperty(user.uid, propertyData)
+      }
       router.replace('/dashboard')
     } catch (err) {
       console.error(err)
@@ -117,7 +126,9 @@ function OnboardingContent() {
             <div className="w-8 h-8 rounded-xl bg-gold-500/20 border border-gold-500/40 flex items-center justify-center">
               <Home size={16} className="text-gold-500" />
             </div>
-            <span className="text-xs font-bold text-gold-500 uppercase tracking-widest">Digital Passport</span>
+            <span className="text-xs font-bold text-gold-500 uppercase tracking-widest">
+              {isNewProperty ? 'Add Property' : 'Digital Passport'}
+            </span>
           </div>
           <button
             onClick={() => router.push('/dashboard')}

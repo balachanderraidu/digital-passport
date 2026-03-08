@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Clock, Copy, Trash2, Plus, Shield, Eye, Check, Loader2, X, AlertTriangle } from 'lucide-react'
 import { cn, formatCountdown } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
 import { subscribeShareLinks, createShareLink, revokeShareLink, type ShareLink } from '@/lib/firestore'
 import { Timestamp } from 'firebase/firestore'
 
@@ -38,7 +39,7 @@ function ConfirmModal({ message, onConfirm, onCancel }: { message: string; onCon
   )
 }
 
-function CreateModal({ uid, open, onClose }: { uid: string; open: boolean; onClose: () => void }) {
+function CreateModal({ uid, pid, open, onClose }: { uid: string; pid: string; open: boolean; onClose: () => void }) {
   const [step, setStep] = useState(1)
   const [config, setConfig] = useState({ recipient: '', scope: '', password: false, expiryHours: 48, watermark: false })
   const [linkToken, setLinkToken] = useState('')
@@ -57,8 +58,8 @@ function CreateModal({ uid, open, onClose }: { uid: string; open: boolean; onClo
         expiresAt,
         passwordProtected: config.password,
         watermark: config.watermark,
-      })
-      setLinkToken(result.token) // ✅ use magic-link token, not Firestore auto-ID
+      }, pid)
+      setLinkToken(result.token)
       setStep(3)
     } finally {
       setGenerating(false)
@@ -175,6 +176,7 @@ function CreateModal({ uid, open, onClose }: { uid: string; open: boolean; onClo
 
 export default function SharePage() {
   const { user, loading: authLoading } = useAuth()
+  const { activePropertyId } = useProperty()
   const [showCreate, setShowCreate] = useState(false)
   const [links, setLinks] = useState<ShareLink[]>([])
   const [loading, setLoading] = useState(true)
@@ -186,13 +188,13 @@ export default function SharePage() {
     const unsub = subscribeShareLinks(user.uid, (data) => {
       setLinks(data)
       setLoading(false)
-    })
+    }, activePropertyId)
     return unsub
-  }, [user])
+  }, [user, activePropertyId])
 
   async function handleRevoke(id: string) {
     if (!user) return
-    await revokeShareLink(user.uid, id)
+    await revokeShareLink(user.uid, id, activePropertyId)
     setRevokeTarget(null)
   }
 
@@ -269,7 +271,7 @@ export default function SharePage() {
         </div>
       </div>
 
-      {user && <CreateModal uid={user.uid} open={showCreate} onClose={() => setShowCreate(false)} />}
+      {user && <CreateModal uid={user.uid} pid={activePropertyId} open={showCreate} onClose={() => setShowCreate(false)} />}
       {revokeTarget && (
         <ConfirmModal
           message="Recipients will lose access to this link immediately. This cannot be undone."

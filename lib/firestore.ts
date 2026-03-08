@@ -6,15 +6,14 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
-  getDocs,
   onSnapshot,
   query,
   orderBy,
-  where,
   limit,
   serverTimestamp,
   Timestamp,
   type Unsubscribe,
+  type Firestore,
 } from 'firebase/firestore'
 import { db } from './firebase'
 
@@ -32,6 +31,7 @@ export interface WarrantyAsset {
   warrantyExpiry: string      // ISO date string
   nextService: string | null  // ISO date string
   invoiceUrl: string | null   // Storage URL
+  source?: string
   createdAt: Timestamp | null
 }
 
@@ -40,7 +40,7 @@ export interface VaultDoc {
   name: string
   type: 'pdf' | 'image' | 'other'
   size: number
-  url: string                 // Storage download URL
+  url: string
   ocr: boolean
   notes: string
   category: string
@@ -72,9 +72,40 @@ export interface ShareLink {
   createdAt: Timestamp | null
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+export interface Property {
+  id: string            // Firestore doc ID (populated when read)
+  name: string          // e.g. "Oberoi Residences"
+  unit: string          // e.g. "12B, Tower A"
+  area: number          // sq ft
+  floorPlanType: string // e.g. "3BHK"
+  location: string      // e.g. "Worli, Mumbai"
+  gmailLinked: boolean
+  createdAt: Timestamp | null
+}
 
-function requireDb() {
+// ─── Path Helpers (backward-compat: 'primary' → top-level collections) ────────
+
+function propCol(firestore: Firestore, uid: string, pid: string, col: string) {
+  if (pid === 'primary') return collection(firestore, 'users', uid, col)
+  return collection(firestore, 'users', uid, 'properties', pid, col)
+}
+
+function propDocRef(firestore: Firestore, uid: string, pid: string, col: string, docId: string) {
+  if (pid === 'primary') return doc(firestore, 'users', uid, col, docId)
+  return doc(firestore, 'users', uid, 'properties', pid, col, docId)
+}
+
+function vaultColRef(firestore: Firestore, uid: string, pid: string, cat: string) {
+  if (pid === 'primary') return collection(firestore, 'users', uid, 'vault', cat, 'docs')
+  return collection(firestore, 'users', uid, 'properties', pid, 'vault', cat, 'docs')
+}
+
+function vaultDocRefFn(firestore: Firestore, uid: string, pid: string, cat: string, docId: string) {
+  if (pid === 'primary') return doc(firestore, 'users', uid, 'vault', cat, 'docs', docId)
+  return doc(firestore, 'users', uid, 'properties', pid, 'vault', cat, 'docs', docId)
+}
+
+function requireDb(): Firestore {
   if (!db) throw new Error('Firestore not initialized')
   return db
 }
@@ -83,29 +114,26 @@ function requireDb() {
 
 export function subscribeWarrantyAssets(
   uid: string,
-  callback: (assets: WarrantyAsset[]) => void
+  callback: (assets: WarrantyAsset[]) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'warranty_assets')
-  const q = query(ref, orderBy('createdAt', 'desc'))
-  return onSnapshot(q, (snap) => {
-    const assets = snap.docs.map((d) => ({ id: d.id, ...d.data() } as WarrantyAsset))
-    callback(assets)
-  })
+  const q = query(propCol(firestore, uid, pid, 'warranty_assets'), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as WarrantyAsset))))
 }
 
 export async function addWarrantyAsset(
   uid: string,
-  data: Omit<WarrantyAsset, 'id' | 'createdAt'>
+  data: Omit<WarrantyAsset, 'id' | 'createdAt'>,
+  pid: string = 'primary'
 ) {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'warranty_assets')
-  return addDoc(ref, { ...data, createdAt: serverTimestamp() })
+  return addDoc(propCol(firestore, uid, pid, 'warranty_assets'), { ...data, createdAt: serverTimestamp() })
 }
 
-export async function deleteWarrantyAsset(uid: string, assetId: string) {
+export async function deleteWarrantyAsset(uid: string, assetId: string, pid: string = 'primary') {
   const firestore = requireDb()
-  await deleteDoc(doc(firestore, 'users', uid, 'warranty_assets', assetId))
+  await deleteDoc(propDocRef(firestore, uid, pid, 'warranty_assets', assetId))
 }
 
 // ─── Vault Docs ───────────────────────────────────────────────────────────────
@@ -116,133 +144,110 @@ export type VaultCategory = typeof VAULT_CATEGORIES[number]
 export function subscribeVaultDocs(
   uid: string,
   category: string,
-  callback: (docs: VaultDoc[]) => void
+  callback: (docs: VaultDoc[]) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'vault', category, 'docs')
-  const q = query(ref, orderBy('createdAt', 'desc'))
-  return onSnapshot(q, (snap) => {
-    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VaultDoc))
-    callback(docs)
-  })
+  const q = query(vaultColRef(firestore, uid, pid, category), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as VaultDoc))))
 }
 
-/**
- * Subscribes to all 6 vault categories simultaneously.
- * Calls back with a map of { [category]: VaultDoc[] } on any change.
- */
 export function subscribeAllVaultCategories(
   uid: string,
-  callback: (data: Record<string, VaultDoc[]>) => void
+  callback: (data: Record<string, VaultDoc[]>) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
   const state: Record<string, VaultDoc[]> = {}
   const unsubs: Unsubscribe[] = []
-
   for (const cat of VAULT_CATEGORIES) {
-    const ref = collection(firestore, 'users', uid, 'vault', cat, 'docs')
-    const q = query(ref, orderBy('createdAt', 'desc'))
-    const unsub = onSnapshot(q, (snap) => {
+    const q = query(vaultColRef(firestore, uid, pid, cat), orderBy('createdAt', 'desc'))
+    unsubs.push(onSnapshot(q, (snap) => {
       state[cat] = snap.docs.map((d) => ({ id: d.id, ...d.data() } as VaultDoc))
       callback({ ...state })
-    })
-    unsubs.push(unsub)
+    }))
   }
-
   return () => unsubs.forEach((u) => u())
 }
 
 export async function addVaultDoc(
   uid: string,
   category: string,
-  data: Omit<VaultDoc, 'id' | 'createdAt'>
+  data: Omit<VaultDoc, 'id' | 'createdAt'>,
+  pid: string = 'primary'
 ) {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'vault', category, 'docs')
-  return addDoc(ref, { ...data, createdAt: serverTimestamp() })
+  return addDoc(vaultColRef(firestore, uid, pid, category), { ...data, createdAt: serverTimestamp() })
 }
 
-export async function deleteVaultDoc(uid: string, category: string, docId: string) {
+export async function deleteVaultDoc(uid: string, category: string, docId: string, pid: string = 'primary') {
   const firestore = requireDb()
-  await deleteDoc(doc(firestore, 'users', uid, 'vault', category, 'docs', docId))
+  await deleteDoc(vaultDocRefFn(firestore, uid, pid, category, docId))
 }
 
 // ─── Snags ────────────────────────────────────────────────────────────────────
 
 export function subscribeSnags(
   uid: string,
-  callback: (snags: Snag[]) => void
+  callback: (snags: Snag[]) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'snags')
-  const q = query(ref, orderBy('createdAt', 'desc'))
-  return onSnapshot(q, (snap) => {
-    const snags = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Snag))
-    callback(snags)
-  })
+  const q = query(propCol(firestore, uid, pid, 'snags'), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Snag))))
 }
 
 export async function addSnag(
   uid: string,
-  data: Omit<Snag, 'id' | 'createdAt' | 'updatedAt'>
+  data: Omit<Snag, 'id' | 'createdAt' | 'updatedAt'>,
+  pid: string = 'primary'
 ) {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'snags')
-  return addDoc(ref, {
+  return addDoc(propCol(firestore, uid, pid, 'snags'), {
     ...data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
 }
 
-export async function updateSnagStatus(
-  uid: string,
-  snagId: string,
-  status: Snag['status']
-) {
+export async function updateSnagStatus(uid: string, snagId: string, status: Snag['status'], pid: string = 'primary') {
   const firestore = requireDb()
-  await updateDoc(doc(firestore, 'users', uid, 'snags', snagId), {
-    status,
-    updatedAt: serverTimestamp(),
-  })
+  await updateDoc(propDocRef(firestore, uid, pid, 'snags', snagId), { status, updatedAt: serverTimestamp() })
 }
 
 // ─── Share Links ──────────────────────────────────────────────────────────────
 
 export function subscribeShareLinks(
   uid: string,
-  callback: (links: ShareLink[]) => void
+  callback: (links: ShareLink[]) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'share_links')
-  const q = query(ref, orderBy('createdAt', 'desc'))
-  return onSnapshot(q, (snap) => {
-    const links = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ShareLink))
-    callback(links)
-  })
+  const q = query(propCol(firestore, uid, pid, 'share_links'), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ShareLink))))
 }
 
 export async function createShareLink(
   uid: string,
-  data: Omit<ShareLink, 'id' | 'createdAt' | 'views' | 'status' | 'token'> & { categories?: string[] }
-): Promise<{ ref: ReturnType<typeof addDoc> extends Promise<infer R> ? R : never; token: string }> {
+  data: Omit<ShareLink, 'id' | 'createdAt' | 'views' | 'status' | 'token'> & { categories?: string[] },
+  pid: string = 'primary'
+): Promise<{ ref: Awaited<ReturnType<typeof addDoc>>; token: string }> {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'share_links')
   const token = Array.from(crypto.getRandomValues(new Uint8Array(6)))
     .map((b) => b.toString(36).padStart(2, '0'))
     .join('')
     .toUpperCase()
     .slice(0, 10)
-  const docRef = await addDoc(ref, {
+  const docRef = await addDoc(propCol(firestore, uid, pid, 'share_links'), {
     ...data,
     token,
     views: 0,
     status: 'active',
     createdAt: serverTimestamp(),
   })
-  // Mirror to top-level share_tokens for anonymous /view/[token] lookups
   await setDoc(doc(firestore, 'share_tokens', token), {
     uid,
+    pid,
     linkId: docRef.id,
     expiresAt: data.expiresAt,
     status: 'active',
@@ -255,27 +260,15 @@ export async function createShareLink(
   return { ref: docRef, token }
 }
 
-export async function revokeShareLink(uid: string, linkId: string) {
+export async function revokeShareLink(uid: string, linkId: string, pid: string = 'primary') {
   const firestore = requireDb()
-  await deleteDoc(doc(firestore, 'users', uid, 'share_links', linkId))
+  await deleteDoc(propDocRef(firestore, uid, pid, 'share_links', linkId))
 }
 
-// ─── Property ─────────────────────────────────────────────────────────────────
+// ─── Properties ───────────────────────────────────────────────────────────────
 
-export interface Property {
-  name: string          // e.g. "Oberoi Residences"
-  unit: string          // e.g. "12B, Tower A"
-  area: number          // sq ft
-  floorPlanType: string // e.g. "3BHK"
-  location: string      // e.g. "Worli, Mumbai"
-  gmailLinked: boolean
-  createdAt: Timestamp | null
-}
-
-export async function createProperty(
-  uid: string,
-  data: Omit<Property, 'createdAt'>
-) {
+/** Create / update the 'primary' property (used by onboarding for first setup) */
+export async function createProperty(uid: string, data: Omit<Property, 'id' | 'createdAt'>) {
   const firestore = requireDb()
   await setDoc(doc(firestore, 'users', uid, 'properties', 'primary'), {
     ...data,
@@ -283,20 +276,49 @@ export async function createProperty(
   })
 }
 
-export async function getProperty(uid: string): Promise<Property | null> {
+/** Create an additional property with an auto-generated ID. Returns the new property ID. */
+export async function createNewProperty(uid: string, data: Omit<Property, 'id' | 'createdAt'>): Promise<string> {
   const firestore = requireDb()
-  const snap = await getDoc(doc(firestore, 'users', uid, 'properties', 'primary'))
-  return snap.exists() ? (snap.data() as Property) : null
+  const docRef = await addDoc(collection(firestore, 'users', uid, 'properties'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  })
+  return docRef.id
+}
+
+export async function getProperty(uid: string, pid: string = 'primary'): Promise<Property | null> {
+  const firestore = requireDb()
+  const snap = await getDoc(doc(firestore, 'users', uid, 'properties', pid))
+  return snap.exists() ? { id: snap.id, ...(snap.data() as Omit<Property, 'id'>) } : null
 }
 
 export function subscribeProperty(
   uid: string,
-  callback: (property: Property | null) => void
+  callback: (property: Property | null) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
-  return onSnapshot(doc(firestore, 'users', uid, 'properties', 'primary'), (snap) => {
-    callback(snap.exists() ? (snap.data() as Property) : null)
+  return onSnapshot(doc(firestore, 'users', uid, 'properties', pid), (snap) => {
+    callback(snap.exists() ? { id: snap.id, ...(snap.data() as Omit<Property, 'id'>) } : null)
   })
+}
+
+export function subscribeAllProperties(uid: string, callback: (properties: Property[]) => void): Unsubscribe {
+  const firestore = requireDb()
+  const q = query(collection(firestore, 'users', uid, 'properties'), orderBy('createdAt', 'asc'))
+  return onSnapshot(q, (snap) =>
+    callback(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Property, 'id'>) })))
+  )
+}
+
+export async function updateProperty(uid: string, pid: string, data: Partial<Omit<Property, 'id' | 'createdAt'>>) {
+  const firestore = requireDb()
+  await updateDoc(doc(firestore, 'users', uid, 'properties', pid), data)
+}
+
+export async function setActiveProperty(uid: string, propertyId: string) {
+  const firestore = requireDb()
+  await setDoc(doc(firestore, 'users', uid), { activePropertyId: propertyId }, { merge: true })
 }
 
 // ─── App Events (Timeline) ────────────────────────────────────────────────────
@@ -310,31 +332,22 @@ export interface AppEvent {
   createdAt: Timestamp | null
 }
 
-export async function addEvent(
-  uid: string,
-  data: Omit<AppEvent, 'id' | 'createdAt'>
-) {
+export async function addEvent(uid: string, data: Omit<AppEvent, 'id' | 'createdAt'>, pid: string = 'primary') {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'events')
-  return addDoc(ref, { ...data, createdAt: serverTimestamp() })
+  return addDoc(propCol(firestore, uid, pid, 'events'), { ...data, createdAt: serverTimestamp() })
 }
 
-export function subscribeEvents(
-  uid: string,
-  callback: (events: AppEvent[]) => void
-): Unsubscribe {
+export function subscribeEvents(uid: string, callback: (events: AppEvent[]) => void, pid: string = 'primary'): Unsubscribe {
   const firestore = requireDb()
-  const ref = collection(firestore, 'users', uid, 'events')
-  const q = query(ref, orderBy('createdAt', 'desc'), limit(10))
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AppEvent)))
-  })
+  const q = query(propCol(firestore, uid, pid, 'events'), orderBy('createdAt', 'desc'), limit(10))
+  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AppEvent))))
 }
 
 // ─── Share Tokens (top-level lookup for public /view route) ───────────────────
 
 export interface ShareTokenLookup {
   uid: string
+  pid?: string
   linkId: string
   expiresAt: Timestamp
   status: 'active' | 'revoked'
@@ -345,9 +358,7 @@ export interface ShareTokenLookup {
   watermark: boolean
 }
 
-export async function getShareLinkByToken(
-  token: string
-): Promise<ShareTokenLookup | null> {
+export async function getShareLinkByToken(token: string): Promise<ShareTokenLookup | null> {
   const firestore = requireDb()
   const snap = await getDoc(doc(firestore, 'share_tokens', token))
   return snap.exists() ? (snap.data() as ShareTokenLookup) : null
@@ -363,7 +374,8 @@ export interface DashboardStats {
 
 export function subscribeDashboardStats(
   uid: string,
-  callback: (stats: DashboardStats) => void
+  callback: (stats: DashboardStats) => void,
+  pid: string = 'primary'
 ): Unsubscribe {
   const firestore = requireDb()
   let warrantyAssets: WarrantyAsset[] = []
@@ -384,29 +396,18 @@ export function subscribeDashboardStats(
     })
   }
 
-  const unsubWarranty = onSnapshot(
-    collection(firestore, 'users', uid, 'warranty_assets'),
-    (snap) => {
-      warrantyAssets = snap.docs.map((d) => ({ id: d.id, ...d.data() } as WarrantyAsset))
-      emit()
-    }
-  )
-
-  const unsubSnags = onSnapshot(
-    collection(firestore, 'users', uid, 'snags'),
-    (snap) => {
-      snags = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Snag))
-      emit()
-    }
-  )
-
-  return () => {
-    unsubWarranty()
-    unsubSnags()
-  }
+  const u1 = onSnapshot(propCol(firestore, uid, pid, 'warranty_assets'), (snap) => {
+    warrantyAssets = snap.docs.map((d) => ({ id: d.id, ...d.data() } as WarrantyAsset))
+    emit()
+  })
+  const u2 = onSnapshot(propCol(firestore, uid, pid, 'snags'), (snap) => {
+    snags = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Snag))
+    emit()
+  })
+  return () => { u1(); u2() }
 }
 
-// ─── User Profile ──────────────────────────────────────────────────────────────
+// ─── User Profile ─────────────────────────────────────────────────────────────
 
 export interface UserProfile {
   email: string | null
@@ -419,6 +420,7 @@ export interface UserProfile {
   notificationsEnabled: boolean
   areaUnit: 'sq ft' | 'm²'
   fcmToken: string | null
+  activePropertyId: string | null
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
@@ -427,17 +429,14 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   return snap.exists() ? (snap.data() as UserProfile) : null
 }
 
-export async function saveUserProfile(uid: string, data: Partial<UserProfile>) {
-  const firestore = requireDb()
-  await setDoc(doc(firestore, 'users', uid), data, { merge: true })
-}
-
-export function subscribeUserProfile(
-  uid: string,
-  callback: (profile: UserProfile | null) => void
-): Unsubscribe {
+export function subscribeUserProfile(uid: string, callback: (profile: UserProfile | null) => void): Unsubscribe {
   const firestore = requireDb()
   return onSnapshot(doc(firestore, 'users', uid), (snap) => {
     callback(snap.exists() ? (snap.data() as UserProfile) : null)
   })
+}
+
+export async function saveUserProfile(uid: string, data: Partial<UserProfile>) {
+  const firestore = requireDb()
+  await setDoc(doc(firestore, 'users', uid), data, { merge: true })
 }

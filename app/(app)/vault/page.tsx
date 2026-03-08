@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Upload, HardDrive, ChevronRight, FileText, FileImage, File, X, CloudUpload, Loader2 } from 'lucide-react'
 import { cn, formatDate, formatFileSize } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
 import {
   subscribeAllVaultCategories,
   addVaultDoc,
@@ -33,6 +34,7 @@ function FileIcon({ type }: { type: string }) {
 
 export default function VaultPage() {
   const { user } = useAuth()
+  const { activePropertyId } = useProperty()
   const [vaultData, setVaultData] = useState<Record<string, VaultDoc[]>>({})
   const [uploading, setUploading] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('ownership')
@@ -43,9 +45,9 @@ export default function VaultPage() {
 
   useEffect(() => {
     if (!user) return
-    const unsub = subscribeAllVaultCategories(user.uid, setVaultData)
+    const unsub = subscribeAllVaultCategories(user.uid, setVaultData, activePropertyId)
     return unsub
-  }, [user])
+  }, [user, activePropertyId])
 
   // Derive stats
   const allDocs = Object.values(vaultData).flat()
@@ -75,13 +77,13 @@ export default function VaultPage() {
         ocr: false,
         notes,
         category: selectedCategory,
-      })
+      }, activePropertyId)
       await addEvent(user.uid, {
         type: 'vault_upload',
         title: selectedFile.name,
         subtitle: CATEGORY_META[selectedCategory].label,
         icon: CATEGORY_META[selectedCategory].icon,
-      })
+      }, activePropertyId)
       setSelectedFile(null)
       setNotes('')
       setUploading(false)

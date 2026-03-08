@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { ShieldCheck, ShieldAlert, ShieldOff, Plus, ChevronRight, Bell, FileText, X, Loader2 } from 'lucide-react'
 import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
-import { subscribeWarrantyAssets, addWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
+import { useProperty } from '@/lib/useProperty'
+import { subscribeWarrantyAssets, addWarrantyAsset, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
 import { uploadInvoice } from '@/lib/storage'
 
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
@@ -58,6 +59,7 @@ const DEFAULT_FORM: AssetForm = {
 
 export default function WarrantyPage() {
   const { user, loading: authLoading } = useAuth()
+  const { activePropertyId } = useProperty()
   const [filter, setFilter] = useState<FilterTab>('all')
   const [showAddAsset, setShowAddAsset] = useState(false)
   const [assets, setAssets] = useState<WarrantyAsset[]>([])
@@ -73,9 +75,9 @@ export default function WarrantyPage() {
     const unsub = subscribeWarrantyAssets(user.uid, (data) => {
       setAssets(data)
       setLoadingAssets(false)
-    })
+    }, activePropertyId)
     return unsub
-  }, [user])
+  }, [user, activePropertyId])
 
   const assetsWithStatus = assets.map((a) => ({
     ...a,

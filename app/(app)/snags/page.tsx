@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Plus, Camera, MapPin, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react'
 import { cn, formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
 import { subscribeSnags, type Snag } from '@/lib/firestore'
 
 type Urgency = 'low' | 'medium' | 'high'
@@ -26,6 +27,7 @@ type Tab = 'open' | 'in-progress' | 'fixed'
 
 export default function SnagsPage() {
   const { user, loading: authLoading } = useAuth()
+  const { activePropertyId } = useProperty()
   const [activeTab, setActiveTab] = useState<Tab>('open')
   const [snags, setSnags] = useState<Snag[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,9 +38,9 @@ export default function SnagsPage() {
     const unsub = subscribeSnags(user.uid, (data) => {
       setSnags(data)
       setLoading(false)
-    })
+    }, activePropertyId)
     return unsub
-  }, [user])
+  }, [user, activePropertyId])
 
   const total = snags.length
   const fixed = snags.filter((s) => s.status === 'fixed').length

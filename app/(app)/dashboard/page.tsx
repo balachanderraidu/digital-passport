@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Bell, ChevronRight, X, Loader2, Upload, Plus, Hammer, Sparkles } from 'lucide-react'
+import { Bell, ChevronRight, X, Loader2, Upload, Plus, Hammer, Sparkles, ChevronDown } from 'lucide-react'
 import { cn, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { AssetDrawer } from '@/components/twin/AssetDrawer'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
+import { PropertySwitcher } from '@/components/PropertySwitcher'
 import {
   subscribeDashboardStats,
   subscribeWarrantyAssets,
@@ -109,6 +111,7 @@ const EVENT_ICONS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
+  const { activePropertyId, activeProperty, allProperties, switchProperty } = useProperty()
   const [stats, setStats] = useState<DashboardStats>({ assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 })
   const [warrantyAssets, setWarrantyAssets] = useState<WarrantyAsset[]>([])
   const [recentSnags, setRecentSnags] = useState<Snag[]>([])
@@ -118,14 +121,15 @@ export default function DashboardPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showNotif, setShowNotif] = useState(false)
   const [show3D, setShow3D] = useState(false)
+  const [showSwitcher, setShowSwitcher] = useState(false)
 
   useEffect(() => {
     if (!user) return
-    const unsubStats = subscribeDashboardStats(user.uid, setStats)
-    const unsubWarranty = subscribeWarrantyAssets(user.uid, setWarrantyAssets)
-    const unsubSnags = subscribeSnags(user.uid, setRecentSnags)
-    const unsubProperty = subscribeProperty(user.uid, setProperty)
-    const unsubEvents = subscribeEvents(user.uid, setEvents)
+    const unsubStats = subscribeDashboardStats(user.uid, setStats, activePropertyId)
+    const unsubWarranty = subscribeWarrantyAssets(user.uid, setWarrantyAssets, activePropertyId)
+    const unsubSnags = subscribeSnags(user.uid, setRecentSnags, activePropertyId)
+    const unsubProperty = subscribeProperty(user.uid, setProperty, activePropertyId)
+    const unsubEvents = subscribeEvents(user.uid, setEvents, activePropertyId)
     return () => {
       unsubStats()
       unsubWarranty()
@@ -133,7 +137,7 @@ export default function DashboardPage() {
       unsubProperty()
       unsubEvents()
     }
-  }, [user])
+  }, [user, activePropertyId])
 
   function handleHotspotSelect(hotspot: typeof HOTSPOT_DEFS[0]) {
     setSelectedHotspot(hotspot)
@@ -191,7 +195,15 @@ export default function DashboardPage() {
             <p className="text-xs text-vault-text-muted font-medium uppercase tracking-widest mb-1">
               Good {greeting} ✦
             </p>
-            <h1 className="text-2xl font-bold text-white">{propName}</h1>
+            <button
+              onClick={() => setShowSwitcher(true)}
+              className="flex items-center gap-1.5 group"
+            >
+              <h1 className="text-2xl font-bold text-white">{propName}</h1>
+              {allProperties.length > 1 && (
+                <ChevronDown size={18} className="text-gold-500 group-hover:opacity-80 mt-1" />
+              )}
+            </button>
             {property ? (
               <p className="text-sm text-vault-text-muted mt-0.5">{propUnit}</p>
             ) : (
@@ -212,6 +224,7 @@ export default function DashboardPage() {
             )}
           </button>
         </div>
+        {showSwitcher && <PropertySwitcher onClose={() => setShowSwitcher(false)} />}
 
         {/* Live quick stats */}
         <div className="grid grid-cols-3 gap-2.5 mt-5">

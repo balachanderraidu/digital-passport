@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Send, Sparkles, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
 import {
   subscribeWarrantyAssets,
   subscribeSnags,

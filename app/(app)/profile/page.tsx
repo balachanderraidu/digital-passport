@@ -6,10 +6,11 @@ import { signOut } from 'firebase/auth'
 import {
   Settings, ChevronRight, LogOut, Bell, Ruler,
   Mail, Lock, HelpCircle, Loader2, Home, Pencil,
-  Check, X, Phone, ShieldCheck, AlertCircle, Download,
+  Check, X, Phone, ShieldCheck, AlertCircle, Download, Building2, Plus,
 } from 'lucide-react'
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
 import {
   subscribeProperty, subscribeDashboardStats, subscribeUserProfile,
   subscribeWarrantyAssets, subscribeSnags,
@@ -58,6 +59,7 @@ function IdentifierRow({
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth()
+  const { activePropertyId, allProperties, switchProperty } = useProperty()
   const router = useRouter()
   const [property, setProperty] = useState<Property | null>(null)
   const [stats, setStats] = useState<DashboardStats>({ assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 })
@@ -92,15 +94,15 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return
-    const u1 = subscribeProperty(user.uid, setProperty)
-    const u2 = subscribeDashboardStats(user.uid, setStats)
+    const u1 = subscribeProperty(user.uid, setProperty, activePropertyId)
+    const u2 = subscribeDashboardStats(user.uid, setStats, activePropertyId)
     const u3 = subscribeUserProfile(user.uid, setProfile)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const u4 = subscribeWarrantyAssets(user.uid, (data: any) => setAssets(data))
+    const u4 = subscribeWarrantyAssets(user.uid, (data: any) => setAssets(data), activePropertyId)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const u5 = subscribeSnags(user.uid, (data: any) => setSnags(data))
+    const u5 = subscribeSnags(user.uid, (data: any) => setSnags(data), activePropertyId)
     return () => { u1(); u2(); u3(); u4(); u5() }
-  }, [user])
+  }, [user, activePropertyId])
 
   async function toggleNotif() {
     if (!user) return
@@ -236,37 +238,52 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Property Card */}
-      <div className="mx-5 mb-4 glass-gold gold-border rounded-2xl p-5">
-        <p className="text-[10px] font-semibold text-vault-text-muted uppercase tracking-widest mb-3">Your Property</p>
-        {property ? (
-          <>
-            <h2 className="text-lg font-bold text-white mb-1.5">{property.name}</h2>
-            <p className="text-xs text-vault-text-muted">
-              {property.unit} · {property.location}
-            </p>
-            <p className="text-xs text-vault-text-muted mt-0.5">
-              {property.floorPlanType}{property.area > 0 ? ` · ${property.area} ${areaUnit}` : ''}
-            </p>
-            <button
-              onClick={() => router.push('/onboarding')}
-              className="mt-3 text-xs font-semibold text-gold-500 flex items-center gap-1 hover:opacity-80 transition-opacity"
-            >
-              Edit Property <ChevronRight size={13} />
-            </button>
-          </>
-        ) : (
-          <button onClick={() => router.push('/onboarding')} className="flex items-center gap-3 w-full">
-            <div className="w-10 h-10 rounded-xl bg-gold-500/10 flex items-center justify-center">
-              <Home size={18} className="text-gold-500" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-white">Set Up Your Property</p>
-              <p className="text-xs text-vault-text-muted mt-0.5">Add your home to get started</p>
-            </div>
-            <ChevronRight size={16} className="text-gold-500" />
+      {/* All Properties */}
+      <div className="mx-5 mb-4">
+        <div className="flex items-center justify-between mb-3 px-1">
+          <p className="text-[10px] font-semibold text-vault-text-muted uppercase tracking-widest">Your Passports</p>
+          <button
+            onClick={() => router.push('/onboarding?new=1')}
+            className="flex items-center gap-1 text-xs font-bold text-gold-500"
+          >
+            <Plus size={12} /> Add
           </button>
-        )}
+        </div>
+        <div className="space-y-2">
+          {allProperties.map((p) => {
+            const isActive = p.id === activePropertyId
+            return (
+              <button
+                key={p.id}
+                onClick={() => switchProperty(p.id)}
+                className={cn(
+                  'w-full p-3.5 rounded-2xl flex items-center gap-3 transition-all text-left',
+                  isActive ? 'glass-gold gold-border' : 'card'
+                )}
+              >
+                <div className={cn(
+                  'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
+                  isActive ? 'bg-gold-500/20' : 'bg-vault-muted/20'
+                )}>
+                  <Building2 size={15} className={isActive ? 'text-gold-500' : 'text-vault-text-muted'} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-sm font-bold truncate', isActive ? 'text-gold-500' : 'text-white')}>{p.name}</p>
+                  <p className="text-xs text-vault-text-muted truncate">{p.unit} · {p.location}</p>
+                </div>
+                {isActive && <Check size={14} className="text-gold-500 flex-shrink-0" />}
+              </button>
+            )
+          })}
+          {allProperties.length === 0 && (
+            <button onClick={() => router.push('/onboarding')} className="w-full card p-3.5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gold-500/10 flex items-center justify-center">
+                <Home size={15} className="text-gold-500" />
+              </div>
+              <span className="text-sm font-semibold text-gold-500">Set Up Your Property</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Quick Stats */}
