@@ -7,9 +7,10 @@ import { useAuth } from '@/lib/useAuth'
 import {
   subscribeWarrantyAssets,
   subscribeSnags,
-  subscribeVaultDocs,
+  subscribeProperty,
   type WarrantyAsset,
   type Snag,
+  type Property,
 } from '@/lib/firestore'
 import { getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 
@@ -23,17 +24,32 @@ interface Message {
 const QUICK_CHIPS = [
   { label: '🛡️ Warranty status', query: 'Which warranties are expiring soon?' },
   { label: '🔨 Open snags', query: 'Show me all open snags' },
+  { label: '🏠 My property', query: 'Tell me about my property' },
   { label: '❄️ AC details', query: 'What is my AC model and warranty?' },
-  { label: '🎨 Paint codes', query: 'What are the paint codes in my home?' },
+  { label: '📊 Summary', query: 'Give me a full home summary' },
 ]
 
-/** Simple client-side RAG: pattern-match intent → query Firestore data → compose reply */
 function generateReply(
   query: string,
   assets: WarrantyAsset[],
-  snags: Snag[]
+  snags: Snag[],
+  property: Property | null
 ): string {
   const q = query.toLowerCase()
+
+  // Property queries
+  if (q.includes('property') || q.includes('home') || q.includes('house') || q.includes('flat') || q.includes('apartment')) {
+    if (!property) return "I don't see a property set up yet. Head to Onboarding to add your home details."
+    return `🏠 **${property.name}**\n\nUnit: ${property.unit || 'N/A'}\nLocation: ${property.location || 'N/A'}\nType: ${property.floorPlanType || 'N/A'}\nArea: ${property.area > 0 ? `${property.area} sq ft` : 'N/A'}\nGmail sync: ${property.gmailLinked ? '✅ Connected' : '❌ Not connected'}`
+  }
+
+  // Summary query
+  if (q.includes('summary') || q.includes('overview') || q.includes('everything') || q.includes('all')) {
+    const expiringCount = assets.filter((a) => getWarrantyStatus(a.warrantyExpiry) === 'expiring').length
+    const openSnags = snags.filter((s) => s.status === 'open').length
+    const propName = property?.name ?? 'your home'
+    return `📋 **${propName} Summary**\n\n🛡️ Warranties: ${assets.length} total, ${expiringCount} expiring soon\n🔨 Snags: ${openSnags} open, ${snags.length} total\n📦 Assets tracked: ${assets.length}\n${property ? `\n📍 ${property.unit} · ${property.location}` : ''}`
+  }
 
   // Warranty queries
   if (q.includes('warrant') || q.includes('expir') || q.includes('shield')) {
@@ -87,7 +103,7 @@ function generateReply(
     ).join('\n\n')
   }
 
-  // Paint / interior queries — suggest vault
+  // Paint / interior queries
   if (q.includes('paint') || q.includes('colour') || q.includes('color') || q.includes('wall') || q.includes('finish')) {
     return "Paint codes and finish specs are stored in your Home Vault under 🎨 Interior Specs. Head to the Vault tab and open that category to find the detailed spec sheet."
   }
@@ -97,11 +113,11 @@ function generateReply(
     if (assets.length === 0)
       return "No assets tracked yet. Add your first one in the Warranty Center."
     const zones = Array.from(new Set(assets.map((a) => a.zone)))
-    return `Your Passport contains ${assets.length} asset${assets.length !== 1 ? 's' : ''} across ${zones.length} zones:\n\n${assets.map((a) => `${a.icon} ${a.name} · ${a.zone}`).join('\n')}`
+    return `Your Passport contains ${assets.length} asset${assets.length !== 1 ? 's' : ''} across ${zones.length} zone${zones.length !== 1 ? 's' : ''}:\n\n${assets.map((a) => `${a.icon} ${a.name} · ${a.zone}`).join('\n')}`
   }
 
   // Fallback
-  return `I searched your Digital Passport but couldn't find a specific match for "${query}". Try asking about warranties, snags, paint codes, or specific appliances. You can also browse the Vault or Warranty Center directly.`
+  return `I searched your Digital Passport but couldn't find a specific match for "${query}". Try asking about warranties, snags, paint codes, your property details, or specific appliances. You can also browse the Vault or Warranty Center directly.`
 }
 
 export default function AssistantPage() {
@@ -110,7 +126,7 @@ export default function AssistantPage() {
     {
       id: '0',
       role: 'assistant',
-      text: "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, paint codes, and more.",
+      text: "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, property details, and more.",
       timestamp: new Date(),
     },
   ])
@@ -119,6 +135,7 @@ export default function AssistantPage() {
   const [listening, setListening] = useState(false)
   const [assets, setAssets] = useState<WarrantyAsset[]>([])
   const [snags, setSnags] = useState<Snag[]>([])
+  const [property, setProperty] = useState<Property | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
@@ -127,7 +144,8 @@ export default function AssistantPage() {
     if (!user) return
     const u1 = subscribeWarrantyAssets(user.uid, setAssets)
     const u2 = subscribeSnags(user.uid, setSnags)
-    return () => { u1(); u2() }
+    const u3 = subscribeProperty(user.uid, setProperty)
+    return () => { u1(); u2(); u3() }
   }, [user])
 
   useEffect(() => {
@@ -141,10 +159,9 @@ export default function AssistantPage() {
     setInput('')
     setThinking(true)
 
-    // Small artificial delay for a more natural feel
-    await new Promise((r) => setTimeout(r, 700 + Math.random() * 600))
+    await new Promise((r) => setTimeout(r, 500 + Math.random() * 500))
 
-    const reply = generateReply(text, assets, snags)
+    const reply = generateReply(text, assets, snags, property)
     const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: reply, timestamp: new Date() }
     setMessages((prev) => [...prev, aiMsg])
     setThinking(false)
@@ -175,14 +192,12 @@ export default function AssistantPage() {
   }
 
   function clearChat() {
-    setMessages([
-      {
-        id: '0',
-        role: 'assistant',
-        text: "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, paint codes, and more.",
-        timestamp: new Date(),
-      },
-    ])
+    setMessages([{
+      id: '0',
+      role: 'assistant',
+      text: "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, property details, and more.",
+      timestamp: new Date(),
+    }])
   }
 
   return (
@@ -196,14 +211,12 @@ export default function AssistantPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">AI Assistant</h1>
-              <p className="text-xs text-vault-text-muted">Powered by your Passport data</p>
+              <p className="text-xs text-vault-text-muted">
+                {property ? `Knows your ${property.name}` : 'Powered by your Passport data'}
+              </p>
             </div>
           </div>
-          <button
-            onClick={clearChat}
-            className="w-9 h-9 rounded-xl glass flex items-center justify-center"
-            title="Clear chat"
-          >
+          <button onClick={clearChat} className="w-9 h-9 rounded-xl glass flex items-center justify-center" title="Clear chat">
             <X size={16} className="text-vault-text-muted" />
           </button>
         </div>
@@ -225,10 +238,7 @@ export default function AssistantPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 pb-36">
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
-          >
+          <div key={msg.id} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             {msg.role === 'assistant' && (
               <div className="w-7 h-7 rounded-xl bg-gold-500/20 border border-gold-500/30 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
                 <Sparkles size={12} className="text-gold-500" />
@@ -292,9 +302,7 @@ export default function AssistantPage() {
           </button>
         </div>
         {listening && (
-          <p className="text-center text-xs text-red-400 font-semibold mt-2 animate-pulse">
-            🎤 Listening… speak now
-          </p>
+          <p className="text-center text-xs text-red-400 font-semibold mt-2 animate-pulse">🎤 Listening… speak now</p>
         )}
       </div>
     </div>

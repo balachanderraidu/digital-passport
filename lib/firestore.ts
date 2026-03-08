@@ -225,7 +225,7 @@ export function subscribeShareLinks(
 export async function createShareLink(
   uid: string,
   data: Omit<ShareLink, 'id' | 'createdAt' | 'views' | 'status' | 'token'> & { categories?: string[] }
-) {
+): Promise<{ ref: ReturnType<typeof addDoc> extends Promise<infer R> ? R : never; token: string }> {
   const firestore = requireDb()
   const ref = collection(firestore, 'users', uid, 'share_links')
   const token = Array.from(crypto.getRandomValues(new Uint8Array(6)))
@@ -252,7 +252,7 @@ export async function createShareLink(
     passwordProtected: data.passwordProtected,
     watermark: data.watermark,
   })
-  return docRef
+  return { ref: docRef, token }
 }
 
 export async function revokeShareLink(uid: string, linkId: string) {
@@ -418,6 +418,7 @@ export interface UserProfile {
   profileCompletionSkipped: boolean
   notificationsEnabled: boolean
   areaUnit: 'sq ft' | 'm²'
+  fcmToken: string | null
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {

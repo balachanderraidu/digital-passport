@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
 import { getProperty } from '@/lib/firestore'
+import { registerFCMToken } from '@/lib/fcm'
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -21,6 +22,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!user) {
       router.replace('/login')
       return
+    }
+
+    // Register FCM token in background — non-blocking
+    if (typeof window !== 'undefined') {
+      registerFCMToken(user.uid).catch(() => {
+        // Permission denied or not supported — ignore silently
+      })
     }
 
     // Authenticated user — redirect to onboarding if no property, unless already there

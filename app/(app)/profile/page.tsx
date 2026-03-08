@@ -6,15 +6,17 @@ import { signOut } from 'firebase/auth'
 import {
   Settings, ChevronRight, LogOut, Bell, Ruler,
   Mail, Lock, HelpCircle, Loader2, Home, Pencil,
-  Check, X, Phone, ShieldCheck, AlertCircle,
+  Check, X, Phone, ShieldCheck, AlertCircle, Download,
 } from 'lucide-react'
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/useAuth'
 import {
   subscribeProperty, subscribeDashboardStats, subscribeUserProfile,
+  subscribeWarrantyAssets, subscribeSnags,
   saveUserProfile,
   type Property, type DashboardStats, type UserProfile,
 } from '@/lib/firestore'
+import { exportPassportPDF } from '@/lib/pdfExport'
 import { cn } from '@/lib/utils'
 
 function GoogleIcon() {
@@ -60,7 +62,10 @@ export default function ProfilePage() {
   const [property, setProperty] = useState<Property | null>(null)
   const [stats, setStats] = useState<DashboardStats>({ assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 })
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [assets, setAssets] = useState<import('@/lib/firestore').WarrantyAsset[]>([])
+  const [snags, setSnags] = useState<{id:string;title:string;location:string;urgency:string;status:string}[]>([])
   const [signingOut, setSigningOut] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Edit name state
   const [editingName, setEditingName] = useState(false)
@@ -90,7 +95,11 @@ export default function ProfilePage() {
     const u1 = subscribeProperty(user.uid, setProperty)
     const u2 = subscribeDashboardStats(user.uid, setStats)
     const u3 = subscribeUserProfile(user.uid, setProfile)
-    return () => { u1(); u2(); u3() }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const u4 = subscribeWarrantyAssets(user.uid, (data: any) => setAssets(data))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const u5 = subscribeSnags(user.uid, (data: any) => setSnags(data))
+    return () => { u1(); u2(); u3(); u4(); u5() }
   }, [user])
 
   async function toggleNotif() {
@@ -346,6 +355,31 @@ export default function ProfilePage() {
             <ChevronRight size={15} className="text-vault-text-muted" />
           </button>
         </div>
+      </div>
+
+      {/* Export Passport */}
+      <div className="mx-5 mb-3">
+        <button
+          onClick={async () => {
+            setExporting(true)
+            try {
+              await exportPassportPDF({
+                property,
+                assets,
+                snags,
+                ownerName: displayName,
+                ownerEmail: resolvedEmail,
+              })
+            } finally {
+              setExporting(false)
+            }
+          }}
+          disabled={exporting}
+          className="w-full py-3.5 rounded-2xl glass-gold gold-border text-sm font-bold text-gold-500 flex items-center justify-center gap-2 hover:bg-gold-500/10 transition-colors disabled:opacity-60"
+        >
+          {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          {exporting ? 'Generating PDF…' : 'Export Passport PDF'}
+        </button>
       </div>
 
       {/* Sign Out */}
