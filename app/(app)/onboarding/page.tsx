@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ChevronRight, Building2, Loader2, Mail, CheckCircle2, Home, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ChevronRight, Building2, Loader2, Mail, CheckCircle2, Home, X, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { createProperty } from '@/lib/firestore'
+import { getFunctions, httpsCallable } from 'firebase/functions'
+import app from '@/lib/firebase'
 
 const FLOOR_PLAN_TYPES = ['Studio', '1BHK', '2BHK', '3BHK', '4BHK', 'Penthouse', 'Villa', 'Custom']
 
@@ -27,24 +29,64 @@ const DEFAULT_FORM: PropertyForm = {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<PropertyForm>(DEFAULT_FORM)
-  const [gmailStatus, setGmailStatus] = useState<'idle' | 'scanning' | 'found'>('idle')
-  const [receiptsFound, setReceiptsFound] = useState(0)
+  const [gmailStatus, setGmailStatus] = useState<'idle' | 'linking' | 'syncing' | 'done' | 'error'>('idle')
+  const [syncResult, setSyncResult] = useState<{ matched: number; pending: number } | null>(null)
+  const [gmailError, setGmailError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Handle OAuth return: /onboarding?code=XXX
+  useEffect(() => {
+    const code = searchParams?.get('code')
+    if (!code || !user || gmailStatus !== 'idle') return
+    void handleOAuthReturn(code)
+  }, [searchParams, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function isStep1Valid() {
     return form.name.trim() && form.unit.trim() && form.location.trim()
   }
 
   async function handleGmailConnect() {
-    setGmailStatus('scanning')
-    // Simulate scanning delay (in production, this triggers the Gmail OAuth + Gemini pipeline)
-    await new Promise((r) => setTimeout(r, 2500))
-    const count = Math.floor(Math.random() * 8) + 2
-    setReceiptsFound(count)
-    setGmailStatus('found')
+    if (!user || !app) return
+    setGmailStatus('linking')
+    setGmailError('')
+    try {
+      const functions = getFunctions(app)
+      const initAuth = httpsCallable<unknown, { authUrl: string }>(functions, 'initGmailAuth')
+      const result = await initAuth({})
+      // Redirect user to Google consent screen
+      window.location.href = result.data.authUrl
+    } catch (err) {
+      console.error('[Gmail connect]', err)
+      setGmailError('Could not start Gmail auth. Please try again.')
+      setGmailStatus('idle')
+    }
+  }
+
+  async function handleOAuthReturn(code: string) {
+    if (!user || !app) return
+    setStep(2) // ensure we're on step 2
+    setGmailStatus('syncing')
+    try {
+      const functions = getFunctions(app)
+      // Step 1: Exchange code for tokens
+      const callback = httpsCallable(functions, 'gmailOAuthCallback')
+      await callback({ code })
+      // Step 2: Run the OCR sync pipeline
+      const sync = httpsCallable<unknown, { matched: number; pending: number; processed: number }>(functions, 'syncGmailReceipts')
+      const syncRes = await sync({})
+      setSyncResult({ matched: syncRes.data.matched, pending: syncRes.data.pending })
+      setGmailStatus('done')
+      // Remove the code param from URL cleanly
+      router.replace('/onboarding')
+    } catch (err) {
+      console.error('[Gmail sync]', err)
+      setGmailError('Gmail sync failed. You can skip and try again later.')
+      setGmailStatus('error')
+    }
   }
 
   async function handleFinish() {
@@ -57,7 +99,7 @@ export default function OnboardingPage() {
         area: parseFloat(form.area) || 0,
         floorPlanType: form.floorPlanType,
         location: form.location,
-        gmailLinked: gmailStatus === 'found',
+        gmailLinked: gmailStatus === 'done',
       })
       router.replace('/dashboard')
     } catch (err) {
@@ -205,19 +247,32 @@ export default function OnboardingPage() {
               </button>
             )}
 
-            {gmailStatus === 'scanning' && (
+            {(gmailStatus === 'linking' || gmailStatus === 'syncing') && (
               <div className="card p-5 text-center space-y-3 border-blue-500/20 bg-blue-500/5">
                 <Loader2 size={28} className="text-blue-400 animate-spin mx-auto" />
-                <p className="text-sm font-bold text-blue-400">Scanning for receipts…</p>
-                <p className="text-xs text-vault-text-muted">Checking the last 2 years of purchase emails</p>
+                <p className="text-sm font-bold text-blue-400">
+                  {gmailStatus === 'linking' ? 'Redirecting to Google…' : 'Scanning & extracting receipts…'}
+                </p>
+                <p className="text-xs text-vault-text-muted">
+                  {gmailStatus === 'syncing' ? 'Gemini AI is reading your purchase emails' : 'One moment'}
+                </p>
               </div>
             )}
 
-            {gmailStatus === 'found' && (
+            {gmailStatus === 'done' && syncResult && (
               <div className="card p-5 border-green-500/30 bg-green-500/5 text-center space-y-2">
                 <CheckCircle2 size={32} className="text-green-400 mx-auto" />
-                <p className="text-sm font-bold text-green-400">{receiptsFound} receipts found!</p>
-                <p className="text-xs text-vault-text-muted">We'll match these to your warranty assets after setup.</p>
+                <p className="text-sm font-bold text-green-400">{syncResult.matched} assets auto-added!</p>
+                {syncResult.pending > 0 && (
+                  <p className="text-xs text-yellow-400">{syncResult.pending} items need manual review (low confidence)</p>
+                )}
+              </div>
+            )}
+
+            {gmailStatus === 'error' && (
+              <div className="card p-4 border-red-500/20 bg-red-500/5 flex items-start gap-3">
+                <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-300">{gmailError}</p>
               </div>
             )}
 
@@ -228,7 +283,7 @@ export default function OnboardingPage() {
               >
                 Skip for now
               </button>
-              {gmailStatus === 'found' && (
+              {gmailStatus === 'done' && (
                 <button
                   onClick={() => setStep(3)}
                   className="flex-1 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm flex items-center justify-center gap-2 hover:shadow-gold-glow transition-all"
@@ -257,7 +312,9 @@ export default function OnboardingPage() {
                   { label: 'Location', value: form.location || '—' },
                   { label: 'Floor Plan', value: form.floorPlanType },
                   { label: 'Area', value: form.area ? `${form.area} sq ft` : '—' },
-                  { label: 'Gmail Sync', value: gmailStatus === 'found' ? `✅ ${receiptsFound} receipts` : '⏭ Skipped' },
+                  { label: 'Gmail Sync', value: gmailStatus === 'done'
+                    ? `✅ ${syncResult?.matched ?? 0} assets added`
+                    : '⏭ Skipped' },
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">{label}</p>

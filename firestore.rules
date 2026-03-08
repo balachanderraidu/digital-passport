@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // USER-OWNED DATA
+    // All data under users/{uid} is strictly private to the authenticated owner.
+    // Cloud Functions use Admin SDK (bypasses rules — correct by design).
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Sub-collections: warranty assets, vault docs, snags, events, etc.
+      match /{collection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+
+        // Nested sub-collections (e.g. vault docs within categories)
+        match /{nested}/{nestedDocId} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHARE TOKENS (Magic Link public access)
+    //
+    // Anonymous users CAN read a share_tokens document ONLY if:
+    //   1. The token exists (status == 'active')
+    //   2. The link has not expired (expiresAt > now)
+    //
+    // Nobody can write to share_tokens directly — only Cloud Functions / Admin SDK.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /share_tokens/{token} {
+      // Public read — but ONLY for active, non-expired tokens
+      allow read: if
+        resource != null &&
+        resource.data.status == 'active' &&
+        resource.data.expiresAt > request.time;
+
+      // No client-side writes — Admin SDK only
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DEFAULT: deny everything else
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
