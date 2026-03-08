@@ -416,6 +416,8 @@ export interface UserProfile {
   displayName: string | null
   photoURL: string | null
   profileCompletionSkipped: boolean
+  notificationsEnabled: boolean
+  areaUnit: 'sq ft' | 'm²'
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
