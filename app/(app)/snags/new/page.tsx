@@ -6,7 +6,7 @@ import { Camera, Upload, ChevronRight, ChevronLeft, Check, MapPin, Tag, AlertTri
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
-import { addSnag } from '@/lib/firestore'
+import { addSnag, updateSnagPhotoUrl } from '@/lib/firestore'
 import { uploadSnagPhoto } from '@/lib/storage'
 
 const LOCATIONS = ['Living Area', 'Master Bedroom', 'Guest Room', 'Kitchen', 'Master Bathroom', 'Guest Bathroom', 'Balcony', 'Hallway', 'Study', 'Utility Room']
@@ -56,18 +56,10 @@ export default function NewSnagPage() {
         photoUrl: null,
       }, activePropertyId)
 
-      // Upload photo and update the snag with the URL using a property-aware path
+      // Upload photo and update the snag with the URL
       if (photoFile) {
         const photoUrl = await uploadSnagPhoto(user.uid, docRef.id, photoFile)
-        const { doc, updateDoc } = await import('firebase/firestore')
-        const { db } = await import('@/lib/firebase')
-        if (db) {
-          // Build the correct Firestore path based on property
-          const snagPath = activePropertyId === 'primary'
-            ? doc(db, 'users', user.uid, 'snags', docRef.id)
-            : doc(db, 'users', user.uid, 'properties', activePropertyId, 'snags', docRef.id)
-          await updateDoc(snagPath, { photoUrl })
-        }
+        await updateSnagPhotoUrl(user.uid, docRef.id, photoUrl, activePropertyId)
       }
 
       router.push('/snags')

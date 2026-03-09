@@ -165,10 +165,11 @@ export const syncGmailReceipts = onCall(
           }
 
           if (extracted.confidence >= 0.8) {
-            await db.collection(`users/${uid}/warranty_assets`).add(assetPayload)
+            // Write to the primary property's warranty_assets sub-collection (multi-property aware)
+            await db.collection(`users/${uid}/properties/primary/warranty_assets`).add(assetPayload)
             result.matched++
           } else {
-            await db.collection(`users/${uid}/pending_assets`).add(assetPayload)
+            await db.collection(`users/${uid}/properties/primary/pending_assets`).add(assetPayload)
             result.pending++
           }
         } catch (attErr) {
@@ -216,7 +217,7 @@ export const checkWarrantyExpiry = onSchedule(
       if (!fcmToken) continue
 
       const assetsSnap = await db
-        .collection(`users/${uid}/warranty_assets`)
+        .collection(`users/${uid}/properties/primary/warranty_assets`)
         .where('warrantyExpiry', '>=', in7DaysStart.toISOString().split('T')[0])
         .where('warrantyExpiry', '<=', in7DaysEnd.toISOString().split('T')[0])
         .get()

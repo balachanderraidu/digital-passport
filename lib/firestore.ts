@@ -245,6 +245,11 @@ export async function updateSnagStatus(uid: string, snagId: string, status: Snag
   await updateDoc(propDocRef(firestore, uid, pid, 'snags', snagId), { status, updatedAt: serverTimestamp() })
 }
 
+export async function updateSnagPhotoUrl(uid: string, snagId: string, photoUrl: string, pid: string = 'primary') {
+  const firestore = requireDb()
+  await updateDoc(propDocRef(firestore, uid, pid, 'snags', snagId), { photoUrl, updatedAt: serverTimestamp() })
+}
+
 // ─── Share Links ──────────────────────────────────────────────────────────────
 
 export function subscribeShareLinks(
@@ -292,6 +297,15 @@ export async function createShareLink(
 
 export async function revokeShareLink(uid: string, linkId: string, pid: string = 'primary') {
   const firestore = requireDb()
+  // Read the link first to get the token, so we can also invalidate the top-level share_tokens entry
+  const linkSnap = await getDoc(propDocRef(firestore, uid, pid, 'share_links', linkId))
+  if (linkSnap.exists()) {
+    const token = linkSnap.data()?.token as string | undefined
+    if (token) {
+      // Delete the top-level lookup so /view/[token] immediately returns 404 / expired
+      await deleteDoc(doc(firestore, 'share_tokens', token))
+    }
+  }
   await deleteDoc(propDocRef(firestore, uid, pid, 'share_links', linkId))
 }
 

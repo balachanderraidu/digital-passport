@@ -33,13 +33,15 @@ export function getDaysUntil(date: Date | string): number {
 }
 
 export function formatCountdown(expiresAt: Date | string): string {
-  const days = getDaysUntil(expiresAt)
-  if (days < 0) return 'Expired'
-  if (days === 0) return 'Expires today'
+  const target = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt
+  const diffMs = target.getTime() - Date.now()
+  if (diffMs <= 0) return 'Expired'
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+  if (totalHours < 1) return 'Expires soon'
+  if (totalHours < 24) return `${totalHours}h left`
+  const days = Math.floor(totalHours / 24)
   if (days === 1) return '1 day left'
-  if (days < 24) return `${days} days left`
-  const hours = Math.floor(days * 24)
-  return `~${days}d left`
+  return `${days}d left`
 }
 
 export function getWarrantyStatus(expiryDate: Date | string): 'active' | 'expiring' | 'expired' {

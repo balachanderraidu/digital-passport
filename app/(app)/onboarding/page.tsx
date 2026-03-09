@@ -348,7 +348,7 @@ function OnboardingContent() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white truncate">{linkedProject.project.name}</p>
                   <p className="text-xs text-vault-text-muted">
-                    Unit {linkedProject.flatNumber} · {linkedProject.unitType.label} · {linkedProject.unitType.area.toLocaleString()} sq ft
+                    Unit {linkedProject.flatNumber} · {linkedProject.unitType.label} · {(linkedProject.unitType.area ?? 0).toLocaleString()} sq ft
                   </p>
                 </div>
                 <CheckCircle2 size={16} className="text-gold-500 flex-shrink-0" />
@@ -458,7 +458,7 @@ function OnboardingContent() {
                       { label: 'Project', value: linkedProject.project.name },
                       { label: 'Unit', value: linkedProject.flatNumber },
                       { label: 'Type', value: linkedProject.unitType.label },
-                      { label: 'Area', value: `${linkedProject.unitType.area.toLocaleString()} sq ft` },
+                      { label: 'Area', value: `${(linkedProject.unitType.area ?? 0).toLocaleString()} sq ft` },
                       { label: 'Config', value: linkedProject.unitType.configuration },
                       {
                         label: 'Gmail Sync',
