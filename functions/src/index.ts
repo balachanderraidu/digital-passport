@@ -1,10 +1,11 @@
 /**
  * Digital Passport — Firebase Cloud Functions (v5 API)
  *
- * Exports three HTTPS callable functions:
+ * Exports HTTPS callable functions:
  *  1. initGmailAuth     — returns Google OAuth URL for the user to redirect to
  *  2. gmailOAuthCallback — exchanges OAuth code for tokens, stores securely
  *  3. syncGmailReceipts  — runs the Gmail→Gemini OCR extraction pipeline
+ *  4. processBrochure    — extracts unit types from a PDF brochure via Gemini
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
@@ -253,6 +254,201 @@ export const checkWarrantyExpiry = onSchedule(
     }
 
     console.log(`[checkWarrantyExpiry] Sent ${notified} warranty expiry notifications.`)
+  }
+)
+
+// ─── 5. processBrochure ──────────────────────────────────────────────────────
+//
+// Callable: accepts a storagePath to a PDF uploaded by the user.
+// Gemini reads the PDF and extracts project + unit type data.
+// If the project doesn't exist yet, it is created in /projects with verified=false.
+// Returns { projectId, projectName, unitTypes[] } to the client.
+
+interface BrochureUnitType {
+  id: string
+  label: string
+  bedrooms: number
+  bathrooms: number
+  area: number
+  configuration: string
+  floorRange: [number, number]
+  flatNumberPattern: string
+  genericDocs: string[]
+}
+
+interface BrochureResult {
+  projectId: string
+  projectName: string
+  unitTypes: BrochureUnitType[]
+}
+
+function makeBrochureKeywords(name: string, developer: string, city: string): string[] {
+  const words = `${name} ${developer} ${city}`.toLowerCase().split(/\s+/)
+  const keywords = new Set<string>()
+  for (const word of words) {
+    for (let i = 2; i <= word.length; i++) keywords.add(word.slice(0, i))
+    keywords.add(word)
+  }
+  return Array.from(keywords).filter((k) => k.length >= 2)
+}
+
+export const processBrochure = onCall(
+  { timeoutSeconds: 120, memory: '1GiB' },
+  async (request): Promise<BrochureResult> => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.')
+    }
+
+    const data = request.data as { storagePath?: string; uid?: string }
+    if (!data?.storagePath) {
+      throw new HttpsError('invalid-argument', 'storagePath is required.')
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY ?? ''
+    if (!geminiKey) {
+      throw new HttpsError('failed-precondition', 'Gemini API key not configured.')
+    }
+
+    try {
+      // 1. Download PDF from Firebase Storage
+      const bucket = admin.storage().bucket()
+      const fileRef = bucket.file(data.storagePath)
+      const [fileBuffer] = await fileRef.download()
+      const base64Pdf = fileBuffer.toString('base64')
+
+      // 2. Call Gemini to extract project + unit types
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+      const prompt = `You are a real estate data extractor. Analyze this residential project brochure and extract structured data.
+
+Return a JSON object (no markdown, just raw JSON) with this exact structure:
+{
+  "projectName": "Full project name",
+  "developer": "Developer/builder name",
+  "city": "City name",
+  "unitTypes": [
+    {
+      "label": "3BHK East",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "area": 1850,
+      "configuration": "East-facing",
+      "floorRange": [3, 45],
+      "flatNumberPattern": ""
+    }
+  ]
+}
+
+Rules:
+- Extract ALL unit types/configurations available in the project
+- For area, use carpet area in sq ft if available, else super built-up
+- If there are east/west configurations, list them separately
+- If no floor range is mentioned, use [2, 30] as default
+- flatNumberPattern should be empty string unless you can clearly infer it from flat number examples in the brochure
+- Return only valid JSON, nothing else`
+
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType: 'application/pdf', data: base64Pdf } },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+      })
+
+      if (!geminiResponse.ok) {
+        throw new Error(`Gemini API error: ${geminiResponse.status}`)
+      }
+
+      const geminiData = await geminiResponse.json() as {
+        candidates?: { content?: { parts?: { text?: string }[] } }[]
+      }
+      const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+      const extracted = JSON.parse(rawText) as {
+        projectName?: string
+        developer?: string
+        city?: string
+        unitTypes?: Array<{
+          label?: string
+          bedrooms?: number
+          bathrooms?: number
+          area?: number
+          configuration?: string
+          floorRange?: [number, number]
+          flatNumberPattern?: string
+        }>
+      }
+
+      const projectName = extracted.projectName ?? 'Unknown Project'
+      const developer = extracted.developer ?? ''
+      const city = extracted.city ?? ''
+      const rawUnitTypes = extracted.unitTypes ?? []
+
+      // 3. Check if project already exists (by name search)
+      const existingQuery = await db
+        .collection('projects')
+        .where('name', '==', projectName)
+        .limit(1)
+        .get()
+
+      let projectId: string
+
+      if (!existingQuery.empty) {
+        projectId = existingQuery.docs[0].id
+        console.log(`[processBrochure] Project already exists: ${projectId}`)
+      } else {
+        // Create new project entry
+        const projectRef = await db.collection('projects').add({
+          name: projectName,
+          developer,
+          city,
+          verified: false,
+          searchKeywords: makeBrochureKeywords(projectName, developer, city),
+          createdAt: FieldValue.serverTimestamp(),
+          createdBy: request.auth.uid,
+        })
+        projectId = projectRef.id
+        console.log(`[processBrochure] Created new project: ${projectId} (${projectName})`)
+      }
+
+      // 4. Create/update unit types
+      const unitTypes: BrochureUnitType[] = []
+      for (const ut of rawUnitTypes) {
+        const label = ut.label ?? 'Unknown'
+        const typeId = label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        const typeData: Omit<BrochureUnitType, 'id'> = {
+          label,
+          bedrooms: ut.bedrooms ?? 0,
+          bathrooms: ut.bathrooms ?? 0,
+          area: ut.area ?? 0,
+          configuration: ut.configuration ?? '',
+          floorRange: ut.floorRange ?? [2, 30],
+          flatNumberPattern: ut.flatNumberPattern ?? '',
+          genericDocs: [],
+        }
+        await db
+          .collection('projects')
+          .doc(projectId)
+          .collection('unitTypes')
+          .doc(typeId)
+          .set(typeData, { merge: true })
+        unitTypes.push({ id: typeId, ...typeData })
+      }
+
+      return { projectId, projectName, unitTypes }
+    } catch (err) {
+      console.error('[processBrochure] Error:', err)
+      throw new HttpsError('internal', 'Failed to process brochure. Please try again.')
+    }
   }
 )
 
