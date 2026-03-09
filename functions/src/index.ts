@@ -1,11 +1,13 @@
 /**
- * Digital Passport — Firebase Cloud Functions (v5 API)
+ * Digital Passport - Firebase Cloud Functions (v5 API)
  *
- * Exports HTTPS callable functions:
- *  1. initGmailAuth     — returns Google OAuth URL for the user to redirect to
- *  2. gmailOAuthCallback — exchanges OAuth code for tokens, stores securely
- *  3. syncGmailReceipts  — runs the Gmail→Gemini OCR extraction pipeline
- *  4. processBrochure    — extracts unit types from a PDF brochure via Gemini
+ * Exports:
+ *  1. initGmailAuth      - returns Google OAuth URL
+ *  2. gmailOAuthCallback - exchanges OAuth code for tokens
+ *  3. syncGmailReceipts  - Gmail+Gemini OCR extraction pipeline
+ *  4. checkWarrantyExpiry - scheduled daily warranty alerts
+ *  5. processBrochure    - PDF brochure -> pending unit types review queue
+ *  6. approveProject     - admin: promote pendingProject to /projects
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
@@ -24,7 +26,7 @@ import { extractReceiptData } from './gemini'
 admin.initializeApp()
 const db = admin.firestore()
 
-// ─── Config helpers ─────────────────────────────────────────────────────────
+// --- Config helpers ----------------------------------------------------------
 
 function getOAuthConfig() {
   return {
@@ -35,7 +37,7 @@ function getOAuthConfig() {
   }
 }
 
-// ─── 1. initGmailAuth ────────────────────────────────────────────────────────
+// --- 1. initGmailAuth --------------------------------------------------------
 
 export const initGmailAuth = onCall(async (request) => {
   if (!request.auth) {
@@ -61,7 +63,7 @@ export const initGmailAuth = onCall(async (request) => {
   return { authUrl }
 })
 
-// ─── 2. gmailOAuthCallback ───────────────────────────────────────────────────
+// --- 2. gmailOAuthCallback ---------------------------------------------------
 
 export const gmailOAuthCallback = onCall(async (request) => {
   if (!request.auth) {
@@ -90,7 +92,7 @@ export const gmailOAuthCallback = onCall(async (request) => {
   }
 })
 
-// ─── 3. syncGmailReceipts ────────────────────────────────────────────────────
+// --- 3. syncGmailReceipts ----------------------------------------------------
 
 interface SyncResult {
   processed: number
@@ -191,9 +193,7 @@ export const syncGmailReceipts = onCall(
   }
 )
 
-// ─── 4. checkWarrantyExpiry (Scheduled daily) ─────────────────────────────────
-// Scans all users' warranty_assets for items expiring in exactly 7 days and
-// sends an FCM push notification to their enrolled device.
+// --- 4. checkWarrantyExpiry (Scheduled daily) --------------------------------
 
 export const checkWarrantyExpiry = onSchedule(
   { schedule: 'every 24 hours', timeZone: 'Asia/Kolkata', memory: '256MiB' },
@@ -206,8 +206,6 @@ export const checkWarrantyExpiry = onSchedule(
     in7DaysEnd.setHours(23, 59, 59, 999)
 
     const messaging = admin.messaging()
-
-    // Iterate all user documents to find enrolled FCM tokens
     const usersSnap = await db.collection('users').get()
     let notified = 0
 
@@ -215,10 +213,8 @@ export const checkWarrantyExpiry = onSchedule(
       const uid = userDoc.id
       const userData = userDoc.data()
       const fcmToken: string | null = userData?.fcmToken ?? null
-
       if (!fcmToken) continue
 
-      // Check this user's warranty assets expiring in 7 days
       const assetsSnap = await db
         .collection(`users/${uid}/warranty_assets`)
         .where('warrantyExpiry', '>=', in7DaysStart.toISOString().split('T')[0])
@@ -231,14 +227,10 @@ export const checkWarrantyExpiry = onSchedule(
           await messaging.send({
             token: fcmToken,
             notification: {
-              title: '⚠️ Warranty Expiring Soon',
+              title: 'Warranty Expiring Soon',
               body: `${asset.name || 'An asset'} warranty expires in 7 days.`,
             },
-            data: {
-              tag: 'warranty-expiry',
-              url: '/warranty',
-              assetId: assetDoc.id,
-            },
+            data: { tag: 'warranty-expiry', url: '/warranty', assetId: assetDoc.id },
             webpush: {
               notification: {
                 icon: 'https://digitalpassport.peroneira.com/icon-192.png',
@@ -257,29 +249,26 @@ export const checkWarrantyExpiry = onSchedule(
   }
 )
 
-// ─── 5. processBrochure ──────────────────────────────────────────────────────
+// --- 5. processBrochure ------------------------------------------------------
 //
-// Callable: accepts a storagePath to a PDF uploaded by the user.
-// Gemini reads the PDF and extracts project + unit type data.
-// If the project doesn't exist yet, it is created in /projects with verified=false.
-// Returns { projectId, projectName, unitTypes[] } to the client.
+// User uploads a PDF brochure to Storage -> calls this function.
+// Pass 1: Gemini extracts unit types + identifies floor plan page numbers.
+// Pass 2: mupdf (WASM, via mupdf-render.js helper) renders those pages to PNGs.
+// Results go to /pendingProjects for admin review - NOT directly to /projects.
+// Admin then calls approveProject to promote the data.
 
-interface BrochureUnitType {
-  id: string
+interface PendingUnitType {
   label: string
   bedrooms: number
   bathrooms: number
   area: number
+  carpetArea: number
+  superBuiltUpArea: number
   configuration: string
   floorRange: [number, number]
   flatNumberPattern: string
+  floorPlanUrl: string
   genericDocs: string[]
-}
-
-interface BrochureResult {
-  projectId: string
-  projectName: string
-  unitTypes: BrochureUnitType[]
 }
 
 function makeBrochureKeywords(name: string, developer: string, city: string): string[] {
@@ -292,88 +281,84 @@ function makeBrochureKeywords(name: string, developer: string, city: string): st
   return Array.from(keywords).filter((k) => k.length >= 2)
 }
 
-export const processBrochure = onCall(
-  { timeoutSeconds: 120, memory: '1GiB' },
-  async (request): Promise<BrochureResult> => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Must be signed in.')
-    }
+async function callGeminiForBrochure(base64Pdf: string, geminiKey: string): Promise<string> {
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+  const prompt = `You are a real estate data extractor. Analyse this residential brochure PDF carefully.
 
-    const data = request.data as { storagePath?: string; uid?: string }
-    if (!data?.storagePath) {
-      throw new HttpsError('invalid-argument', 'storagePath is required.')
-    }
-
-    const geminiKey = process.env.GEMINI_API_KEY ?? ''
-    if (!geminiKey) {
-      throw new HttpsError('failed-precondition', 'Gemini API key not configured.')
-    }
-
-    try {
-      // 1. Download PDF from Firebase Storage
-      const bucket = admin.storage().bucket()
-      const fileRef = bucket.file(data.storagePath)
-      const [fileBuffer] = await fileRef.download()
-      const base64Pdf = fileBuffer.toString('base64')
-
-      // 2. Call Gemini to extract project + unit types
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
-      const prompt = `You are a real estate data extractor. Analyze this residential project brochure and extract structured data.
-
-Return a JSON object (no markdown, just raw JSON) with this exact structure:
+Return ONLY raw JSON (no markdown) with this structure:
 {
-  "projectName": "Full project name",
-  "developer": "Developer/builder name",
-  "city": "City name",
+  "projectName": "string",
+  "developer": "string",
+  "city": "string",
   "unitTypes": [
     {
       "label": "3BHK East",
       "bedrooms": 3,
       "bathrooms": 3,
-      "area": 1850,
+      "carpetArea": 0,
+      "superBuiltUpArea": 2595,
       "configuration": "East-facing",
-      "floorRange": [3, 45],
-      "flatNumberPattern": ""
+      "floorRange": [3, 36],
+      "flatNumberPattern": "",
+      "floorPlanPage": 16
     }
   ]
 }
 
 Rules:
-- Extract ALL unit types/configurations available in the project
-- For area, use carpet area in sq ft if available, else super built-up
-- If there are east/west configurations, list them separately
-- If no floor range is mentioned, use [2, 30] as default
-- flatNumberPattern should be empty string unless you can clearly infer it from flat number examples in the brochure
-- Return only valid JSON, nothing else`
+- List EACH distinct unit type separately (east/west are separate).
+- carpetArea: RERA carpet area in sq ft. 0 if not found.
+- superBuiltUpArea: total/super built-up area in sq ft. 0 if not found.
+- floorPlanPage: 1-indexed page number for THIS unit type floor plan. 0 if not found.
+- floorRange: [minFloor, maxFloor]. Use [2, 36] if unknown.
+- Return ONLY valid JSON.`
 
-      const geminiResponse = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inlineData: { mimeType: 'application/pdf', data: base64Pdf } },
-              ],
-            },
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: 'application/pdf', data: base64Pdf } },
           ],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json',
-          },
-        }),
-      })
+        },
+      ],
+      generationConfig: { temperature: 0.1, responseMimeType: 'application/json' },
+    }),
+  })
+  if (!resp.ok) throw new Error(`Gemini error: ${resp.status}`)
+  const json = await resp.json() as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+  }
+  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+}
 
-      if (!geminiResponse.ok) {
-        throw new Error(`Gemini API error: ${geminiResponse.status}`)
-      }
+export const processBrochure = onCall(
+  { timeoutSeconds: 300, memory: '2GiB' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in.')
 
-      const geminiData = await geminiResponse.json() as {
-        candidates?: { content?: { parts?: { text?: string }[] } }[]
-      }
-      const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
-      const extracted = JSON.parse(rawText) as {
+    const data = request.data as { storagePath?: string }
+    if (!data?.storagePath) throw new HttpsError('invalid-argument', 'storagePath is required.')
+
+    const geminiKey = process.env.GEMINI_API_KEY ?? ''
+    if (!geminiKey) throw new HttpsError('failed-precondition', 'Gemini API key not configured.')
+
+    try {
+      const bucket = admin.storage().bucket()
+      const uid = request.auth.uid
+
+      // 1. Download PDF
+      const [pdfBuffer] = await bucket.file(data.storagePath).download()
+      const base64Pdf = pdfBuffer.toString('base64')
+      console.log(`[processBrochure] PDF: ${pdfBuffer.length} bytes, uid: ${uid}`)
+
+      // 2. Gemini: extract unit types + floor plan page numbers
+      const rawJson = await callGeminiForBrochure(base64Pdf, geminiKey)
+      const extracted = JSON.parse(rawJson) as {
         projectName?: string
         developer?: string
         city?: string
@@ -381,10 +366,12 @@ Rules:
           label?: string
           bedrooms?: number
           bathrooms?: number
-          area?: number
+          carpetArea?: number
+          superBuiltUpArea?: number
           configuration?: string
           floorRange?: [number, number]
           flatNumberPattern?: string
+          floorPlanPage?: number
         }>
       }
 
@@ -392,59 +379,73 @@ Rules:
       const developer = extracted.developer ?? ''
       const city = extracted.city ?? ''
       const rawUnitTypes = extracted.unitTypes ?? []
+      console.log(`[processBrochure] Extracted ${rawUnitTypes.length} unit types for "${projectName}"`)
 
-      // 3. Check if project already exists (by name search)
-      const existingQuery = await db
-        .collection('projects')
-        .where('name', '==', projectName)
-        .limit(1)
-        .get()
+      // 3. mupdf (via JS helper): render unique floor plan pages to PNG
+      const { renderPdfPageToPng } = require('./mupdf-render') as {
+        renderPdfPageToPng: (buf: Buffer, idx: number, dpi: number) => Promise<Buffer>
+      }
+      const uniquePages = [
+        ...new Set(rawUnitTypes.map((ut) => ut.floorPlanPage ?? 0).filter((p) => p > 0)),
+      ]
+      const pageToUrl = new Map<number, string>()
+      const ts = Date.now()
 
-      let projectId: string
-
-      if (!existingQuery.empty) {
-        projectId = existingQuery.docs[0].id
-        console.log(`[processBrochure] Project already exists: ${projectId}`)
-      } else {
-        // Create new project entry
-        const projectRef = await db.collection('projects').add({
-          name: projectName,
-          developer,
-          city,
-          verified: false,
-          searchKeywords: makeBrochureKeywords(projectName, developer, city),
-          createdAt: FieldValue.serverTimestamp(),
-          createdBy: request.auth.uid,
-        })
-        projectId = projectRef.id
-        console.log(`[processBrochure] Created new project: ${projectId} (${projectName})`)
+      for (const pageNum of uniquePages) {
+        console.log(`[processBrochure] Rendering page ${pageNum} with mupdf...`)
+        try {
+          const png = await renderPdfPageToPng(pdfBuffer, pageNum - 1, 100)
+          const imgPath = `pending/${uid}/${ts}/floorplan-page${pageNum}.png`
+          const imgFile = bucket.file(imgPath)
+          await imgFile.save(png, { metadata: { contentType: 'image/png' } })
+          await imgFile.makePublic()
+          const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`
+          pageToUrl.set(pageNum, url)
+          console.log(`[processBrochure] Uploaded page ${pageNum}: ${Math.round(png.length / 1024)}KB`)
+        } catch (renderErr) {
+          console.warn(`[processBrochure] Render failed for page ${pageNum}:`, renderErr)
+        }
       }
 
-      // 4. Create/update unit types
-      const unitTypes: BrochureUnitType[] = []
-      for (const ut of rawUnitTypes) {
-        const label = ut.label ?? 'Unknown'
-        const typeId = label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-        const typeData: Omit<BrochureUnitType, 'id'> = {
-          label,
+      // 4. Build unit type list
+      const unitTypes: PendingUnitType[] = rawUnitTypes.map((ut) => {
+        const carpetArea = ut.carpetArea ?? 0
+        const sbuArea = ut.superBuiltUpArea ?? 0
+        const pageNum = ut.floorPlanPage ?? 0
+        const floorPlanUrl = pageNum > 0 ? (pageToUrl.get(pageNum) ?? '') : ''
+        return {
+          label: ut.label ?? 'Unknown',
           bedrooms: ut.bedrooms ?? 0,
           bathrooms: ut.bathrooms ?? 0,
-          area: ut.area ?? 0,
+          area: carpetArea > 0 ? carpetArea : sbuArea,
+          carpetArea,
+          superBuiltUpArea: sbuArea,
           configuration: ut.configuration ?? '',
           floorRange: ut.floorRange ?? [2, 30],
           flatNumberPattern: ut.flatNumberPattern ?? '',
-          genericDocs: [],
+          floorPlanUrl,
+          genericDocs: floorPlanUrl ? [floorPlanUrl] : [],
         }
-        await db
-          .collection('projects')
-          .doc(projectId)
-          .collection('unitTypes')
-          .doc(typeId)
-          .set(typeData, { merge: true })
-        unitTypes.push({ id: typeId, ...typeData })
-      }
+      })
 
-      return { projectId, projectName, unitTypes }
+      // 5. Write to /pendingProjects - NOT /projects
+      const pendingRef = await db.collection('pendingProjects').add({
+        projectName,
+        developer,
+        city,
+        submittedBy: uid,
+        status: 'pending',
+        storagePath: data.storagePath,
+        unitTypes,
+        submittedAt: FieldValue.serverTimestamp(),
+      })
+
+      console.log(`[processBrochure] Created pendingProject: ${pendingRef.id}`)
+      return {
+        pendingProjectId: pendingRef.id,
+        projectName,
+        unitTypesCount: unitTypes.length,
+      }
     } catch (err) {
       console.error('[processBrochure] Error:', err)
       throw new HttpsError('internal', 'Failed to process brochure. Please try again.')
@@ -452,3 +453,109 @@ Rules:
   }
 )
 
+// --- 6. approveProject (Admin) -----------------------------------------------
+//
+// Promotes a /pendingProjects document to /projects.
+// If verified=true, the project shows the VERIFIED badge in the search UI.
+// If the project already exists, unit types are merged in.
+// Call: { pendingProjectId: string, verified?: boolean, reject?: boolean }
+
+export const approveProject = onCall(
+  { timeoutSeconds: 60 },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in.')
+
+    const ADMIN_UIDS = (process.env.ADMIN_UIDS ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    if (ADMIN_UIDS.length > 0 && !ADMIN_UIDS.includes(request.auth.uid)) {
+      throw new HttpsError('permission-denied', 'Admin access required.')
+    }
+
+    const data = request.data as {
+      pendingProjectId?: string
+      verified?: boolean
+      reject?: boolean
+    }
+    if (!data?.pendingProjectId) {
+      throw new HttpsError('invalid-argument', 'pendingProjectId is required.')
+    }
+
+    const pendingRef = db.collection('pendingProjects').doc(data.pendingProjectId)
+    const pendingSnap = await pendingRef.get()
+    if (!pendingSnap.exists) throw new HttpsError('not-found', 'Pending project not found.')
+
+    const pending = pendingSnap.data() as {
+      projectName: string
+      developer: string
+      city: string
+      submittedBy: string
+      unitTypes: PendingUnitType[]
+    }
+
+    if (data.reject) {
+      await pendingRef.update({
+        status: 'rejected',
+        reviewedAt: FieldValue.serverTimestamp(),
+        reviewedBy: request.auth.uid,
+      })
+      return { status: 'rejected' }
+    }
+
+    // Find or create project
+    const existing = await db
+      .collection('projects')
+      .where('name', '==', pending.projectName)
+      .limit(1)
+      .get()
+
+    let projectId: string
+    if (!existing.empty) {
+      projectId = existing.docs[0].id
+      console.log(`[approveProject] Merging into existing project: ${projectId}`)
+      // Update verified if requested
+      if (data.verified) {
+        await db.collection('projects').doc(projectId).update({ verified: true })
+      }
+    } else {
+      const projectRef = await db.collection('projects').add({
+        name: pending.projectName,
+        developer: pending.developer,
+        city: pending.city,
+        verified: data.verified ?? false,
+        searchKeywords: makeBrochureKeywords(
+          pending.projectName,
+          pending.developer,
+          pending.city
+        ),
+        createdAt: FieldValue.serverTimestamp(),
+        createdBy: pending.submittedBy,
+      })
+      projectId = projectRef.id
+      console.log(`[approveProject] Created project: ${projectId}`)
+    }
+
+    // Copy unit types
+    for (const ut of pending.unitTypes) {
+      const typeId = ut.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      await db
+        .collection('projects')
+        .doc(projectId)
+        .collection('unitTypes')
+        .doc(typeId)
+        .set(ut, { merge: true })
+    }
+
+    // Mark pending as approved
+    await pendingRef.update({
+      status: 'approved',
+      approvedProjectId: projectId,
+      reviewedAt: FieldValue.serverTimestamp(),
+      reviewedBy: request.auth.uid,
+    })
+
+    console.log(`[approveProject] Approved: ${data.pendingProjectId} -> ${projectId}`)
+    return { status: 'approved', projectId }
+  }
+)

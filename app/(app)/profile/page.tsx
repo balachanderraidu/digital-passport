@@ -6,11 +6,12 @@ import { signOut } from 'firebase/auth'
 import {
   Settings, ChevronRight, LogOut, Bell, Ruler,
   Mail, Lock, HelpCircle, Loader2, Home, Pencil,
-  Check, X, Phone, ShieldCheck, AlertCircle, Download, Building2, Plus,
+  Check, X, Phone, ShieldCheck, AlertCircle, Download, Building2, Plus, Smartphone,
 } from 'lucide-react'
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
+import { usePWAInstall } from '@/lib/usePWAInstall'
 import {
   subscribeProperty, subscribeDashboardStats, subscribeUserProfile,
   subscribeWarrantyAssets, subscribeSnags,
@@ -60,6 +61,7 @@ function IdentifierRow({
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth()
   const { activePropertyId, allProperties, switchProperty } = useProperty()
+  const { canInstall, isInstalled, triggerInstall } = usePWAInstall()
   const router = useRouter()
   const [property, setProperty] = useState<Property | null>(null)
   const [stats, setStats] = useState<DashboardStats>({ assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 })
@@ -362,6 +364,17 @@ export default function ProfilePage() {
             <span className="flex-1 text-sm font-medium text-vault-text text-left">Privacy & Data</span>
             <ChevronRight size={15} className="text-vault-text-muted" />
           </button>
+
+          {/* Install App */}
+          {canInstall && !isInstalled && (
+            <button onClick={triggerInstall} className="flex items-center gap-3 px-4 py-3.5 w-full hover:bg-vault-muted/5 transition-colors">
+              <div className="w-8 h-8 rounded-xl bg-gold-500/10 flex items-center justify-center flex-shrink-0">
+                <Smartphone size={15} className="text-gold-500" />
+              </div>
+              <span className="flex-1 text-sm font-medium text-vault-text text-left">Install App</span>
+              <span className="text-[10px] font-bold text-gold-500 bg-gold-500/10 px-2 py-0.5 rounded-full">Add to Home</span>
+            </button>
+          )}
 
           {/* Help */}
           <button className="flex items-center gap-3 px-4 py-3.5 w-full hover:bg-vault-muted/5 transition-colors">
