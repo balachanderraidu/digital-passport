@@ -2,14 +2,23 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronRight, Building2, Loader2, Mail, CheckCircle2, Home, X, AlertCircle } from 'lucide-react'
+import { ChevronRight, Loader2, Mail, CheckCircle2, Home, X, AlertCircle, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
-import { createProperty, createNewProperty, setActiveProperty } from '@/lib/firestore'
+import { createProperty, createNewProperty, setActiveProperty, type ProjectListing, type UnitType } from '@/lib/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import app from '@/lib/firebase'
+import { ProjectSearchStep } from './ProjectSearchStep'
+import { BrochureUploadStep } from './BrochureUploadStep'
 
 const FLOOR_PLAN_TYPES = ['Studio', '1BHK', '2BHK', '3BHK', '4BHK', 'Penthouse', 'Villa', 'Custom']
+
+type FlowStep =
+  | 'project-search'     // Step 1: Search database
+  | 'brochure-upload'    // Step 1b: Brochure upload (not in DB)
+  | 'manual-details'     // Step 2: Manual property details  
+  | 'gmail-sync'         // Step 3: Gmail procurement sync
+  | 'review'             // Step 4: Review & launch
 
 interface PropertyForm {
   name: string
@@ -27,13 +36,37 @@ const DEFAULT_FORM: PropertyForm = {
   location: '',
 }
 
+// Maps flow step names to human-readable step numbers for the progress bar
+const STEP_ORDER: FlowStep[] = ['project-search', 'manual-details', 'gmail-sync', 'review']
+const STEP_LABELS: Record<FlowStep, string> = {
+  'project-search': 'Find Project',
+  'brochure-upload': 'Find Project',
+  'manual-details': 'Property Details',
+  'gmail-sync': 'Gmail Sync',
+  'review': 'Review',
+}
+
+function getDisplayStep(step: FlowStep): number {
+  const idx = STEP_ORDER.indexOf(step === 'brochure-upload' ? 'project-search' : step)
+  return Math.max(idx + 1, 1)
+}
+
+// ─── Linked project data (set when user picks from DB or uploads brochure) ────
+interface LinkedProject {
+  project: ProjectListing
+  unitType: UnitType
+  flatNumber: string
+}
+
 function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const isNewProperty = searchParams?.get('new') === '1'
-  const [step, setStep] = useState(1)
+
+  const [step, setStep] = useState<FlowStep>('project-search')
   const [form, setForm] = useState<PropertyForm>(DEFAULT_FORM)
+  const [linkedProject, setLinkedProject] = useState<LinkedProject | null>(null)
   const [gmailStatus, setGmailStatus] = useState<'idle' | 'linking' | 'syncing' | 'done' | 'error'>('idle')
   const [syncResult, setSyncResult] = useState<{ matched: number; pending: number } | null>(null)
   const [gmailError, setGmailError] = useState('')
@@ -46,10 +79,11 @@ function OnboardingContent() {
     void handleOAuthReturn(code)
   }, [searchParams, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function isStep1Valid() {
+  function isManualValid() {
     return form.name.trim() && form.unit.trim() && form.location.trim()
   }
 
+  // ── Gmail handlers ────────────────────────────────────────────────────────
   async function handleGmailConnect() {
     if (!user || !app) return
     setGmailStatus('linking')
@@ -58,7 +92,6 @@ function OnboardingContent() {
       const functions = getFunctions(app)
       const initAuth = httpsCallable<unknown, { authUrl: string }>(functions, 'initGmailAuth')
       const result = await initAuth({})
-      // Redirect user to Google consent screen
       window.location.href = result.data.authUrl
     } catch (err) {
       console.error('[Gmail connect]', err)
@@ -69,19 +102,16 @@ function OnboardingContent() {
 
   async function handleOAuthReturn(code: string) {
     if (!user || !app) return
-    setStep(2) // ensure we're on step 2
+    setStep('gmail-sync')
     setGmailStatus('syncing')
     try {
       const functions = getFunctions(app)
-      // Step 1: Exchange code for tokens
       const callback = httpsCallable(functions, 'gmailOAuthCallback')
       await callback({ code })
-      // Step 2: Run the OCR sync pipeline
       const sync = httpsCallable<unknown, { matched: number; pending: number; processed: number }>(functions, 'syncGmailReceipts')
       const syncRes = await sync({})
       setSyncResult({ matched: syncRes.data.matched, pending: syncRes.data.pending })
       setGmailStatus('done')
-      // Remove the code param from URL cleanly
       router.replace('/onboarding')
     } catch (err) {
       console.error('[Gmail sync]', err)
@@ -90,24 +120,37 @@ function OnboardingContent() {
     }
   }
 
+  // ── Save & finish ─────────────────────────────────────────────────────────
   async function handleFinish() {
     if (!user) return
     setSaving(true)
     try {
-      const propertyData = {
-        name: form.name,
-        unit: form.unit,
-        area: parseFloat(form.area) || 0,
-        floorPlanType: form.floorPlanType,
-        location: form.location,
-        gmailLinked: gmailStatus === 'done',
-      }
+      // Build property data — prefer linked project data when available
+      const propertyData = linkedProject
+        ? {
+            name: linkedProject.project.name,
+            unit: linkedProject.flatNumber,
+            area: linkedProject.unitType.area,
+            floorPlanType: linkedProject.unitType.label,
+            location: linkedProject.project.city,
+            gmailLinked: gmailStatus === 'done',
+            projectId: linkedProject.project.id,
+            unitTypeId: linkedProject.unitType.id,
+            unitTypeLabel: linkedProject.unitType.label,
+          }
+        : {
+            name: form.name,
+            unit: form.unit,
+            area: parseFloat(form.area) || 0,
+            floorPlanType: form.floorPlanType,
+            location: form.location,
+            gmailLinked: gmailStatus === 'done',
+          }
+
       if (isNewProperty) {
-        // Adding an additional property — create with auto-ID and switch to it
         const newPid = await createNewProperty(user.uid, propertyData)
         await setActiveProperty(user.uid, newPid)
       } else {
-        // First-time setup — creates / updates 'primary'
         await createProperty(user.uid, propertyData)
       }
       router.replace('/dashboard')
@@ -116,6 +159,47 @@ function OnboardingContent() {
       setSaving(false)
     }
   }
+
+  // ── Handlers for step transitions ─────────────────────────────────────────
+  function handleProjectSelected(project: ProjectListing, unitType: UnitType, flatNumber: string) {
+    setLinkedProject({ project, unitType, flatNumber })
+    // Pre-fill form as fallback
+    setForm({
+      name: project.name,
+      unit: flatNumber,
+      area: String(unitType.area),
+      floorPlanType: unitType.label,
+      location: project.city,
+    })
+    setStep('gmail-sync')
+  }
+
+  function handleBrochureExtracted(projectId: string, projectName: string, unitTypes: UnitType[]) {
+    // For brochure flow, we get a synthetic project + the user-selected type
+    const unitType = unitTypes[0]
+    if (!unitType) return
+    const syntheticProject: ProjectListing = {
+      id: projectId,
+      name: projectName,
+      city: '',
+      developer: '',
+      verified: false,
+      searchKeywords: [],
+      createdAt: null,
+    }
+    setLinkedProject({ project: syntheticProject, unitType, flatNumber: form.unit })
+    setForm((f) => ({
+      ...f,
+      name: projectName,
+      area: String(unitType.area),
+      floorPlanType: unitType.label,
+    }))
+    setStep('gmail-sync')
+  }
+
+  // ── Progress display ──────────────────────────────────────────────────────
+  const displayStep = getDisplayStep(step)
+  const totalSteps = 4
 
   return (
     <div className="min-h-dvh bg-vault-bg flex flex-col">
@@ -138,26 +222,54 @@ function OnboardingContent() {
           </button>
         </div>
         <h1 className="text-2xl font-bold text-white mt-4">Set Up Your Passport</h1>
-        <p className="text-sm text-vault-text-muted mt-1">Let's get your home data connected in 3 steps.</p>
+        <p className="text-sm text-vault-text-muted mt-1">
+          {step === 'project-search' && "Let's find your home in our database"}
+          {step === 'brochure-upload' && "Upload your project brochure for AI processing"}
+          {step === 'manual-details' && "Tell us about your property"}
+          {step === 'gmail-sync' && "Auto-import your purchase receipts"}
+          {step === 'review' && "Review your passport setup"}
+        </p>
 
         {/* Progress bar */}
         <div className="flex gap-1.5 mt-6">
-          {[1, 2, 3].map((s) => (
+          {Array.from({ length: totalSteps }).map((_, i) => (
             <div
-              key={s}
+              key={i}
               className={cn(
                 'h-1.5 flex-1 rounded-full transition-all duration-500',
-                s <= step ? 'bg-gold-500' : 'bg-vault-muted'
+                i < displayStep ? 'bg-gold-500' : 'bg-vault-muted'
               )}
             />
           ))}
         </div>
-        <p className="text-xs text-vault-text-muted mt-2">Step {step} of 3</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-xs text-vault-text-muted">Step {displayStep} of {totalSteps}</p>
+          <p className="text-xs text-vault-text-muted font-medium">{STEP_LABELS[step]}</p>
+        </div>
       </div>
 
       <div className="flex-1 px-5 py-4">
-        {/* Step 1: Property Details */}
-        {step === 1 && (
+
+        {/* ── Step 1A: Project Search ── */}
+        {step === 'project-search' && (
+          <ProjectSearchStep
+            onProjectSelected={handleProjectSelected}
+            onSkipToManual={() => setStep('manual-details')}
+            onNotFound={() => setStep('brochure-upload')}
+          />
+        )}
+
+        {/* ── Step 1B: Brochure Upload ── */}
+        {step === 'brochure-upload' && user && (
+          <BrochureUploadStep
+            uid={user.uid}
+            onUnitTypesExtracted={handleBrochureExtracted}
+            onSkipToManual={() => setStep('manual-details')}
+          />
+        )}
+
+        {/* ── Step 2: Manual Details ── */}
+        {step === 'manual-details' && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center">
@@ -178,7 +290,7 @@ function OnboardingContent() {
               <div key={key}>
                 <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">{label}</label>
                 <input
-                  className="w-full px-4 py-3.5 text-sm rounded-2xl"
+                  className="w-full px-4 py-3.5 text-sm rounded-2xl bg-vault-surface border border-vault-border text-white placeholder:text-vault-text-muted focus:outline-none focus:border-gold-500/60 transition-colors"
                   placeholder={placeholder}
                   value={form[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
@@ -208,18 +320,41 @@ function OnboardingContent() {
             </div>
 
             <button
-              onClick={() => setStep(2)}
-              disabled={!isStep1Valid()}
+              onClick={() => setStep('gmail-sync')}
+              disabled={!isManualValid()}
               className="w-full py-4 mt-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm flex items-center justify-center gap-2 hover:shadow-gold-glow transition-all disabled:opacity-40"
             >
               Next: Gmail Sync <ChevronRight size={16} />
             </button>
+
+            <button
+              onClick={() => setStep('project-search')}
+              className="w-full py-2 text-xs text-vault-text-muted font-medium text-center"
+            >
+              ← Back to project search
+            </button>
           </div>
         )}
 
-        {/* Step 2: Gmail Procurement Sync */}
-        {step === 2 && (
+        {/* ── Step 3: Gmail Sync ── */}
+        {step === 'gmail-sync' && (
           <div className="space-y-4 animate-fade-in">
+            {/* Linked project summary (if set) */}
+            {linkedProject && (
+              <div className="card p-4 border-gold-500/20 bg-gold-500/5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gold-500/15 flex items-center justify-center flex-shrink-0">
+                  <Building2 size={16} className="text-gold-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{linkedProject.project.name}</p>
+                  <p className="text-xs text-vault-text-muted">
+                    Unit {linkedProject.flatNumber} · {linkedProject.unitType.label} · {linkedProject.unitType.area.toLocaleString()} sq ft
+                  </p>
+                </div>
+                <CheckCircle2 size={16} className="text-gold-500 flex-shrink-0" />
+              </div>
+            )}
+
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <Mail size={20} className="text-blue-400" />
@@ -289,14 +424,14 @@ function OnboardingContent() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep('review')}
                 className="flex-1 py-3.5 rounded-2xl glass gold-border text-vault-text font-semibold text-sm"
               >
                 Skip for now
               </button>
               {gmailStatus === 'done' && (
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep('review')}
                   className="flex-1 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm flex items-center justify-center gap-2 hover:shadow-gold-glow transition-all"
                 >
                   Continue <ChevronRight size={16} />
@@ -306,8 +441,8 @@ function OnboardingContent() {
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
-        {step === 3 && (
+        {/* ── Step 4: Review & Launch ── */}
+        {step === 'review' && (
           <div className="space-y-4 animate-fade-in">
             <div className="text-center py-4">
               <div className="text-5xl mb-3">🏡</div>
@@ -317,22 +452,62 @@ function OnboardingContent() {
 
             <div className="card p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Property', value: form.name || '—' },
-                  { label: 'Unit', value: form.unit || '—' },
-                  { label: 'Location', value: form.location || '—' },
-                  { label: 'Floor Plan', value: form.floorPlanType },
-                  { label: 'Area', value: form.area ? `${form.area} sq ft` : '—' },
-                  { label: 'Gmail Sync', value: gmailStatus === 'done'
-                    ? `✅ ${syncResult?.matched ?? 0} assets added`
-                    : '⏭ Skipped' },
-                ].map(({ label, value }) => (
-                  <div key={label}>
-                    <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">{label}</p>
-                    <p className="text-sm font-semibold text-vault-text mt-0.5">{value}</p>
-                  </div>
-                ))}
+                {linkedProject ? (
+                  <>
+                    {[
+                      { label: 'Project', value: linkedProject.project.name },
+                      { label: 'Unit', value: linkedProject.flatNumber },
+                      { label: 'Type', value: linkedProject.unitType.label },
+                      { label: 'Area', value: `${linkedProject.unitType.area.toLocaleString()} sq ft` },
+                      { label: 'Config', value: linkedProject.unitType.configuration },
+                      {
+                        label: 'Gmail Sync',
+                        value: gmailStatus === 'done'
+                          ? `✅ ${syncResult?.matched ?? 0} assets added`
+                          : '⏭ Skipped',
+                      },
+                    ].map(({ label, value }) => (
+                      <div key={label}>
+                        <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">{label}</p>
+                        <p className="text-sm font-semibold text-vault-text mt-0.5">{value}</p>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {[
+                      { label: 'Property', value: form.name || '—' },
+                      { label: 'Unit', value: form.unit || '—' },
+                      { label: 'Location', value: form.location || '—' },
+                      { label: 'Floor Plan', value: form.floorPlanType },
+                      { label: 'Area', value: form.area ? `${form.area} sq ft` : '—' },
+                      {
+                        label: 'Gmail Sync',
+                        value: gmailStatus === 'done'
+                          ? `✅ ${syncResult?.matched ?? 0} assets added`
+                          : '⏭ Skipped',
+                      },
+                    ].map(({ label, value }) => (
+                      <div key={label}>
+                        <p className="text-[9px] font-semibold text-vault-text-muted uppercase tracking-widest">{label}</p>
+                        <p className="text-sm font-semibold text-vault-text mt-0.5">{value}</p>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
+
+              {linkedProject && (
+                <div className="pt-3 border-t border-vault-border/50">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={12} className="text-gold-500" />
+                    <p className="text-[10px] text-gold-500 font-semibold">Linked to project database</p>
+                  </div>
+                  <p className="text-[10px] text-vault-text-muted mt-1 ml-4.5">
+                    Floor plans and specs will be synced as they become available
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="card p-4 border-gold-500/20 bg-gold-500/5">
@@ -363,4 +538,3 @@ export default function OnboardingPage() {
     </Suspense>
   )
 }
-

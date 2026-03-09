@@ -4,12 +4,14 @@ import {
   addDoc,
   setDoc,
   getDoc,
+  getDocs,
   deleteDoc,
   updateDoc,
   onSnapshot,
   query,
   orderBy,
   limit,
+  where,
   serverTimestamp,
   Timestamp,
   type Unsubscribe,
@@ -72,6 +74,30 @@ export interface ShareLink {
   createdAt: Timestamp | null
 }
 
+export interface UnitType {
+  id: string
+  label: string              // e.g. "3BHK West"
+  bedrooms: number
+  bathrooms: number
+  area: number               // sq ft
+  configuration: string      // e.g. "West-facing"
+  floorRange: [number, number]
+  flatNumberPattern?: string // regex string to match flat numbers
+  genericDocs: string[]      // Storage URLs for floor plans etc.
+}
+
+export interface ProjectListing {
+  id: string
+  name: string
+  city: string
+  developer: string
+  blocks?: string[]
+  totalUnits?: number
+  verified: boolean
+  searchKeywords: string[]
+  createdAt: Timestamp | null
+}
+
 export interface Property {
   id: string            // Firestore doc ID (populated when read)
   name: string          // e.g. "Oberoi Residences"
@@ -80,6 +106,10 @@ export interface Property {
   floorPlanType: string // e.g. "3BHK"
   location: string      // e.g. "Worli, Mumbai"
   gmailLinked: boolean
+  // Project database linkage (optional — set when user selects from database)
+  projectId?: string
+  unitTypeId?: string
+  unitTypeLabel?: string
   createdAt: Timestamp | null
 }
 
@@ -319,6 +349,49 @@ export async function updateProperty(uid: string, pid: string, data: Partial<Omi
 export async function setActiveProperty(uid: string, propertyId: string) {
   const firestore = requireDb()
   await setDoc(doc(firestore, 'users', uid), { activePropertyId: propertyId }, { merge: true })
+}
+
+// ─── Projects (Community Database) ───────────────────────────────────────────
+
+/** Search projects by keyword (case-insensitive prefix match via searchKeywords array) */
+export async function searchProjects(queryText: string): Promise<ProjectListing[]> {
+  const firestore = requireDb()
+  const term = queryText.toLowerCase().trim()
+  if (!term) return []
+  const q = query(
+    collection(firestore, 'projects'),
+    where('searchKeywords', 'array-contains', term),
+    limit(10)
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ProjectListing, 'id'>) }))
+}
+
+/** Fetch all unit types for a project */
+export async function getProjectUnitTypes(projectId: string): Promise<UnitType[]> {
+  const firestore = requireDb()
+  const snap = await getDocs(collection(firestore, 'projects', projectId, 'unitTypes'))
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<UnitType, 'id'>) }))
+}
+
+/** Fetch a single project listing */
+export async function getProject(projectId: string): Promise<ProjectListing | null> {
+  const firestore = requireDb()
+  const snap = await getDoc(doc(firestore, 'projects', projectId))
+  return snap.exists() ? { id: snap.id, ...(snap.data() as Omit<ProjectListing, 'id'>) } : null
+}
+
+/** Attempt to resolve a flat number to a unit type using flatNumberPattern regex */
+export function matchUnitTypeByFlat(flatNumber: string, unitTypes: UnitType[]): UnitType | null {
+  for (const ut of unitTypes) {
+    if (!ut.flatNumberPattern) continue
+    try {
+      if (new RegExp(ut.flatNumberPattern, 'i').test(flatNumber)) return ut
+    } catch {
+      // invalid regex in data — skip
+    }
+  }
+  return null
 }
 
 // ─── App Events (Timeline) ────────────────────────────────────────────────────

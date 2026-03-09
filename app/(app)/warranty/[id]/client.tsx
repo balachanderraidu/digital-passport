@@ -1,122 +1,67 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, ShieldCheck, ShieldAlert, ShieldOff, Zap, Info, Bell, Phone, FileText } from 'lucide-react'
+import {
+  ArrowLeft, Calendar, ShieldCheck, ShieldAlert, ShieldOff,
+  Zap, Info, Bell, Phone, FileText, Trash2, Loader2,
+} from 'lucide-react'
 import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
-
-interface ServiceEvent {
-  date: string
-  note: string
-}
-
-interface AssetDetail {
-  name: string
-  icon: string
-  zone: string
-  brand: string
-  model: string
-  serial: string
-  purchaseDate: string
-  warrantyExpiry: string
-  efficiency: string | null
-  invoiceLinked: boolean
-  nextService: string | null
-  serviceHistory: ServiceEvent[]
-}
-
-const DEMO_ASSETS: Record<string, AssetDetail> = {
-  a1: {
-    name: 'Daikin 2.0T Inverter AC',
-    icon: '❄️',
-    zone: 'Living Area',
-    brand: 'Daikin',
-    model: 'FTKM60TV',
-    serial: 'DK-2024-LV-001',
-    purchaseDate: '2023-04-15',
-    warrantyExpiry: '2028-04-15',
-    efficiency: 'BEE 5 Star',
-    invoiceLinked: true,
-    nextService: '2026-10-01',
-    serviceHistory: [
-      { date: '2025-10-01', note: 'Annual deep clean & gas top-up' },
-      { date: '2024-10-15', note: 'Regular service — no issues found' },
-    ],
-  },
-  a2: {
-    name: 'Sony Bravia 75" OLED',
-    icon: '📺',
-    zone: 'Living Area',
-    brand: 'Sony',
-    model: 'XR-75A95L',
-    serial: 'SN-TV-LV-005',
-    purchaseDate: '2023-05-10',
-    warrantyExpiry: '2026-05-10',
-    efficiency: null,
-    invoiceLinked: true,
-    nextService: null,
-    serviceHistory: [],
-  },
-  a3: {
-    name: 'Elica 4-Burner Hob',
-    icon: '🍳',
-    zone: 'Kitchen',
-    brand: 'Elica',
-    model: 'EHB TF HC 4B DX',
-    serial: 'EL-KCH-003',
-    purchaseDate: '2023-03-12',
-    warrantyExpiry: '2026-03-12',
-    efficiency: null,
-    invoiceLinked: false,
-    nextService: null,
-    serviceHistory: [{ date: '2025-01-15', note: 'Burner cleaning service' }],
-  },
-  a4: {
-    name: 'Modular Wardrobe — Master',
-    icon: '🚪',
-    zone: 'Master Bedroom',
-    brand: 'Spacewood',
-    model: 'Elite 8×10',
-    serial: 'SW-MB-001',
-    purchaseDate: '2023-02-28',
-    warrantyExpiry: '2033-02-28',
-    efficiency: null,
-    invoiceLinked: true,
-    nextService: null,
-    serviceHistory: [],
-  },
-  a5: {
-    name: 'Bosch Front Load Washer',
-    icon: '🫧',
-    zone: 'Utility',
-    brand: 'Bosch',
-    model: 'WAJ24268IN',
-    serial: 'BS-ULT-007',
-    purchaseDate: '2023-04-01',
-    warrantyExpiry: '2028-04-01',
-    efficiency: null,
-    invoiceLinked: true,
-    nextService: '2026-04-01',
-    serviceHistory: [{ date: '2025-04-01', note: 'Annual drum clean & filter check' }],
-  },
-  a6: {
-    name: 'Crompton Ceiling Fan',
-    icon: '🌀',
-    zone: 'Bedroom',
-    brand: 'Crompton',
-    model: 'HS Plus 1200mm',
-    serial: 'CR-BD-012',
-    purchaseDate: '2023-01-15',
-    warrantyExpiry: '2025-01-15',
-    efficiency: null,
-    invoiceLinked: false,
-    nextService: null,
-    serviceHistory: [],
-  },
-}
+import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
+import { subscribeWarrantyAssets, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
 
 export default function WarrantyDetailClient({ id }: { id: string }) {
   const router = useRouter()
-  const asset = DEMO_ASSETS[id] ?? DEMO_ASSETS['a1']
+  const { user } = useAuth()
+  const { activePropertyId } = useProperty()
+  const [asset, setAsset] = useState<WarrantyAsset | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    setLoading(true)
+    const unsub = subscribeWarrantyAssets(user.uid, (assets) => {
+      const found = assets.find((a) => a.id === id) ?? null
+      setAsset(found)
+      setLoading(false)
+    }, activePropertyId)
+    return unsub
+  }, [user, id, activePropertyId])
+
+  async function handleDelete() {
+    if (!user || !asset) return
+    setDeleting(true)
+    try {
+      await deleteWarrantyAsset(user.uid, asset.id, activePropertyId)
+      router.replace('/warranty')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh bg-vault-bg flex items-center justify-center">
+        <Loader2 size={28} className="text-gold-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!asset) {
+    return (
+      <div className="min-h-dvh bg-vault-bg flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <ShieldOff size={40} className="text-vault-text-muted opacity-40" />
+        <p className="text-base font-bold text-white">Asset not found</p>
+        <p className="text-sm text-vault-text-muted">This warranty record may have been deleted.</p>
+        <button onClick={() => router.replace('/warranty')} className="mt-2 text-sm font-semibold text-gold-500">
+          ← Back to Warranty Center
+        </button>
+      </div>
+    )
+  }
 
   const status = getWarrantyStatus(asset.warrantyExpiry)
   const daysLeft = getDaysUntil(asset.warrantyExpiry)
@@ -139,11 +84,19 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
     <div className="min-h-dvh bg-vault-bg">
       {/* Header */}
       <div className="px-5 pt-14 pb-4 bg-gradient-to-b from-vault-surface to-vault-bg">
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={() => router.back()} className="w-9 h-9 rounded-xl glass flex items-center justify-center flex-shrink-0">
-            <ArrowLeft size={18} className="text-vault-text-muted" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()} className="w-9 h-9 rounded-xl glass flex items-center justify-center flex-shrink-0">
+              <ArrowLeft size={18} className="text-vault-text-muted" />
+            </button>
+            <h1 className="text-lg font-bold text-white">Asset Detail</h1>
+          </div>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center hover:bg-red-500/20 transition-all"
+          >
+            <Trash2 size={15} className="text-red-400" />
           </button>
-          <h1 className="text-lg font-bold text-white">Asset Detail</h1>
         </div>
 
         {/* Asset card */}
@@ -176,9 +129,8 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
                 <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded-full', statusBadge)}>{statusLabel}</span>
               </span>,
             },
-            ...(asset.efficiency ? [{ icon: <Zap size={16} className="text-gold-500" />, label: 'Efficiency Rating', value: asset.efficiency }] : []),
-            { icon: <Info size={16} className="text-vault-text-muted" />, label: 'Model', value: asset.model },
-            { icon: <Info size={16} className="text-vault-text-muted" />, label: 'Serial No.', value: asset.serial },
+            ...(asset.model ? [{ icon: <Info size={16} className="text-vault-text-muted" />, label: 'Model', value: asset.model }] : []),
+            ...(asset.serialNumber ? [{ icon: <Info size={16} className="text-vault-text-muted" />, label: 'Serial No.', value: asset.serialNumber }] : []),
             ...(asset.nextService ? [{ icon: <Calendar size={16} className="text-blue-400" />, label: 'Next Service', value: <span className="text-blue-400">{formatDate(asset.nextService)}</span> }] : []),
           ].map(({ icon, label, value }) => (
             <div key={label} className="flex items-start gap-3 p-3.5 rounded-xl bg-vault-card/50 border border-vault-border">
@@ -190,15 +142,16 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
             </div>
           ))}
 
-          {/* Invoice row */}
-          {asset.invoiceLinked && (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gold-500/5 border border-gold-500/20">
+          {/* Invoice */}
+          {asset.invoiceUrl && (
+            <a href={asset.invoiceUrl} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3.5 rounded-xl bg-gold-500/5 border border-gold-500/20 hover:bg-gold-500/10 transition-all">
               <FileText size={16} className="text-gold-500 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-[10px] font-semibold text-vault-text-muted uppercase tracking-widest mb-0.5">Invoice</p>
-                <p className="text-sm font-bold text-gold-500">Invoice linked ✓</p>
+                <p className="text-sm font-bold text-gold-500">View Invoice ↗</p>
               </div>
-            </div>
+            </a>
           )}
         </div>
 
@@ -213,30 +166,33 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
             Book Service
           </button>
         </div>
+      </div>
 
-        {/* Service history */}
-        {asset.serviceHistory.length > 0 && (
-          <div>
-            <h3 className="text-sm font-bold text-white mb-3">Service History</h3>
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-px bg-vault-border" />
-              <div className="space-y-3">
-                {asset.serviceHistory.map((event, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="relative z-10 w-8 h-8 rounded-full bg-vault-surface border border-vault-border flex items-center justify-center flex-shrink-0">
-                      <span className="w-2 h-2 rounded-full bg-gold-500" />
-                    </div>
-                    <div className="flex-1 card p-3 mb-0">
-                      <p className="text-xs font-semibold text-vault-text">{event.note}</p>
-                      <p className="text-[10px] text-vault-text-muted mt-0.5">{formatDate(event.date)}</p>
-                    </div>
-                  </div>
-                ))}
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={() => setConfirmDelete(false)} />
+          <div className="fixed inset-x-5 top-1/2 -translate-y-1/2 z-50 card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <Trash2 size={18} className="text-red-400" />
               </div>
+              <h3 className="text-base font-bold text-white">Delete Asset?</h3>
+            </div>
+            <p className="text-sm text-vault-text-muted mb-5">
+              This will permanently remove <span className="font-semibold text-white">{asset.name}</span> and its warranty record.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-3 rounded-xl glass gold-border text-sm font-semibold text-vault-text">
+                Cancel
+              </button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 py-3 rounded-xl bg-red-500/80 text-sm font-bold text-white hover:bg-red-500 transition-colors flex items-center justify-center gap-2">
+                {deleting ? <><Loader2 size={14} className="animate-spin" /> Deleting…</> : 'Delete'}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   )
 }

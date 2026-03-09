@@ -112,7 +112,7 @@ export default function WarrantyPage() {
         warrantyExpiry: form.warrantyExpiry,
         nextService: form.nextService || null,
         invoiceUrl,
-      })
+      }, activePropertyId)
       setForm(DEFAULT_FORM)
       setInvoiceFile(null)
       setShowAddAsset(false)

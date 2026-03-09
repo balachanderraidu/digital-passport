@@ -137,17 +137,17 @@ export default function AssistantPage() {
   const [assets, setAssets] = useState<WarrantyAsset[]>([])
   const [snags, setSnags] = useState<Snag[]>([])
   const [property, setProperty] = useState<Property | null>(null)
+  const { activePropertyId } = useProperty()
   const bottomRef = useRef<HTMLDivElement>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 
   useEffect(() => {
     if (!user) return
-    const u1 = subscribeWarrantyAssets(user.uid, setAssets)
-    const u2 = subscribeSnags(user.uid, setSnags)
-    const u3 = subscribeProperty(user.uid, setProperty)
+    const u1 = subscribeWarrantyAssets(user.uid, setAssets, activePropertyId)
+    const u2 = subscribeSnags(user.uid, setSnags, activePropertyId)
+    const u3 = subscribeProperty(user.uid, setProperty, activePropertyId)
     return () => { u1(); u2(); u3() }
-  }, [user])
+  }, [user, activePropertyId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

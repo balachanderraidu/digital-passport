@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
-import { getProperty } from '@/lib/firestore'
+import { subscribeAllProperties } from '@/lib/firestore'
 import { registerFCMToken } from '@/lib/fcm'
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const hasChecked = useRef(false)
 
   const isDemo =
     typeof window !== 'undefined' && sessionStorage.getItem('demo_mode') === 'true'
@@ -31,10 +32,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       })
     }
 
-    // Authenticated user — redirect to onboarding if no property, unless already there
+    // Skip property check if already on onboarding
     if (pathname === '/onboarding') return
-    getProperty(user.uid).then((property) => {
-      if (!property) {
+    if (hasChecked.current) return
+    hasChecked.current = true
+
+    // Check if user has ANY property (not just 'primary')
+    const unsub = subscribeAllProperties(user.uid, (properties) => {
+      unsub() // one-shot
+      if (properties.length === 0) {
         router.replace('/onboarding')
       }
     })

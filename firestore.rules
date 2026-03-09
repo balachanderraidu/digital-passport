@@ -45,6 +45,23 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // PROJECTS (Community Database)
+    //
+    // Public read so the project search typeahead works for all users.
+    // No client-side writes — seeded via Admin SDK / Cloud Functions only.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /unitTypes/{unitTypeId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // DEFAULT: deny everything else
     // ─────────────────────────────────────────────────────────────────────────
 

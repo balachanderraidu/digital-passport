@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Camera, Upload, ChevronRight, ChevronLeft, Check, MapPin, Tag, AlertTriangle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
 import { addSnag } from '@/lib/firestore'
 import { uploadSnagPhoto } from '@/lib/storage'
 
@@ -19,6 +20,7 @@ const URGENCY_OPTS = [
 export default function NewSnagPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { activePropertyId } = useProperty()
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState(1)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -42,10 +44,9 @@ export default function NewSnagPage() {
     if (!user || !location || !category || !urgency) return
     setSubmitting(true)
     try {
-      // Build the snag title from location + category
       const title = description || `${category} issue — ${location}`
 
-      // Add snag to Firestore first to get the ID
+      // Add snag scoped to the active property
       const docRef = await addSnag(user.uid, {
         title,
         location,
@@ -53,17 +54,19 @@ export default function NewSnagPage() {
         urgency,
         status: 'open',
         photoUrl: null,
-      })
+      }, activePropertyId)
 
-      // Upload photo after we have the snag ID
+      // Upload photo and update the snag with the URL using a property-aware path
       if (photoFile) {
         const photoUrl = await uploadSnagPhoto(user.uid, docRef.id, photoFile)
-        // Update the snag with the photo URL using updateSnagStatus won't work here
-        // Instead re-use Firestore directly via updateDoc
         const { doc, updateDoc } = await import('firebase/firestore')
         const { db } = await import('@/lib/firebase')
         if (db) {
-          await updateDoc(doc(db, 'users', user.uid, 'snags', docRef.id), { photoUrl })
+          // Build the correct Firestore path based on property
+          const snagPath = activePropertyId === 'primary'
+            ? doc(db, 'users', user.uid, 'snags', docRef.id)
+            : doc(db, 'users', user.uid, 'properties', activePropertyId, 'snags', docRef.id)
+          await updateDoc(snagPath, { photoUrl })
         }
       }
 
