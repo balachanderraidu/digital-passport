@@ -167,7 +167,7 @@ export function BrochureUploadStep({ uid, onUnitTypesExtracted, onSkipToManual }
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Ruler size={10} className="text-vault-text-muted" />
-                      <span className="text-[10px] text-vault-text-muted">{ut.area.toLocaleString()} sq ft</span>
+                      <span className="text-[10px] text-vault-text-muted">{(ut.area ?? 0).toLocaleString()} sq ft</span>
                     </div>
                     <p className="text-[9px] text-vault-text-muted/70">{ut.configuration}</p>
                   </div>
