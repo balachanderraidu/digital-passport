@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Public: Project floor plan images (crowdsourced building data, not user data) ──
+    match /projects/{projectId}/floorplans/{fileName} {
+      allow read;   // public, no auth needed — floor plans are community data
+    }
+
+    // ── Authenticated: User-specific files ──
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Authenticated: Everything else requires sign-in ──
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
