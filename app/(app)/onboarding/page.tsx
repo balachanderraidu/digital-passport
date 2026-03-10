@@ -71,6 +71,7 @@ function OnboardingContent() {
   const [syncResult, setSyncResult] = useState<{ matched: number; pending: number } | null>(null)
   const [gmailError, setGmailError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [occupancy, setOccupancy] = useState<'residing' | 'rented' | 'empty' | 'renovation'>('residing')
 
   // Handle OAuth return: /onboarding?code=XXX
   useEffect(() => {
@@ -141,6 +142,7 @@ function OnboardingContent() {
             unitTypeId: linkedProject.unitType.id,
             unitTypeLabel: linkedProject.unitType.label,
             floorPlanUrl: linkedProject.unitType.floorPlanUrl ?? undefined,
+            occupancy,
           }
         : {
             name: form.name,
@@ -149,6 +151,7 @@ function OnboardingContent() {
             floorPlanType: form.floorPlanType,
             location: form.location,
             gmailLinked: gmailStatus === 'done',
+            occupancy,
           }
 
       if (isNewProperty) {
@@ -512,6 +515,33 @@ function OnboardingContent() {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Occupancy status picker */}
+            <div className="card p-4 space-y-3">
+              <p className="text-xs font-bold text-white">How is this property being used?</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'residing', label: '🏠 Self-Residing', sub: "It's my home" },
+                  { key: 'rented',   label: '🔑 Rented Out',    sub: 'Tenant occupancy' },
+                  { key: 'empty',    label: '🚪 Vacant',        sub: 'Currently empty' },
+                  { key: 'renovation', label: '🔨 Renovation',  sub: 'Under works' },
+                ] as const).map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => setOccupancy(o.key)}
+                    className={cn(
+                      'p-3 rounded-xl border text-left transition-all',
+                      occupancy === o.key
+                        ? 'border-gold-500 bg-gold-500/10'
+                        : 'border-vault-border bg-vault-card/30 hover:border-gold-500/40',
+                    )}
+                  >
+                    <p className="text-xs font-bold text-vault-text">{o.label}</p>
+                    <p className="text-[10px] text-vault-text-muted mt-0.5">{o.sub}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="card p-4 border-gold-500/20 bg-gold-500/5">

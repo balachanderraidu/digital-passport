@@ -112,6 +112,7 @@ export interface Property {
   unitTypeId?: string
   unitTypeLabel?: string
   floorPlanUrl?: string  // Firebase Storage URL for the floor plan PNG
+  occupancy?: 'residing' | 'rented' | 'empty' | 'renovation'  // how property is used
   createdAt: Timestamp | null
 }
 
