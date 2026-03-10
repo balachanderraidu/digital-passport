@@ -85,7 +85,10 @@ function OnboardingContent() {
 
   // ── Gmail handlers ────────────────────────────────────────────────────────
   async function handleGmailConnect() {
-    if (!user || !app) return
+    if (!user || !app) {
+      setGmailError('Please sign in with a real account to connect Gmail — this feature is not available in Demo Mode.')
+      return
+    }
     setGmailStatus('linking')
     setGmailError('')
     try {
@@ -415,7 +418,7 @@ function OnboardingContent() {
               </div>
             )}
 
-            {gmailStatus === 'error' && (
+            {gmailError && (
               <div className="card p-4 border-red-500/20 bg-red-500/5 flex items-start gap-3">
                 <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-red-300">{gmailError}</p>
