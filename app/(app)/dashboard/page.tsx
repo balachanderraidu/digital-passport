@@ -280,59 +280,83 @@ export default function DashboardPage() {
       {/* Floor Plan Section */}
       <div className="px-5 mt-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-white">Interactive Home Twin</h2>
-          <button
-            onClick={() => setShow3D((v) => !v)}
-            className="flex items-center gap-1 text-xs text-gold-500 font-semibold"
-          >
-            {show3D ? '3D Coming Soon ✨' : <>3D View <ChevronRight size={14} /></>}
-          </button>
+          <h2 className="text-sm font-bold text-white">
+            {property?.floorPlanUrl ? 'Floor Plan' : 'Interactive Home Twin'}
+          </h2>
+          {!property?.floorPlanUrl && (
+            <button
+              onClick={() => setShow3D((v) => !v)}
+              className="flex items-center gap-1 text-xs text-gold-500 font-semibold"
+            >
+              {show3D ? '3D Coming Soon ✨' : <>3D View <ChevronRight size={14} /></>}
+            </button>
+          )}
         </div>
 
-        {/* Isometric floor plan */}
-        <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface" style={{ height: '300px' }}>
-          <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="iso-grid" x="0" y="0" width="40" height="23" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
-                <line x1="0" y1="0" x2="40" y2="0" stroke="#FFD700" strokeWidth="0.5" />
-                <line x1="0" y1="0" x2="0" y2="23" stroke="#FFD700" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#iso-grid)" />
-          </svg>
-
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-              <rect x="20" y="20" width="220" height="140" rx="12" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="125" y="97" fill="rgba(255,215,0,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">LIVING AREA</text>
-              <rect x="260" y="20" width="120" height="100" rx="12" fill="rgba(34,197,94,0.03)" stroke="rgba(34,197,94,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="320" y="75" fill="rgba(34,197,94,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">KITCHEN</text>
-              <rect x="20" y="180" width="180" height="100" rx="12" fill="rgba(99,102,241,0.04)" stroke="rgba(99,102,241,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="110" y="234" fill="rgba(99,102,241,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">MASTER BED</text>
-              <rect x="220" y="180" width="160" height="100" rx="12" fill="rgba(59,130,246,0.03)" stroke="rgba(59,130,246,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-              <text x="300" y="234" fill="rgba(59,130,246,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">STUDY</text>
-            </svg>
-          </div>
-
-          {HOTSPOT_DEFS.map((h) => (
-            <Hotspot
-              key={h.key}
-              label={h.label}
-              x={h.x}
-              y={h.y}
-              icon={h.icon}
-              status={getZoneStatus(warrantyAssets, h.zone)}
-              onSelect={() => handleHotspotSelect(h)}
+        {property?.floorPlanUrl ? (
+          /* Real floor plan PNG from Firestore */
+          <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={property.floorPlanUrl}
+              alt={`${property.unitTypeLabel ?? property.floorPlanType} floor plan`}
+              className="w-full object-contain"
+              style={{ maxHeight: '440px' }}
+              loading="lazy"
             />
-          ))}
-
-          <div className="absolute bottom-3 right-3 flex gap-3 text-[9px] font-medium text-vault-text-muted">
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Active</div>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Expiring</div>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Expired</div>
+            <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg bg-vault-card/90 border border-vault-border backdrop-blur-sm">
+              <p className="text-[10px] font-bold text-gold-500">{property.unitTypeLabel ?? property.floorPlanType}</p>
+              <p className="text-[9px] text-vault-text-muted">{(property.area ?? 0).toLocaleString()} sq ft</p>
+            </div>
           </div>
-        </div>
-        <p className="text-center text-xs text-vault-text-muted mt-2 mb-1">Tap any node to view asset details</p>
+        ) : (
+          /* SVG wireframe fallback with interactive hotspots */
+          <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface" style={{ height: '300px' }}>
+            <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="iso-grid" x="0" y="0" width="40" height="23" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+                  <line x1="0" y1="0" x2="40" y2="0" stroke="#FFD700" strokeWidth="0.5" />
+                  <line x1="0" y1="0" x2="0" y2="23" stroke="#FFD700" strokeWidth="0.5" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#iso-grid)" />
+            </svg>
+
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="20" width="220" height="140" rx="12" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="125" y="97" fill="rgba(255,215,0,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">LIVING AREA</text>
+                <rect x="260" y="20" width="120" height="100" rx="12" fill="rgba(34,197,94,0.03)" stroke="rgba(34,197,94,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="320" y="75" fill="rgba(34,197,94,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">KITCHEN</text>
+                <rect x="20" y="180" width="180" height="100" rx="12" fill="rgba(99,102,241,0.04)" stroke="rgba(99,102,241,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="110" y="234" fill="rgba(99,102,241,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">MASTER BED</text>
+                <rect x="220" y="180" width="160" height="100" rx="12" fill="rgba(59,130,246,0.03)" stroke="rgba(59,130,246,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="300" y="234" fill="rgba(59,130,246,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">STUDY</text>
+              </svg>
+            </div>
+
+            {HOTSPOT_DEFS.map((h) => (
+              <Hotspot
+                key={h.key}
+                label={h.label}
+                x={h.x}
+                y={h.y}
+                icon={h.icon}
+                status={getZoneStatus(warrantyAssets, h.zone)}
+                onSelect={() => handleHotspotSelect(h)}
+              />
+            ))}
+
+            <div className="absolute bottom-3 right-3 flex gap-3 text-[9px] font-medium text-vault-text-muted">
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Active</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Expiring</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Expired</div>
+            </div>
+          </div>
+        )}
+        {!property?.floorPlanUrl && (
+          <p className="text-center text-xs text-vault-text-muted mt-2 mb-1">Tap any node to view asset details</p>
+        )}
       </div>
 
       {/* Open Snags */}

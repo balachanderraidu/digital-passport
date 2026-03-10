@@ -84,6 +84,7 @@ export interface UnitType {
   floorRange: [number, number]
   flatNumberPattern?: string // regex string to match flat numbers
   genericDocs: string[]      // Storage URLs for floor plans etc.
+  floorPlanUrl?: string      // Primary floor plan PNG URL (Firebase Storage)
 }
 
 export interface ProjectListing {
@@ -110,6 +111,7 @@ export interface Property {
   projectId?: string
   unitTypeId?: string
   unitTypeLabel?: string
+  floorPlanUrl?: string  // Firebase Storage URL for the floor plan PNG
   createdAt: Timestamp | null
 }
 

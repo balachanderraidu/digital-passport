@@ -140,6 +140,7 @@ function OnboardingContent() {
             projectId: linkedProject.project.id,
             unitTypeId: linkedProject.unitType.id,
             unitTypeLabel: linkedProject.unitType.label,
+            floorPlanUrl: linkedProject.unitType.floorPlanUrl ?? undefined,
           }
         : {
             name: form.name,
