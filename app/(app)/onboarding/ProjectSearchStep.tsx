@@ -79,9 +79,13 @@ export function ProjectSearchStep({ onProjectSelected, onSkipToManual, onNotFoun
   }
 
   const handleConfirm = () => {
-    if (!selectedProject || !selectedUnit) return
+    if (!selectedProject) return
     if (!flatNumber.trim()) {
-      setFlatError('Please enter your flat/unit number')
+      setFlatError('Please enter your flat / unit number first')
+      return
+    }
+    if (!selectedUnit) {
+      setFlatError('Please select a unit type above')
       return
     }
     onProjectSelected(selectedProject, selectedUnit, flatNumber.trim())
@@ -261,8 +265,7 @@ export function ProjectSearchStep({ onProjectSelected, onSkipToManual, onNotFoun
           <button
             id="confirm-unit-btn"
             onClick={handleConfirm}
-            disabled={!selectedUnit}
-            className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm flex items-center justify-center gap-2 hover:shadow-gold-glow transition-all disabled:opacity-40"
+            className="w-full py-4 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm flex items-center justify-center gap-2 hover:shadow-gold-glow transition-all"
           >
             Confirm Unit <ChevronRight size={16} />
           </button>
