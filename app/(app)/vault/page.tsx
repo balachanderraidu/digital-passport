@@ -14,6 +14,7 @@ import {
 } from '@/lib/firestore'
 import { addEvent } from '@/lib/firestore'
 import { uploadVaultFile } from '@/lib/storage'
+import SpatialViewer from '@/components/twin/SpatialViewer'
 
 const CATEGORY_META: Record<string, { label: string; icon: string; color: string; border: string }> = {
   ownership:   { label: 'Ownership Docs',   icon: '🏠', color: 'from-gold-500/20 to-gold-500/5',     border: 'border-gold-500/20' },
@@ -133,6 +134,22 @@ export default function VaultPage() {
             {(10 - parseFloat(storageUsedGB)).toFixed(2)} GB remaining · {allDocs.length} files
           </p>
         </div>
+      </div>
+
+      <div className="px-5 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-white">Property Layout (Beta)</h2>
+          <span className="text-[10px] font-bold text-vault-text-muted bg-vault-muted px-2 py-0.5 rounded-full">Interactive AI Render</span>
+        </div>
+        <SpatialViewer 
+          backgroundImage="/floor_plan_ai.jpg"
+          onAssetClick={(id, type) => {
+            alert(`Digital Passport Event:\nYou clicked a ${type} (${id}).\n\nIn the full build, this will filter the Vault below to show only documents tagged to this location.`);
+          }} 
+        />
+        <p className="text-[10px] text-vault-text-muted mt-2 text-center">
+          Pinch to zoom. Tap rooms or highlighted furniture.
+        </p>
       </div>
 
       {/* Category grid — live counts */}

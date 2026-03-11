@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Find Crop Coordinates</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; background: #eee; }
+        .container { display: flex; gap: 20px; }
+        .controls { width: 300px; padding: 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .image-pane { overflow: auto; background: white; outline: 1px solid #ccc; flex-grow: 1; position: relative; }
+        img { display: block; max-width: none; cursor: crosshair; }
+        .box { position: absolute; border: 2px solid red; background: rgba(255,0,0,0.1); pointer-events: none; }
+        .coord-list { margin-top: 10px; font-size: 13px; line-height: 1.5; white-space: pre; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; height: 300px; overflow-y: auto;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h3>Crop Tool</h3>
+            <select id="imageSelect">
+                <option value="brochure-hires/page-14-blocks-BC.png">Page 14 (BC)</option>
+                <option value="brochure-hires/page-16-block-F.png">Page 16 (F)</option>
+                <option value="brochure-hires/page-19-blocks-JK.png">Page 19 (JK)</option>
+            </select>
+            <p>Click top-left, then bottom-right of a flat.</p>
+            <div id="status">Waiting for top-left...</div>
+            <textarea id="output" style="width: 100%; height: 200px; margin-top: 20px; font-family: monospace;"></textarea>
+            <button id="clearBtn" style="margin-top: 10px; padding: 5px 10px;">Clear Current Box</button>
+        </div>
+        <div class="image-pane">
+            <img id="mainImage" src="brochure-hires/page-14-blocks-BC.png">
+            <div id="boxes"></div>
+        </div>
+    </div>
+    
+    <script>
+        const img = document.getElementById('mainImage');
+        const select = document.getElementById('imageSelect');
+        const status = document.getElementById('status');
+        const output = document.getElementById('output');
+        const boxes = document.getElementById('boxes');
+        
+        let state = 0; // 0=waiting tl, 1=waiting br
+        let tl = {x: 0, y: 0};
+        
+        let allCrops = [];
+        
+        select.addEventListener('change', (e) => {
+            img.src = e.target.value;
+            boxes.innerHTML = '';
+            state = 0;
+            status.textContent = 'Waiting for top-left...';
+        });
+        
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            state = 0;
+            status.textContent = 'Waiting for top-left...';
+            // remove last box
+            if (boxes.lastChild) {
+                boxes.removeChild(boxes.lastChild);
+                allCrops.pop();
+                updateOutput();
+            }
+        });
+        
+        img.addEventListener('click', (e) => {
+            const rect = img.getBoundingClientRect();
+            // Scale correctly based on actual image size vs displayed size
+            const scaleX = img.naturalWidth / rect.width;
+            const scaleY = img.naturalHeight / rect.height;
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+            
+            if (state === 0) {
+                tl = {x, y};
+                state = 1;
+                status.textContent = `TL clicked (${x},${y}). Waiting for bottom-right...`;
+                
+                // Add temporary indicator for TL
+                const div = document.createElement('div');
+                div.className = 'box';
+                div.id = 'temp-box';
+                div.style.left = (tl.x / scaleX) + 'px';
+                div.style.top = (tl.y / scaleY) + 'px';
+                div.style.width = '2px';
+                div.style.height = '2px';
+                div.style.backgroundColor = 'blue';
+                boxes.appendChild(div);
+                
+            } else {
+                const w = x - tl.x;
+                const h = y - tl.y;
+                
+                if (w > 0 && h > 0) {
+                    const temp = document.getElementById('temp-box');
+                    if (temp) temp.remove();
+                    
+                    const div = document.createElement('div');
+                    div.className = 'box';
+                    div.style.left = (tl.x / scaleX) + 'px';
+                    div.style.top = (tl.y / scaleY) + 'px';
+                    div.style.width = (w / scaleX) + 'px';
+                    div.style.height = (h / scaleY) + 'px';
+                    boxes.appendChild(div);
+                    
+                    const crop = {
+                        page: select.value.split('/')[1],
+                        left: tl.x,
+                        top: tl.y,
+                        width: w,
+                        height: h
+                    };
+                    allCrops.push(crop);
+                    updateOutput();
+                } else {
+                    alert("Invalid box, bottom-right must be below and to the right of top-left.");
+                }
+                
+                state = 0;
+                status.textContent = 'Waiting for top-left...';
+            }
+        });
+        
+        function updateOutput() {
+            output.value = JSON.stringify(allCrops, null, 2);
+        }
+    </script>
+</body>
+</html>
