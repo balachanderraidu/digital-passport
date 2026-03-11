@@ -174,8 +174,18 @@ export const syncGmailReceipts = onCall(
 
             if (extracted.confidence >= 0.8) {
               // Write to the primary property's warranty_assets sub-collection (multi-property aware)
-              await db.collection(`users/${uid}/properties/primary/warranty_assets`).add(assetPayload)
+              const assetRef = await db.collection(`users/${uid}/properties/primary/warranty_assets`).add(assetPayload)
               result.matched++
+              // Auto-embed for semantic search (non-fatal)
+              try {
+                const embedText_ = assetToEmbedText(assetPayload)
+                if (embedText_) {
+                  const embedding = await embedText(embedText_, geminiKey)
+                  await assetRef.update({ embedding })
+                }
+              } catch (embedErr) {
+                console.warn(`[syncGmailReceipts] Embedding failed for ${assetRef.id}:`, embedErr)
+              }
             } else {
               await db.collection(`users/${uid}/properties/primary/pending_assets`).add(assetPayload)
               result.pending++
