@@ -14,8 +14,6 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import { embedText, cosineSimilarity } from './embeddings'
 
-const db = admin.firestore()
-
 interface SearchRequest {
   query: string
   scope: 'assets' | 'vault' | 'projects'
@@ -55,6 +53,7 @@ export const semanticSearch = onCall(
     const scope = data.scope ?? 'assets'
     const topK = Math.min(data.limit ?? 10, 50) // cap at 50
     const uid = request.auth.uid
+    const db = admin.firestore()
 
     const geminiKey = process.env.GEMINI_API_KEY ?? ''
     if (!geminiKey) {
