@@ -131,52 +131,57 @@ export const syncGmailReceipts = onCall(
       const attachments = await listReceiptAttachments(oauth2Client, 60)
       console.log(`[syncGmailReceipts] Found ${attachments.length} attachments for ${uid}`)
 
-      for (const att of attachments) {
-        result.processed++
-        try {
-          const base64 = await downloadAttachment(oauth2Client, att.messageId, att.attachmentId)
-          const extracted = await extractReceiptData(base64, att.mimeType, geminiKey)
+      await Promise.all(
+        attachments.map(async (att) => {
+          result.processed++
+          try {
+            const base64 = await downloadAttachment(oauth2Client, att.messageId, att.attachmentId)
+            const extracted = await extractReceiptData(base64, att.mimeType, geminiKey)
 
-          if (!extracted) { result.skipped++; continue }
+            if (!extracted) {
+              result.skipped++
+              return
+            }
 
-          let warrantyExpiry = ''
-          if (extracted.purchase_date && extracted.warranty_period_months > 0) {
-            const d = new Date(extracted.purchase_date)
-            d.setMonth(d.getMonth() + extracted.warranty_period_months)
-            warrantyExpiry = d.toISOString().split('T')[0]
+            let warrantyExpiry = ''
+            if (extracted.purchase_date && extracted.warranty_period_months > 0) {
+              const d = new Date(extracted.purchase_date)
+              d.setMonth(d.getMonth() + extracted.warranty_period_months)
+              warrantyExpiry = d.toISOString().split('T')[0]
+            }
+
+            const assetPayload = {
+              name:                  extracted.product_name || att.filename,
+              brand:                 extracted.vendor_name,
+              model:                 extracted.model_number,
+              serialNumber:          extracted.serial_number,
+              purchaseDate:          extracted.purchase_date,
+              warrantyExpiry,
+              price:                 extracted.price,
+              currency:              extracted.currency,
+              source:                'gmail_sync',
+              gmailMessageId:        att.messageId,
+              gmailSubject:          att.subject,
+              extractionConfidence:  extracted.confidence,
+              icon:                  '📄',
+              zone:                  'Unassigned',
+              createdAt:             FieldValue.serverTimestamp(),
+            }
+
+            if (extracted.confidence >= 0.8) {
+              // Write to the primary property's warranty_assets sub-collection (multi-property aware)
+              await db.collection(`users/${uid}/properties/primary/warranty_assets`).add(assetPayload)
+              result.matched++
+            } else {
+              await db.collection(`users/${uid}/properties/primary/pending_assets`).add(assetPayload)
+              result.pending++
+            }
+          } catch (attErr) {
+            console.warn(`[syncGmailReceipts] Attachment failed (${att.filename}):`, attErr)
+            result.skipped++
           }
-
-          const assetPayload = {
-            name:                  extracted.product_name || att.filename,
-            brand:                 extracted.vendor_name,
-            model:                 extracted.model_number,
-            serialNumber:          extracted.serial_number,
-            purchaseDate:          extracted.purchase_date,
-            warrantyExpiry,
-            price:                 extracted.price,
-            currency:              extracted.currency,
-            source:                'gmail_sync',
-            gmailMessageId:        att.messageId,
-            gmailSubject:          att.subject,
-            extractionConfidence:  extracted.confidence,
-            icon:                  '📄',
-            zone:                  'Unassigned',
-            createdAt:             FieldValue.serverTimestamp(),
-          }
-
-          if (extracted.confidence >= 0.8) {
-            // Write to the primary property's warranty_assets sub-collection (multi-property aware)
-            await db.collection(`users/${uid}/properties/primary/warranty_assets`).add(assetPayload)
-            result.matched++
-          } else {
-            await db.collection(`users/${uid}/properties/primary/pending_assets`).add(assetPayload)
-            result.pending++
-          }
-        } catch (attErr) {
-          console.warn(`[syncGmailReceipts] Attachment failed (${att.filename}):`, attErr)
-          result.skipped++
-        }
-      }
+        })
+      )
 
       await db.collection(`users/${uid}/events`).add({
         type:      'gmail_sync',
