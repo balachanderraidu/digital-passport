@@ -273,27 +273,28 @@ async function main() {
   // ── Step 3: Render unique pages ──────────────────────────────────────────────
   const uniquePages = [...new Set(extracted.unitTypes.map(ut => ut.floorPlanPage ?? 0).filter(p => p > 0))]
   const pageToUrl = new Map()
-  console.log(`\n🖼️  Rendering ${uniquePages.length} floor plan page(s) at ${args.dpi}dpi...`)
+  console.log(`\n🖼️  Rendering ${uniquePages.length} floor plan page(s) at ${args.dpi}dpi concurrently...`)
 
-  for (const pageNum of uniquePages) {
-    process.stdout.write(`   Page ${pageNum}... `)
-    try {
-      const png = await renderPageToPng(args.pdf, pageNum - 1, args.dpi)
-      console.log(`rendered (${Math.round(png.length / 1024)}KB PNG)`)
+  await Promise.all(
+    uniquePages.map(async (pageNum) => {
+      try {
+        const png = await renderPageToPng(args.pdf, pageNum - 1, args.dpi)
+        const kb = Math.round(png.length / 1024)
 
-      if (!args.dryRun) {
-        const storagePath = `projects/${projectId}/floorplans/page-${pageNum}.png`
-        const url = await uploadToStorage(token, storagePath, png)
-        pageToUrl.set(pageNum, url)
-        console.log(`   📤 ${url}`)
-      } else {
-        pageToUrl.set(pageNum, `[DRY-RUN-page-${pageNum}]`)
-        console.log(`   📤 [DRY RUN]`)
+        if (!args.dryRun) {
+          const storagePath = `projects/${projectId}/floorplans/page-${pageNum}.png`
+          const url = await uploadToStorage(token, storagePath, png)
+          pageToUrl.set(pageNum, url)
+          console.log(`   ✅ Page ${pageNum} rendered (${kb}KB PNG) and uploaded: ${url}`)
+        } else {
+          pageToUrl.set(pageNum, `[DRY-RUN-page-${pageNum}]`)
+          console.log(`   ✅ Page ${pageNum} rendered (${kb}KB PNG) and uploaded: [DRY RUN]`)
+        }
+      } catch (err) {
+        console.log(`   ❌ Page ${pageNum} FAILED: ${err.message}`)
       }
-    } catch (err) {
-      console.log(`FAILED: ${err.message}`)
-    }
-  }
+    })
+  )
 
   // ── Step 4: Update Firestore unit types ──────────────────────────────────────
   console.log('\n💾 Updating Firestore unit types...')
