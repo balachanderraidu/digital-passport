@@ -327,19 +327,25 @@ const projects: {
 async function seed() {
   console.log('🌱 Seeding projects database...\n')
 
+  // Use a WriteBatch to perform all updates in a single network round-trip.
+  // This significantly improves performance compared to awaiting each write individually.
+  const batch = db.batch()
+
   for (const project of projects) {
     const projectRef = db.collection('projects').doc(project.id)
-    await projectRef.set(project.data, { merge: true })
+    batch.set(projectRef, project.data, { merge: true })
     console.log(`✅ Project: ${(project.data as { name: string }).name}`)
 
     for (const ut of project.unitTypes) {
-      await projectRef.collection('unitTypes').doc(ut.id).set(ut.data, { merge: true })
+      const utRef = projectRef.collection('unitTypes').doc(ut.id)
+      batch.set(utRef, ut.data, { merge: true })
       console.log(`   └─ Unit type: ${(ut.data as { label: string }).label}`)
     }
 
     console.log('')
   }
 
+  await batch.commit()
   console.log('🎉 Seeding complete!')
   process.exit(0)
 }
