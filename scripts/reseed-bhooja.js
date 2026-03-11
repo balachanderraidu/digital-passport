@@ -16,11 +16,13 @@ async function run() {
   const projectRef = db.collection('projects').doc('myhome-bhooja')
   const unitTypesCol = projectRef.collection('unitTypes')
 
+  const batch = db.batch()
+
   // Delete old placeholder types that were never correct for Bhooja
   const toDelete = ['2bhk-east', '2bhk-west', '25bhk-east', '25bhk-west']
   for (const id of toDelete) {
-    await unitTypesCol.doc(id).delete()
-    console.log(`Deleted: ${id}`)
+    batch.delete(unitTypesCol.doc(id))
+    console.log(`Queued delete: ${id}`)
   }
 
   // Real unit types from Myhome Bhooja brochure
@@ -95,9 +97,11 @@ async function run() {
 
   for (const ut of unitTypes) {
     const { id, ...data } = ut
-    await unitTypesCol.doc(id).set(data, { merge: true })
-    console.log(`Set: ${data.label} (${data.area} sq ft)`)
+    batch.set(unitTypesCol.doc(id), data, { merge: true })
+    console.log(`Queued set: ${data.label} (${data.area} sq ft)`)
   }
+
+  await batch.commit()
 
   console.log('\nDone! Myhome Bhooja reseeded with correct unit types.')
   process.exit(0)
