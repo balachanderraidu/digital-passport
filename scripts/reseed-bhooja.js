@@ -18,10 +18,11 @@ async function run() {
 
   // Delete old placeholder types that were never correct for Bhooja
   const toDelete = ['2bhk-east', '2bhk-west', '25bhk-east', '25bhk-west']
-  for (const id of toDelete) {
+  const deletePromises = toDelete.map(async (id) => {
     await unitTypesCol.doc(id).delete()
     console.log(`Deleted: ${id}`)
-  }
+  })
+  await Promise.all(deletePromises)
 
   // Real unit types from Myhome Bhooja brochure
   // Super built-up areas extracted from official brochure
@@ -93,11 +94,12 @@ async function run() {
     },
   ]
 
-  for (const ut of unitTypes) {
+  const setPromises = unitTypes.map(async (ut) => {
     const { id, ...data } = ut
     await unitTypesCol.doc(id).set(data, { merge: true })
     console.log(`Set: ${data.label} (${data.area} sq ft)`)
-  }
+  })
+  await Promise.all(setPromises)
 
   console.log('\nDone! Myhome Bhooja reseeded with correct unit types.')
   process.exit(0)
