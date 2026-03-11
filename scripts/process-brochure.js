@@ -297,7 +297,7 @@ async function main() {
 
   // ── Step 4: Update Firestore unit types ──────────────────────────────────────
   console.log('\n💾 Updating Firestore unit types...')
-  for (const ut of extracted.unitTypes) {
+  await Promise.all(extracted.unitTypes.map(async (ut) => {
     const label   = ut.label ?? 'Unknown'
     const typeId  = label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
     const pageNum = ut.floorPlanPage ?? 0
@@ -322,7 +322,7 @@ async function main() {
     const img = url ? '🖼️ ' : '⚠️  (no image)'
     const areaStr = ut.carpetArea > 0 ? `${ut.carpetArea} carpet` : `${ut.superBuiltUpArea} SBU`
     console.log(`   ${img}  ${label} (${areaStr} sqft)`)
-  }
+  }))
 
   console.log('\n🎉 Done!')
   if (!args.dryRun) {
