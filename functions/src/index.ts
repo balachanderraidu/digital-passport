@@ -2,12 +2,14 @@
  * Digital Passport - Firebase Cloud Functions (v5 API)
  *
  * Exports:
- *  1. initGmailAuth      - returns Google OAuth URL
- *  2. gmailOAuthCallback - exchanges OAuth code for tokens
- *  3. syncGmailReceipts  - Gmail+Gemini OCR extraction pipeline
+ *  1. initGmailAuth       - returns Google OAuth URL
+ *  2. gmailOAuthCallback  - exchanges OAuth code for tokens
+ *  3. syncGmailReceipts   - Gmail+Gemini OCR extraction pipeline
  *  4. checkWarrantyExpiry - scheduled daily warranty alerts
- *  5. processBrochure    - PDF brochure -> pending unit types review queue
- *  6. approveProject     - admin: promote pendingProject to /projects
+ *  5. processBrochure     - PDF brochure -> pending unit types review queue
+ *  6. approveProject      - admin: promote pendingProject to /projects
+ *  7. indexUserAssets     - embed user's warranty/vault items for semantic search
+ *  8. semanticSearch      - query user's assets/vault/projects by natural language
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
@@ -22,6 +24,8 @@ import {
   downloadAttachment,
 } from './gmail'
 import { extractReceiptData } from './gemini'
+import { embedText, embedPdf, assetToEmbedText } from './embeddings'
+export { semanticSearch } from './search'
 
 admin.initializeApp()
 const db = admin.firestore()
@@ -434,7 +438,18 @@ export const processBrochure = onCall(
         }
       })
 
-      // 5. Write to /pendingProjects - NOT /projects
+      // 5. Embed the PDF with Gemini Embedding 2 for semantic project search
+      let brochureEmbedding: number[] = []
+      try {
+        console.log(`[processBrochure] Generating PDF embedding...`)
+        brochureEmbedding = await embedPdf(base64Pdf, geminiKey)
+        console.log(`[processBrochure] Embedding generated: dim=${brochureEmbedding.length}`)
+      } catch (embedErr) {
+        // Non-fatal — proceed without embedding
+        console.warn('[processBrochure] Embedding failed (non-fatal):', embedErr)
+      }
+
+      // 6. Write to /pendingProjects - NOT /projects
       const pendingRef = await db.collection('pendingProjects').add({
         projectName,
         developer,
@@ -443,6 +458,7 @@ export const processBrochure = onCall(
         status: 'pending',
         storagePath: data.storagePath,
         unitTypes,
+        ...(brochureEmbedding.length > 0 ? { embedding: brochureEmbedding } : {}),
         submittedAt: FieldValue.serverTimestamp(),
       })
 
@@ -451,6 +467,7 @@ export const processBrochure = onCall(
         pendingProjectId: pendingRef.id,
         projectName,
         unitTypesCount: unitTypes.length,
+        embeddingDim: brochureEmbedding.length,
       }
     } catch (err) {
       console.error('[processBrochure] Error:', err)
@@ -525,6 +542,7 @@ export const approveProject = onCall(
         await db.collection('projects').doc(projectId).update({ verified: true })
       }
     } else {
+      const pendingData = pendingSnap.data() as typeof pending & { embedding?: number[] }
       const projectRef = await db.collection('projects').add({
         name: pending.projectName,
         developer: pending.developer,
@@ -535,6 +553,7 @@ export const approveProject = onCall(
           pending.developer,
           pending.city
         ),
+        ...(pendingData.embedding ? { embedding: pendingData.embedding } : {}),
         createdAt: FieldValue.serverTimestamp(),
         createdBy: pending.submittedBy,
       })
@@ -563,5 +582,67 @@ export const approveProject = onCall(
 
     console.log(`[approveProject] Approved: ${data.pendingProjectId} -> ${projectId}`)
     return { status: 'approved', projectId }
+  }
+)
+
+// --- 7. indexUserAssets ------------------------------------------------------
+//
+// Batch-embeds all warranty_assets (or vault_items) for a user that don't yet
+// have an embedding vector. Run once after syncGmailReceipts, or on-demand.
+// Input: { scope: 'assets' | 'vault' }
+
+type IndexScope = 'assets' | 'vault'
+
+export const indexUserAssets = onCall(
+  { timeoutSeconds: 300, memory: '512MiB' },
+  async (request): Promise<{ indexed: number; skipped: number }> => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in.')
+
+    const uid = request.auth.uid
+    const scope = (request.data as { scope?: IndexScope }).scope ?? 'assets'
+    const collectionName = scope === 'vault' ? 'vault_items' : 'warranty_assets'
+    const collectionPath = `users/${uid}/properties/primary/${collectionName}`
+
+    const geminiKey = process.env.GEMINI_API_KEY ?? ''
+    if (!geminiKey) throw new HttpsError('failed-precondition', 'Gemini API key not configured.')
+
+    // Fetch docs without embeddings
+    const snap = await db.collection(collectionPath).get()
+    const unindexed = snap.docs.filter((d) => !d.data().embedding)
+
+    console.log(
+      `[indexUserAssets] uid=${uid} scope=${scope} ` +
+      `total=${snap.size} to_index=${unindexed.length}`
+    )
+
+    let indexed = 0
+    let skipped = 0
+
+    // Process in batches of 5 to avoid rate limits
+    const BATCH = 5
+    for (let i = 0; i < unindexed.length; i += BATCH) {
+      const chunk = unindexed.slice(i, i + BATCH)
+      await Promise.all(
+        chunk.map(async (doc) => {
+          const asset = doc.data()
+          const text = assetToEmbedText(asset)
+          if (!text.trim()) {
+            skipped++
+            return
+          }
+          try {
+            const embedding = await embedText(text, geminiKey)
+            await doc.ref.update({ embedding })
+            indexed++
+          } catch (err) {
+            console.warn(`[indexUserAssets] Failed to embed doc ${doc.id}:`, err)
+            skipped++
+          }
+        })
+      )
+    }
+
+    console.log(`[indexUserAssets] Done: indexed=${indexed} skipped=${skipped}`)
+    return { indexed, skipped }
   }
 )
