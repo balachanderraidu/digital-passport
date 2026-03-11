@@ -79,17 +79,18 @@ const files = [
 
 console.log('\n📤 Uploading floor plan images...');
 const pageUrls = {};
-for (const f of files) {
+
+await Promise.all(files.map(async (f) => {
   const fullPath = join(ROOT, f.local);
   const sizeKB = Math.round(statSync(fullPath).size / 1024);
-  process.stdout.write(`   Page ${f.page} (${sizeKB}KB)... `);
+  console.log(`   Page ${f.page} (${sizeKB}KB)... `);
   await uploadPng(fullPath, f.gcsName);
   // Firebase Storage public URL format for uniform-access bucket:
   // Needs a download token OR use the Firebase REST read (works with Storage rules)
   const url = `https://${GCS_HOST}/${BUCKET}/${f.gcsName}`;
   pageUrls[f.page] = url;
-  console.log(`✅`);
-}
+  console.log(`   ✅ Page ${f.page}`);
+}));
 
 console.log('\n💾 Updating Firestore unit types...');
 const unitMap = [
@@ -99,14 +100,14 @@ const unitMap = [
   { id: '4bhk',        page: 19 },
 ];
 
-for (const ut of unitMap) {
+await Promise.all(unitMap.map(async (ut) => {
   const url = pageUrls[ut.page];
   await fsSet(`projects/myhome-bhooja/unitTypes/${ut.id}`, {
     genericDocs: { arrayValue: { values: [{ stringValue: url }] } },
     floorPlanUrl: { stringValue: url },
   });
   console.log(`   ✅ ${ut.id} → page ${ut.page}`);
-}
+}));
 
 console.log('\n🎉 All done!');
 console.log('Floor plan URLs:');
