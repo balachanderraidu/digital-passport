@@ -73,7 +73,7 @@ function OnboardingContent() {
   const [saving, setSaving] = useState(false)
   const [occupancy, setOccupancy] = useState<'residing' | 'rented' | 'empty' | 'renovation'>('residing')
 
-  // Handle OAuth return: /onboarding?code=XXX
+  // Handle OAuth return: /onboarding?code=<CODE>
   useEffect(() => {
     const code = searchParams?.get('code')
     if (!code || !user || gmailStatus !== 'idle') return
