@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting & Functions
+name: Deploy to Firebase Hosting
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install frontend dependencies
+      - name: Install dependencies
         run: npm ci
 
       - name: Build Next.js (static export)
@@ -34,33 +34,5 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
           NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY }}
 
-      - name: Install Functions dependencies
-        run: npm ci
-        working-directory: functions
-
-      - name: Build Functions (TypeScript → JS)
-        run: npm run build
-        working-directory: functions
-
-      - name: Deploy to Firebase (Hosting + Functions + Rules)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          # Deploy hosting + functions + firestore rules in one step
-          entryPoint: .
-          target: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-
-      - name: Set Firebase Functions runtime config
-        run: |
-          npx firebase-tools functions:config:set \
-            google.oauth_client_id="${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}" \
-            google.oauth_client_secret="${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}" \
-            google.oauth_redirect_uri="${{ secrets.GOOGLE_OAUTH_REDIRECT_URI }}" \
-            google.gemini_api_key="${{ secrets.GEMINI_API_KEY }}"
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        # Only runs after a successful deploy — sets runtime config in Firebase
-        continue-on-error: true
+      - name: Deploy hosting to Firebase
+        run: npx firebase-tools deploy --only hosting --project ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }} --non-interactive

@@ -14,6 +14,10 @@ import {
   type Property,
 } from '@/lib/firestore'
 import { getWarrantyStatus, getDaysUntil } from '@/lib/utils'
+import {
+  DEMO_WARRANTY_ASSETS, DEMO_SNAGS, DEMO_PROPERTY,
+  DEMO_ITEM_LINKS, DEMO_TIMELINE_EVENTS, DEMO_ROOM_SPECS,
+} from '@/lib/demo-data'
 
 interface Message {
   id: string
@@ -27,29 +31,73 @@ const QUICK_CHIPS = [
   { label: '🔨 Open snags', query: 'Show me all open snags' },
   { label: '🏠 My property', query: 'Tell me about my property' },
   { label: '❄️ AC details', query: 'What is my AC model and warranty?' },
-  { label: '📊 Summary', query: 'Give me a full home summary' },
+  { label: '🔧 Recent service', query: 'What was the last service done?' },
+  { label: '💰 Service cost', query: 'How much have I spent on services?' },
+  { label: '📋 Summary', query: 'Give me a full home summary' },
 ]
 
 function generateReply(
   query: string,
   assets: WarrantyAsset[],
   snags: Snag[],
-  property: Property | null
+  property: Property | null,
+  isDemo: boolean
 ): string {
   const q = query.toLowerCase()
 
   // Property queries
   if (q.includes('property') || q.includes('home') || q.includes('house') || q.includes('flat') || q.includes('apartment')) {
+    if (isDemo) {
+      const p = DEMO_PROPERTY
+      return `🏠 **${p.name}**\n\nUnit: ${p.unit}\nLocation: ${p.location}\nType: 3BHK East-facing · Floor 12\nCarpet Area: 1,456 sq ft (UDS: 312 sq ft)\nDeveloper: Prestige Estates\nRERA: P02400005021\nPossession: 1 Sep 2024\nStatus: ${p.occupancy !== 'renovation' ? 'Passive (Occupied)' : 'Active (Under Construction)'}`
+    }
     if (!property) return "I don't see a property set up yet. Head to Onboarding to add your home details."
     return `🏠 **${property.name}**\n\nUnit: ${property.unit || 'N/A'}\nLocation: ${property.location || 'N/A'}\nType: ${property.floorPlanType || 'N/A'}\nArea: ${property.area > 0 ? `${property.area} sq ft` : 'N/A'}\nGmail sync: ${property.gmailLinked ? '✅ Connected' : '❌ Not connected'}`
+  }
+
+  // Service cost / spending queries
+  if (q.includes('cost') || q.includes('spend') || q.includes('spent') || q.includes('money') || q.includes('₹') || q.includes('rupee')) {
+    if (isDemo) {
+      const allEvents = Object.values(DEMO_ITEM_LINKS).flatMap(link => link.serviceHistory ?? [])
+      const total = allEvents.reduce((sum, e) => sum + (e.cost ?? 0), 0)
+      const year2025 = allEvents.filter(e => e.date.startsWith('2025')).reduce((sum, e) => sum + (e.cost ?? 0), 0)
+      const free = allEvents.filter(e => e.cost === 0).length
+      return `💰 **Service Spend Summary**\n\nTotal across all appliances: ₹${total.toLocaleString()}\n2025 YTD: ₹${year2025.toLocaleString()}\nWarranty claims (free): ${free} event${free !== 1 ? 's' : ''}\n\nMost serviced: LG AC (3 events, ₹2,050 total)\nNext due: Panasonic AC in ~275 days`
+    }
+    return `I can track your service costs once you log service events against your warranty assets. Head to Warranty Center → tap an asset → Service History.`
+  }
+
+  // Recent service queries
+  if (q.includes('last service') || q.includes('recent service') || q.includes('latest service') || q.includes('serviced')) {
+    if (isDemo) {
+      const latest = DEMO_TIMELINE_EVENTS
+        .filter(e => e.category === 'service')
+        .sort((a, b) => b.date.localeCompare(a.date))[0]
+      return `🔧 **Most Recent Service**\n\n${latest.icon} ${latest.title}\n📅 ${new Date(latest.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n${latest.detail}\n\nTap the Property Timeline on the Home screen to see all 22 service and installation events.`
+    }
+    return `Service history is tracked per appliance. Open an asset in the Warranty Center to view its service timeline.`
+  }
+
+  // Room / spec queries
+  if (q.includes('room') || q.includes('kitchen') || q.includes('bedroom') || q.includes('living') || q.includes('bathroom') || q.includes('flooring') || q.includes('paint') || q.includes('wall') || q.includes('finish') || q.includes('spec')) {
+    if (isDemo && DEMO_ROOM_SPECS) {
+      const rooms = Object.keys(DEMO_ROOM_SPECS)
+      const specRoom = rooms.find(r => q.includes(r.toLowerCase())) ?? rooms[0]
+      const spec = DEMO_ROOM_SPECS[specRoom]
+      if (spec) {
+        return `🏠 **${specRoom} Specifications**\n\nFlooring: ${spec.flooring ?? 'N/A'}\nWall finish: ${spec.wallFinish ?? 'N/A'}\nPaint: ${spec.paintColor ?? 'N/A'}\nCeiling: ${spec.ceiling ?? 'N/A'}\n\nTap the room on the Home Twin floor plan to see full specs, furniture, and linked snags.`
+      }
+    }
+    return `Room specifications are in your Home Twin. Tap any room on the floor plan to see flooring, paint codes, wall finish, and furniture specs.`
   }
 
   // Summary query
   if (q.includes('summary') || q.includes('overview') || q.includes('everything') || q.includes('all')) {
     const expiringCount = assets.filter((a) => getWarrantyStatus(a.warrantyExpiry) === 'expiring').length
     const openSnags = snags.filter((s) => s.status === 'open').length
-    const propName = property?.name ?? 'your home'
-    return `📋 **${propName} Summary**\n\n🛡️ Warranties: ${assets.length} total, ${expiringCount} expiring soon\n🔨 Snags: ${openSnags} open, ${snags.length} total\n📦 Assets tracked: ${assets.length}\n${property ? `\n📍 ${property.unit} · ${property.location}` : ''}`
+    const propName = isDemo ? DEMO_PROPERTY.name : property?.name ?? 'your home'
+    const extraDemo = isDemo ? `\n🔧 Service events: 12 logged · ₹3,600 spent in 2025\n🏗️ Passport mode: ${DEMO_PROPERTY.occupancy !== 'renovation' ? 'Passive (Occupied)' : 'Active (Construction)'}` : ''
+    return `📋 **${propName} Summary**\n\n🛡️ Warranties: ${assets.length} total, ${expiringCount} expiring soon\n🔨 Snags: ${openSnags} open, ${snags.length} total\n📦 Assets tracked: ${assets.length}${extraDemo}${property || isDemo ? `\n\n📍 ${isDemo ? `${DEMO_PROPERTY.unit} · ${DEMO_PROPERTY.location}` : `${property!.unit} · ${property!.location}`}` : ''}`
   }
 
   // Warranty queries
@@ -91,7 +139,7 @@ function generateReply(
   }
 
   // AC-specific queries
-  if (q.includes('ac') || q.includes('air condition') || q.includes('daikin') || q.includes('blue star')) {
+  if (q.includes('ac') || q.includes('air condition') || q.includes('daikin') || q.includes('lg') || q.includes('panasonic')) {
     const acAssets = assets.filter((a) =>
       a.name.toLowerCase().includes('ac') ||
       a.name.toLowerCase().includes('air') ||
@@ -104,12 +152,7 @@ function generateReply(
     ).join('\n\n')
   }
 
-  // Paint / interior queries
-  if (q.includes('paint') || q.includes('colour') || q.includes('color') || q.includes('wall') || q.includes('finish')) {
-    return "Paint codes and finish specs are stored in your Home Vault under 🎨 Interior Specs. Head to the Vault tab and open that category to find the detailed spec sheet."
-  }
-
-  // Asset count / summary
+  // Asset count / list
   if (q.includes('asset') || q.includes('how many') || q.includes('total') || q.includes('list')) {
     if (assets.length === 0)
       return "No assets tracked yet. Add your first one in the Warranty Center."
@@ -117,12 +160,20 @@ function generateReply(
     return `Your Passport contains ${assets.length} asset${assets.length !== 1 ? 's' : ''} across ${zones.length} zone${zones.length !== 1 ? 's' : ''}:\n\n${assets.map((a) => `${a.icon} ${a.name} · ${a.zone}`).join('\n')}`
   }
 
+  // Vault / document queries
+  if (q.includes('vault') || q.includes('document') || q.includes('invoice') || q.includes('gst') || q.includes('agreement')) {
+    return isDemo
+      ? `📂 **Vault Documents**\n\nYour Demo Vault has 7 documents across 6 categories:\n• 📄 Sale Agreement – Oriana Unit 1202\n• 🏠 Occupancy Certificate\n• 🔧 Maintenance Schedule 2025\n• 🗺️ Architectural Floor Plan\n• 🧾 GST Invoice – ₹14,80,000\n• 📖 LG AC Installation Manual\n• 🛡️ Extended Warranty Certificate\n\nTap the Vault tab to search and filter documents.`
+      : `Your documents are stored in the Vault tab. Use the search bar to find specific files, or filter by category.`
+  }
+
   // Fallback
-  return `I searched your Digital Passport but couldn't find a specific match for "${query}". Try asking about warranties, snags, paint codes, your property details, or specific appliances. You can also browse the Vault or Warranty Center directly.`
+  return `I searched your Digital Passport but couldn't find a specific match for "${query}". Try asking about warranties, snags, service history, room specs, property details, or specific appliances.`
 }
 
 export default function AssistantPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const isDemo = !authLoading && !user
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -140,6 +191,13 @@ export default function AssistantPage() {
   const { activePropertyId } = useProperty()
   const bottomRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  // Demo mode — load static demo data
+  useEffect(() => {
+    if (!isDemo) return
+    setAssets(DEMO_WARRANTY_ASSETS as unknown as WarrantyAsset[])
+    setSnags(DEMO_SNAGS as unknown as Snag[])
+  }, [isDemo])
 
   useEffect(() => {
     if (!user) return
@@ -162,7 +220,7 @@ export default function AssistantPage() {
 
     await new Promise((r) => setTimeout(r, 500 + Math.random() * 500))
 
-    const reply = generateReply(text, assets, snags, property)
+    const reply = generateReply(text, assets, snags, property, isDemo)
     const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: reply, timestamp: new Date() }
     setMessages((prev) => [...prev, aiMsg])
     setThinking(false)
@@ -196,7 +254,9 @@ export default function AssistantPage() {
     setMessages([{
       id: '0',
       role: 'assistant',
-      text: "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, property details, and more.",
+      text: isDemo
+        ? `Hi! I'm your Digital Passport AI, trained on Oriana Unit 1202. Ask me about warranties (${DEMO_WARRANTY_ASSETS.length} tracked), open snags, service history, room specs, or property details.`
+        : "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, property details, and more.",
       timestamp: new Date(),
     }])
   }

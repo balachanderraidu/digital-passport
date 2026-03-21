@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeWarrantyAssets, addWarrantyAsset, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
 import { uploadInvoice } from '@/lib/storage'
-import { DEMO_WARRANTY_ASSETS, DEMO_PROPERTY } from '@/lib/demo-data'
+import { DEMO_WARRANTY_ASSETS, DEMO_PROPERTY, DEMO_ITEM_LINKS } from '@/lib/demo-data'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
 
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
@@ -276,6 +276,32 @@ export default function WarrantyPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* Service metadata — demo mode */}
+                        {(() => {
+                          const key = Object.keys(DEMO_ITEM_LINKS).find(k =>
+                            asset.name.toLowerCase().includes(k.split(' ')[0].toLowerCase()) ||
+                            k.toLowerCase().includes(asset.name.split(' ')[0].toLowerCase())
+                          )
+                          const link = key ? DEMO_ITEM_LINKS[key] : null
+                          const history = link?.serviceHistory ?? []
+                          if (history.length === 0) return null
+                          const lastSvc = [...history].sort((a, b) => b.date.localeCompare(a.date))[0]
+                          const totalCost = history.reduce((s, e) => s + (e.cost ?? 0), 0)
+                          const daysSince = Math.round((Date.now() - new Date(lastSvc.date).getTime()) / 86400000)
+                          return (
+                            <div className="mt-2 flex items-center gap-3 pt-2 border-t border-vault-border/40">
+                              <span className="text-[9px] text-vault-text-muted flex items-center gap-1">
+                                🔧 <span className="font-semibold text-vault-text">Last serviced</span> {daysSince}d ago
+                              </span>
+                              {totalCost > 0 && (
+                                <span className="text-[9px] text-vault-text-muted ml-auto">
+                                  ₹{totalCost.toLocaleString()} total
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </div>
                       <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
                     </div>

@@ -408,6 +408,34 @@ export default function LoginPage() {
         <p className="text-center text-[10px] text-vault-muted mt-6 leading-relaxed">
           By continuing, you agree to our Terms of Service and Privacy Policy.
         </p>
+
+        {/* Active vs Passive concept explainer */}
+        <div className="mt-8 pt-6 border-t border-vault-border">
+          <p className="text-[10px] font-bold text-vault-text-muted uppercase tracking-widest text-center mb-4">How it works</p>
+          <div className="space-y-2.5">
+            <div className="flex gap-3 px-3 py-2.5 rounded-xl bg-vault-card/50 border border-vault-border border-l-2 border-l-amber-500">
+              <span className="text-lg flex-shrink-0">🏗️</span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Active Passport</p>
+                <p className="text-[10px] text-vault-text-muted leading-relaxed mt-0.5">During construction — track snags, contractor contacts, defect resolution, and room-by-room completion.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 px-3 py-2.5 rounded-xl bg-vault-card/50 border border-vault-border border-l-2 border-l-emerald-500">
+              <span className="text-lg flex-shrink-0">🏠</span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Passive Passport</p>
+                <p className="text-[10px] text-vault-text-muted leading-relaxed mt-0.5">Once you move in — warranties, appliance service history, vault documents, and property timeline.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 px-3 py-2.5 rounded-xl bg-vault-card/50 border border-vault-border border-l-2 border-l-gold-500">
+              <span className="text-lg flex-shrink-0">✨</span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gold-500">AI Assistant</p>
+                <p className="text-[10px] text-vault-text-muted leading-relaxed mt-0.5">Ask anything — expiring warranties, service costs, room specs, open snags, or property details.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
