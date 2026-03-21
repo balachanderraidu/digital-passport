@@ -274,8 +274,134 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
   },
 }
 
+// ─── Item Cross-Reference Layer ────────────────────────────────────────────────
+// Everything hangs off Room → Spec → Item.
+// This layer links each named item to its warranty, vault doc, snags, and service history.
+
+export interface ServiceEvent {
+  date: string          // YYYY-MM-DD
+  type: 'Installation' | 'Annual Service' | 'Repair' | 'Inspection' | 'Cleaning'
+  tech: string          // technician / company name
+  contact?: string      // phone or email of the technician/company
+  notes: string         // description of what was done
+  invoiceRef?: string   // service invoice / job-order number
+  cost?: number         // ₹
+}
+
+export interface ItemLink {
+  warrantyId?: string       // key into DEMO_WARRANTY_ASSETS
+  vaultDocId?: string       // key into DEMO_VAULT_DOCS (flat)
+  snagIds?: string[]        // keys into DEMO_SNAGS / DEMO_SNAGS_ACTIVE
+  serviceHistory?: ServiceEvent[]
+}
+
+/** Keyed by the exact furniture/spec item name as it appears in DEMO_ROOM_SPECS */
+export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
+
+  // ── Living Room ──────────────────────────────────────────────────────────────
+  '1.5T LG Split AC (window right)': {
+    warrantyId: 'wa-1',
+    serviceHistory: [
+      { date: '2024-03-18', type: 'Installation', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Unit installed, tested and commissioned. Gas charged at factory spec.', invoiceRef: 'LG-INST-2024-0012', cost: 0 },
+      { date: '2024-09-05', type: 'Annual Service', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Indoor/outdoor coil cleaned, drain pipe flushed, gas pressure verified (8.2 bar). Filter washed.', invoiceRef: 'LG-SVC-2024-0891', cost: 850 },
+      { date: '2025-03-10', type: 'Annual Service', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Full service done — coil cleaned, refrigerant topped up 150g, remote battery replaced. Warranty expires in 15 days; renewal advised.', invoiceRef: 'LG-SVC-2025-0214', cost: 1200 },
+    ],
+  },
+  'Samsung 55″ QLED TV on wall mount': {
+    warrantyId: 'wa-2',
+    serviceHistory: [
+      { date: '2024-08-22', type: 'Installation', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'TV wall-mounted (75° tilt bracket), calibrated for room ambient lighting conditions.', invoiceRef: 'SC-INST-2024-0445', cost: 0 },
+    ],
+  },
+
+  // ── Kitchen ──────────────────────────────────────────────────────────────────
+  'Samsung 265L double-door refrigerator': {
+    warrantyId: 'wa-4',
+    serviceHistory: [
+      { date: '2024-09-01', type: 'Installation', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'Refrigerator placed and levelled. Initial cooling cycle complete.', invoiceRef: 'SC-INST-2024-0446', cost: 0 },
+      { date: '2025-01-15', type: 'Inspection', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'Condenser coils cleaned. Door seals checked — minor gap on right door corrected (no charge, warranty visit).', invoiceRef: 'SC-INSP-2025-0088', cost: 0 },
+    ],
+  },
+  'LG 28L microwave (built-in shelf)': {
+    warrantyId: 'wa-5',
+    serviceHistory: [
+      { date: '2024-09-05', type: 'Installation', tech: 'Self', notes: 'Built into the shelf above counter using Hafele mounting kit. Turntable and timer verified.', cost: 0 },
+    ],
+  },
+  'IFB dishwasher (under-counter)': {
+    warrantyId: 'wa-3',
+    serviceHistory: [
+      { date: '2024-09-10', type: 'Installation', tech: 'IFB Authorised – Hyderabad', contact: '+91 73829 44001', notes: 'Plumbing connection made to existing supply line under counter. Test cycle completed — no leaks detected.', invoiceRef: 'IFB-INST-2024-0203', cost: 0 },
+      { date: '2024-12-20', type: 'Cleaning', tech: 'Self', notes: 'Filter basket descaled using dishwasher cleaner. Limescale removed from spray arms. Door seal wiped.', cost: 0 },
+      { date: '2025-02-18', type: 'Repair', tech: 'IFB Authorised – Hyderabad', contact: '+91 73829 44001', notes: 'Inlet water valve replaced — unit was displaying E3 error. Valve sourced from IFB warehouse. Part covered under warranty.', invoiceRef: 'IFB-REP-2025-0041', cost: 0 },
+    ],
+  },
+  'Modular kitchen — L-shape layout (Hafele fittings)': {
+    vaultDocId: 'vd-4',
+    snagIds: ['sn-2'],
+    serviceHistory: [
+      { date: '2024-08-28', type: 'Inspection', tech: 'Hafele Service Partner – Interior Touch', contact: '+91 99890 32211 · interior.touch.hyd@gmail.com', notes: 'Post-installation snag inspection. Cabinet door hinges adjusted, drawer runners aligned to specification.', invoiceRef: 'HFP-INSP-2024-0018', cost: 0 },
+      { date: '2025-03-05', type: 'Repair', tech: 'Hafele Service Partner – Interior Touch', contact: '+91 99890 32211', notes: 'Right upper cabinet door realigned — screw anchor had vibrated loose. Fischer plug replaced with M6 anchor. Snag sn-2 status updated to In Progress.', invoiceRef: 'HFP-REP-2025-0007', cost: 350 },
+    ],
+  },
+
+  // ── Master Bedroom ───────────────────────────────────────────────────────────
+  'Panasonic 1.5T inverter AC': {
+    warrantyId: 'wa-7',
+    serviceHistory: [
+      { date: '2024-10-02', type: 'Installation', tech: 'Panasonic Service – Hyderabad', contact: '+91 80001 23456', notes: 'Installed in master bedroom. Star-rated inverter compressor tested at rated load. Earthing verified.', invoiceRef: 'PAN-INST-2024-0088', cost: 0 },
+      { date: '2025-02-28', type: 'Annual Service', tech: 'Panasonic Service – Hyderabad', contact: '+91 80001 23456', notes: 'Pre-summer service: indoor/outdoor coil washed, drain pan cleared, inverter board firmware updated to v3.1.2.', invoiceRef: 'PAN-SVC-2025-0031', cost: 950 },
+    ],
+  },
+  'Walk-in wardrobe (6-door sliding, Italian laminate)': {
+    snagIds: [],
+    serviceHistory: [
+      { date: '2024-09-01', type: 'Inspection', tech: 'Prism Interiors – Hyderabad', contact: 'prism.interiors.hyd@gmail.com · +91 98100 77654', notes: 'Post-installation check: all 6 sliding panels aligned and smooth. Soft-close mechanism tested on all doors. Locking mechanism verified.', invoiceRef: 'PRISM-INSP-2024-0031', cost: 0 },
+    ],
+  },
+
+  // ── Bathroom (en-suite + common) ─────────────────────────────────────────────
+  'Racold 25L water heater': {
+    warrantyId: 'wa-6',
+    snagIds: [],
+    serviceHistory: [
+      { date: '2024-08-30', type: 'Installation', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Unit wall-mounted above shower point. Pressure relief valve tested (opens at 8 bar). Earthing loop verified with tester.', invoiceRef: 'RAC-INST-2024-0199', cost: 0 },
+      { date: '2025-01-10', type: 'Annual Service', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Magnesium anode rod inspected — 30% consumed, still healthy (replacement advised in ~18 months). Tank flushed of sediment. Thermostat recalibrated to 55°C.', invoiceRef: 'RAC-SVC-2025-0012', cost: 600 },
+    ],
+  },
+  'Dyson V11 Vacuum Cleaner': {
+    warrantyId: 'wa-8',
+    serviceHistory: [
+      { date: '2023-06-15', type: 'Installation', tech: 'Self', notes: 'Unboxed and assembled. All accessories tested: floor head, crevice tool, mini motorized tool.', cost: 0 },
+      { date: '2024-06-10', type: 'Cleaning', tech: 'Self', notes: 'HEPA filter washed and dried 24h. Bin emptied and rinsed. Brush bar removed — hair tangled at ends cleared.', cost: 0 },
+    ],
+  },
+
+  // ── Flooring snag cross-links ────────────────────────────────────────────────
+  'Anti-skid vitrified tile (600×600 mm, Terracotta)': {
+    snagIds: ['sn-3'],   // Balcony waterproofing peeling near drain
+  },
+  'Kajaria Porcelain (800×800 mm), Light Beige': {
+    snagIds: ['sn-1'],   // Bathroom floor tiles cracked
+  },
+  'Frameless shower partition (8mm glass)': {
+    snagIds: ['sn-5'],   // Bedroom 2 window sealing gap (closest demo snag)
+  },
+
+  // ── Vault doc links ───────────────────────────────────────────────────────────
+  'Laminate wood flooring (8mm, Walnut finish)': {
+    vaultDocId: 'vd-4',  // Interior specs / architectural floor plan
+  },
+  'Gypsum false ceiling with LED coves, 10 ft height': {
+    vaultDocId: 'vd-3',  // Maintenance schedule
+  },
+  'Appliance Warranty Card Bundle': {
+    vaultDocId: 'vd-7',
+  },
+}
 
 // ─── Warranty Assets ──────────────────────────────────────────────────────────
+
 
 export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
