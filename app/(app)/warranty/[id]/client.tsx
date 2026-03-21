@@ -10,16 +10,28 @@ import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeWarrantyAssets, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
+import { DEMO_WARRANTY_ASSETS } from '@/lib/demo-data'
 
 export default function WarrantyDetailClient({ id }: { id: string }) {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { activePropertyId } = useProperty()
   const [asset, setAsset] = useState<WarrantyAsset | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  const isDemo = !authLoading && !user
+
+  // Demo mode
+  useEffect(() => {
+    if (!isDemo) return
+    const found = DEMO_WARRANTY_ASSETS.find((a) => a.id === id) ?? null
+    setAsset(found)
+    setLoading(false)
+  }, [isDemo, id])
+
+  // Real user
   useEffect(() => {
     if (!user) return
     setLoading(true)
@@ -91,12 +103,14 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
             </button>
             <h1 className="text-lg font-bold text-white">Asset Detail</h1>
           </div>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center hover:bg-red-500/20 transition-all"
-          >
-            <Trash2 size={15} className="text-red-400" />
-          </button>
+          {!isDemo && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center hover:bg-red-500/20 transition-all"
+            >
+              <Trash2 size={15} className="text-red-400" />
+            </button>
+          )}
         </div>
 
         {/* Asset card */}

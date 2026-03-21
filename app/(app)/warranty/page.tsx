@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeWarrantyAssets, addWarrantyAsset, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
 import { uploadInvoice } from '@/lib/storage'
+import { DEMO_WARRANTY_ASSETS, DEMO_PROPERTY } from '@/lib/demo-data'
+import { PassportModeBadge } from '@/components/PassportModeBadge'
 
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
 
@@ -59,7 +61,7 @@ const DEFAULT_FORM: AssetForm = {
 
 export default function WarrantyPage() {
   const { user, loading: authLoading } = useAuth()
-  const { activePropertyId } = useProperty()
+  const { activePropertyId, activeProperty } = useProperty()
   const [filter, setFilter] = useState<FilterTab>('all')
   const [showAddAsset, setShowAddAsset] = useState(false)
   const [assets, setAssets] = useState<WarrantyAsset[]>([])
@@ -69,6 +71,16 @@ export default function WarrantyPage() {
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const invoiceRef = useRef<HTMLInputElement>(null)
 
+  const isDemo = !authLoading && !user
+
+  // Demo mode
+  useEffect(() => {
+    if (!isDemo) return
+    setAssets(DEMO_WARRANTY_ASSETS)
+    setLoadingAssets(false)
+  }, [isDemo])
+
+  // Real user
   useEffect(() => {
     if (!user) return
     setLoadingAssets(true)
@@ -136,7 +148,10 @@ export default function WarrantyPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Warranty Center</h1>
-            <p className="text-sm text-vault-text-muted mt-0.5">Service & warranty automation</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-sm text-vault-text-muted">Service & warranty automation</p>
+              <PassportModeBadge occupancy={isDemo ? DEMO_PROPERTY.occupancy : activeProperty?.occupancy} />
+            </div>
           </div>
           <button
             onClick={() => setShowAddAsset(true)}

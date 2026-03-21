@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, FileText, Loader2, Sparkles, CheckCircle2, AlertCircle, X, BedDouble, Bath, Ruler, ChevronRight } from 'lucide-react'
+import {
+  Upload, FileText, Loader2, Sparkles, CheckCircle2,
+  AlertCircle, BedDouble, Bath, Ruler, ChevronRight, Building2,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type UnitType } from '@/lib/firestore'
 import { ref, uploadBytesResumable } from 'firebase/storage'
@@ -14,25 +17,52 @@ interface BrochureUploadStepProps {
   onUnitTypesExtracted: (
     projectId: string,
     projectName: string,
-    unitTypes: UnitType[]
+    unitTypes: UnitType[],
+    flatNumber: string,
   ) => void
   onSkipToManual: () => void
 }
 
 type StepState = 'idle' | 'uploading' | 'processing' | 'done' | 'error'
 
-export function BrochureUploadStep({ uid, onUnitTypesExtracted, onSkipToManual }: BrochureUploadStepProps) {
+/** Derive floor number from a raw unit number string.
+ *  e.g. "3301" with maxFloor=36  → 33
+ *       "1001" with maxFloor=15  → 10
+ */
+function deriveFloor(unitNum: string, maxFloor: number): number | null {
+  const digits = unitNum.replace(/\D/g, '')
+  if (!digits || digits.length < 2) return null
+  const floorDigits = maxFloor >= 100 ? 3 : maxFloor >= 10 ? 2 : 1
+  const floor = parseInt(digits.slice(0, floorDigits), 10)
+  return floor > 0 && floor <= maxFloor ? floor : null
+}
+
+export function BrochureUploadStep({
+  uid,
+  onUnitTypesExtracted,
+  onSkipToManual,
+}: BrochureUploadStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [stepState, setStepState] = useState<StepState>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
+
+  // Extraction results
   const [extractedProject, setExtractedProject] = useState('')
   const [extractedTypes, setExtractedTypes] = useState<UnitType[]>([])
-  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(null)
-  const [flatNumber, setFlatNumber] = useState('')
-  const [flatError, setFlatError] = useState('')
+  const [towers, setTowers] = useState<string[]>([])
   const [projectId, setProjectId] = useState('')
+
+  // Unit selection
+  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(null)
+  const [selectedTower, setSelectedTower] = useState('')
+  const [unitNumber, setUnitNumber] = useState('')
+  const [unitError, setUnitError] = useState('')
+
+  const derivedFloor = selectedUnit
+    ? deriveFloor(unitNumber, selectedUnit.floorRange?.[1] ?? 40)
+    : null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
@@ -55,96 +85,83 @@ export function BrochureUploadStep({ uid, onUnitTypesExtracted, onSkipToManual }
     setError('')
 
     try {
-      // 1. Upload to Firebase Storage
       const storageRef = ref(storage!, `brochures/${uid}/${Date.now()}_${file.name}`)
       const uploadTask = uploadBytesResumable(storageRef, file)
 
       await new Promise<void>((resolve, reject) => {
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100))
-          },
+        uploadTask.on('state_changed',
+          (s) => setUploadProgress(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
           reject,
-          resolve
+          resolve,
         )
       })
 
       const storagePath = storageRef.fullPath
       setStepState('processing')
 
-      // 2. Call Cloud Function to process brochure
       const functions = getFunctions(app)
       const processBrochure = httpsCallable<
         { storagePath: string; uid: string },
-        { projectId: string; projectName: string; unitTypes: UnitType[] }
-      >(functions, 'processBrochure')
+        { projectId: string; projectName: string; towers: string[]; unitTypes: UnitType[] }
+      >(functions, 'processBrochure', { timeout: 300_000 })
 
       const result = await processBrochure({ storagePath, uid })
-      const { projectId: pid, projectName, unitTypes } = result.data
+      const { projectId: pid, projectName, towers: extractedTowers, unitTypes } = result.data
 
       setProjectId(pid)
       setExtractedProject(projectName)
       setExtractedTypes(unitTypes)
+      setTowers(extractedTowers ?? [])
       setStepState('done')
     } catch (err) {
       console.error('[brochure process]', err)
-      setError('Could not process the brochure. Please try a clearer scan or skip to manual entry.')
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(`Processing failed: ${msg}`)
       setStepState('error')
     }
   }
 
   const handleConfirm = () => {
     if (!selectedUnit) return
-    if (!flatNumber.trim()) {
-      setFlatError('Please enter your flat/unit number')
+    if (!unitNumber.trim()) {
+      setUnitError('Please enter your flat/unit number')
       return
     }
-    onUnitTypesExtracted(projectId, extractedProject, [selectedUnit])
+    const fullUnit = [selectedTower, unitNumber.trim()].filter(Boolean).join('-')
+    onUnitTypesExtracted(projectId, extractedProject, [selectedUnit], fullUnit)
   }
 
-  // ── Done state: pick unit type ─────────────────────────────────────────────
+  // ── Done state ─────────────────────────────────────────────────────────────
   if (stepState === 'done' && extractedTypes.length > 0) {
     return (
       <div className="space-y-5 animate-fade-in">
+        {/* Success banner */}
         <div className="card p-4 border-green-500/20 bg-green-500/5 flex items-center gap-3">
           <CheckCircle2 size={20} className="text-green-400 flex-shrink-0" />
           <div>
             <p className="text-sm font-bold text-green-400">Brochure processed!</p>
             <p className="text-xs text-vault-text-muted mt-0.5">
-              Found <span className="text-white font-semibold">{extractedProject}</span> with {extractedTypes.length} unit type{extractedTypes.length !== 1 ? 's' : ''}
+              Found <span className="text-white font-semibold">{extractedProject}</span> with{' '}
+              {extractedTypes.length} unit type{extractedTypes.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
 
-        <div>
-          <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">
-            Your Flat / Unit Number
-          </label>
-          <input
-            type="text"
-            className={cn(
-              "w-full px-4 py-3.5 text-sm rounded-2xl bg-vault-surface border text-white placeholder:text-vault-text-muted focus:outline-none transition-colors",
-              flatError ? 'border-red-500/50' : 'border-vault-border focus:border-gold-500/60'
-            )}
-            placeholder="e.g. 3301 or Block K, 3301"
-            value={flatNumber}
-            onChange={(e) => { setFlatNumber(e.target.value); setFlatError('') }}
-          />
-          {flatError && <p className="text-xs text-red-400 mt-1.5 ml-1">{flatError}</p>}
-        </div>
-
+        {/* Unit type picker */}
         <div>
           <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-3 block">
             Select Your Unit Type
           </label>
           <div className="grid grid-cols-2 gap-2.5">
             {extractedTypes.map((ut) => {
-              const isSelected = selectedUnit?.id === ut.id
+              const unitKey = `${ut.label}-${ut.area}`
+              const isSelected = selectedUnit
+                ? `${selectedUnit.label}-${selectedUnit.area}` === unitKey
+                : false
               return (
                 <button
-                  key={ut.id}
-                  onClick={() => setSelectedUnit(ut)}
+                  key={unitKey}
+                  onClick={() => { setSelectedUnit(ut); setUnitError('') }}
                   className={cn(
                     'p-3.5 rounded-2xl border text-left transition-all',
                     isSelected
@@ -175,6 +192,76 @@ export function BrochureUploadStep({ uid, onUnitTypesExtracted, onSkipToManual }
               )
             })}
           </div>
+        </div>
+
+        {/* Floor plan image for selected unit */}
+        {selectedUnit?.floorPlanUrl && (
+          <div className="rounded-2xl overflow-hidden border border-vault-border bg-vault-surface">
+            <p className="text-[10px] font-semibold text-vault-text-muted uppercase tracking-widest px-3 pt-3 pb-2">
+              Floor Plan — {selectedUnit.label}
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedUnit.floorPlanUrl}
+              alt={`${selectedUnit.label} floor plan`}
+              className="w-full object-contain max-h-64"
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* Tower / Block dropdown */}
+        {towers.length > 0 && (
+          <div>
+            <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">
+              Tower / Block
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {towers.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTower(t)}
+                  className={cn(
+                    'px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all',
+                    selectedTower === t
+                      ? 'bg-gold-500/10 border-gold-500/60 text-gold-500'
+                      : 'card border-vault-border text-vault-text hover:border-gold-500/30'
+                  )}
+                >
+                  <Building2 size={12} className="inline mr-1.5 opacity-70" />
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Flat/Unit number */}
+        <div>
+          <label className="text-xs font-semibold text-vault-text-muted uppercase tracking-widest mb-2 block">
+            Your Flat / Unit Number
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            className={cn(
+              'w-full px-4 py-3.5 text-sm rounded-2xl bg-vault-surface border text-white placeholder:text-vault-text-muted focus:outline-none transition-colors',
+              unitError ? 'border-red-500/50' : 'border-vault-border focus:border-gold-500/60'
+            )}
+            placeholder="e.g. 3301"
+            value={unitNumber}
+            onChange={(e) => { setUnitNumber(e.target.value); setUnitError('') }}
+          />
+          {unitError && <p className="text-xs text-red-400 mt-1.5 ml-1">{unitError}</p>}
+          {/* Auto-derived floor */}
+          {derivedFloor && (
+            <p className="text-xs text-vault-text-muted mt-1.5 ml-1">
+              📍 Floor <span className="text-gold-500 font-semibold">{derivedFloor}</span>
+              {selectedUnit?.floorRange && (
+                <span className="opacity-60"> of {selectedUnit.floorRange[1]}</span>
+              )}
+            </p>
+          )}
         </div>
 
         <button
@@ -295,7 +382,7 @@ export function BrochureUploadStep({ uid, onUnitTypesExtracted, onSkipToManual }
         <div className="card p-5 text-center space-y-3 border-purple-500/20 bg-purple-500/5">
           <Loader2 size={28} className="text-purple-400 animate-spin mx-auto" />
           <p className="text-sm font-bold text-purple-300">Gemini is reading your brochure…</p>
-          <p className="text-xs text-vault-text-muted">Extracting unit types, areas, and configurations</p>
+          <p className="text-xs text-vault-text-muted">Extracting unit types, floor plans, and towers</p>
         </div>
       )}
 

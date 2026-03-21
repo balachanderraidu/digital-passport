@@ -74,6 +74,29 @@ export interface ShareLink {
   createdAt: Timestamp | null
 }
 
+export interface FloorPlanRoom {
+  name: string   // e.g. "Living Room", "Master Bedroom"
+  x: number      // left edge as % of floor plan (0–100)
+  y: number      // top edge as % of floor plan (0–100)
+  w: number      // width as %
+  h: number      // height as %
+}
+
+/** A single draggable item on the Konva home-plan canvas */
+export interface HomePlanItem {
+  id: string
+  type: string          // 'sofa'|'bed'|'table'|'wardrobe'|'sink'|'hob'|'fridge'|'desk'|'chair'|'tv'|'toilet'
+  roomName: string      // which room it belongs to
+  x: number             // x on canvas (0–100 relative %)
+  y: number             // y on canvas (0–100 relative %)
+  w: number             // width %
+  h: number             // height %
+  rotation: number      // degrees
+  color: string         // hex color
+  style: 'minimal' | 'modern' | 'classic'
+  label?: string        // optional custom label
+  vaultItemId?: string  // linked warranty/vault item
+}
 export interface UnitType {
   id: string
   label: string              // e.g. "3BHK West"
@@ -85,6 +108,8 @@ export interface UnitType {
   flatNumberPattern?: string // regex string to match flat numbers
   genericDocs: string[]      // Storage URLs for floor plans etc.
   floorPlanUrl?: string      // Primary floor plan PNG URL (Firebase Storage)
+  svgFloorPlan?: string      // AI-generated SVG string (Gemini 2.0 Flash)
+  rooms?: FloorPlanRoom[]    // Room centroids for interactive hotspot overlay
 }
 
 export interface ProjectListing {
@@ -111,8 +136,10 @@ export interface Property {
   projectId?: string
   unitTypeId?: string
   unitTypeLabel?: string
-  floorPlanUrl?: string  // Firebase Storage URL for the floor plan PNG
-  occupancy?: 'residing' | 'rented' | 'empty' | 'renovation'  // how property is used
+  floorPlanUrl?: string     // Firebase Storage URL for the floor plan PNG
+  rooms?: FloorPlanRoom[]   // AI-extracted room bounding boxes
+  homePlan?: HomePlanItem[] // User-edited Konva canvas state
+  occupancy?: 'residing' | 'rented' | 'empty' | 'renovation'
   createdAt: Timestamp | null
 }
 

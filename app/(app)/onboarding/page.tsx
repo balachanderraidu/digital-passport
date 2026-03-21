@@ -2,21 +2,28 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronRight, Loader2, Mail, CheckCircle2, Home, X, AlertCircle, Building2 } from 'lucide-react'
+import { ChevronRight, Loader2, Mail, CheckCircle2, Home, X, AlertCircle, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
-import { createProperty, createNewProperty, setActiveProperty, type ProjectListing, type UnitType } from '@/lib/firestore'
+import { createProperty, createNewProperty, setActiveProperty, type ProjectListing, type UnitType, type HomePlanItem } from '@/lib/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import app from '@/lib/firebase'
 import { ProjectSearchStep } from './ProjectSearchStep'
 import { BrochureUploadStep } from './BrochureUploadStep'
+import dynamic from 'next/dynamic'
+
+const FloorPlanCanvas = dynamic(
+  () => import('@/components/floorplan/FloorPlanCanvas').then(m => m.FloorPlanCanvas),
+  { ssr: false, loading: () => <div className="w-full h-48 rounded-2xl bg-vault-surface animate-pulse" /> }
+)
 
 const FLOOR_PLAN_TYPES = ['Studio', '1BHK', '2BHK', '3BHK', '4BHK', 'Penthouse', 'Villa', 'Custom']
 
 type FlowStep =
   | 'project-search'     // Step 1: Search database
   | 'brochure-upload'    // Step 1b: Brochure upload (not in DB)
-  | 'manual-details'     // Step 2: Manual property details  
+  | 'manual-details'     // Step 2: Manual property details
+  | 'home-plan-setup'    // Step 2b: Arrange furniture on floor plan
   | 'gmail-sync'         // Step 3: Gmail procurement sync
   | 'review'             // Step 4: Review & launch
 
@@ -37,13 +44,14 @@ const DEFAULT_FORM: PropertyForm = {
 }
 
 // Maps flow step names to human-readable step numbers for the progress bar
-const STEP_ORDER: FlowStep[] = ['project-search', 'manual-details', 'gmail-sync', 'review']
+const STEP_ORDER: FlowStep[] = ['project-search', 'manual-details', 'home-plan-setup', 'gmail-sync', 'review']
 const STEP_LABELS: Record<FlowStep, string> = {
-  'project-search': 'Find Project',
+  'project-search':  'Find Project',
   'brochure-upload': 'Find Project',
-  'manual-details': 'Property Details',
-  'gmail-sync': 'Gmail Sync',
-  'review': 'Review',
+  'manual-details':  'Property Details',
+  'home-plan-setup': 'Home Plan',
+  'gmail-sync':      'Gmail Sync',
+  'review':          'Review',
 }
 
 function getDisplayStep(step: FlowStep): number {
@@ -67,10 +75,12 @@ function OnboardingContent() {
   const [step, setStep] = useState<FlowStep>('project-search')
   const [form, setForm] = useState<PropertyForm>(DEFAULT_FORM)
   const [linkedProject, setLinkedProject] = useState<LinkedProject | null>(null)
+  const [homePlanItems, setHomePlanItems] = useState<HomePlanItem[]>([])
   const [gmailStatus, setGmailStatus] = useState<'idle' | 'linking' | 'syncing' | 'done' | 'error'>('idle')
   const [syncResult, setSyncResult] = useState<{ matched: number; pending: number } | null>(null)
   const [gmailError, setGmailError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [finishError, setFinishError] = useState('')
   const [occupancy, setOccupancy] = useState<'residing' | 'rented' | 'empty' | 'renovation'>('residing')
 
   // Handle OAuth return: /onboarding?code=<CODE>
@@ -126,23 +136,45 @@ function OnboardingContent() {
 
   // ── Save & finish ─────────────────────────────────────────────────────────
   async function handleFinish() {
-    if (!user) return
+    if (!user) {
+      setFinishError('You must be signed in to save. Please sign in and try again.')
+      return
+    }
     setSaving(true)
+    setFinishError('')
     try {
+      // Strip undefined values from HomePlanItems before writing to Firestore
+      const cleanItems = homePlanItems.map((item) => ({
+        id: item.id,
+        type: item.type,
+        roomName: item.roomName,
+        x: item.x,
+        y: item.y,
+        w: item.w,
+        h: item.h,
+        rotation: item.rotation,
+        color: item.color,
+        style: item.style,
+        ...(item.label ? { label: item.label } : {}),
+        ...(item.vaultItemId ? { vaultItemId: item.vaultItemId } : {}),
+      }))
       // Build property data — prefer linked project data when available
+      // Build property data — never pass undefined to Firestore (it throws)
       const propertyData = linkedProject
         ? {
             name: linkedProject.project.name,
             unit: linkedProject.flatNumber,
             area: linkedProject.unitType.area,
             floorPlanType: linkedProject.unitType.label,
-            location: linkedProject.project.city,
+            location: linkedProject.project.city || '',
             gmailLinked: gmailStatus === 'done',
             projectId: linkedProject.project.id,
             unitTypeId: linkedProject.unitType.id,
             unitTypeLabel: linkedProject.unitType.label,
-            floorPlanUrl: linkedProject.unitType.floorPlanUrl ?? undefined,
             occupancy,
+            ...(linkedProject.unitType.floorPlanUrl ? { floorPlanUrl: linkedProject.unitType.floorPlanUrl } : {}),
+            ...(linkedProject.unitType.rooms?.length ? { rooms: linkedProject.unitType.rooms } : {}),
+            ...(cleanItems.length > 0 ? { homePlan: cleanItems } : {}),
           }
         : {
             name: form.name,
@@ -162,7 +194,9 @@ function OnboardingContent() {
       }
       router.replace('/dashboard')
     } catch (err) {
-      console.error(err)
+      console.error('[handleFinish]', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setFinishError(`Save failed: ${msg}`)
       setSaving(false)
     }
   }
@@ -170,7 +204,6 @@ function OnboardingContent() {
   // ── Handlers for step transitions ─────────────────────────────────────────
   function handleProjectSelected(project: ProjectListing, unitType: UnitType, flatNumber: string) {
     setLinkedProject({ project, unitType, flatNumber })
-    // Pre-fill form as fallback
     setForm({
       name: project.name,
       unit: flatNumber,
@@ -178,11 +211,11 @@ function OnboardingContent() {
       floorPlanType: unitType.label,
       location: project.city,
     })
-    setStep('gmail-sync')
+    // Show home plan setup if AI extracted rooms, else skip to gmail
+    setStep((unitType.rooms?.length ?? 0) > 0 ? 'home-plan-setup' : 'gmail-sync')
   }
 
-  function handleBrochureExtracted(projectId: string, projectName: string, unitTypes: UnitType[]) {
-    // For brochure flow, we get a synthetic project + the user-selected type
+  function handleBrochureExtracted(projectId: string, projectName: string, unitTypes: UnitType[], flatNumber: string) {
     const unitType = unitTypes[0]
     if (!unitType) return
     const syntheticProject: ProjectListing = {
@@ -194,14 +227,16 @@ function OnboardingContent() {
       searchKeywords: [],
       createdAt: null,
     }
-    setLinkedProject({ project: syntheticProject, unitType, flatNumber: form.unit })
+    setLinkedProject({ project: syntheticProject, unitType, flatNumber })
     setForm((f) => ({
       ...f,
       name: projectName,
+      unit: flatNumber,
       area: String(unitType.area),
       floorPlanType: unitType.label,
     }))
-    setStep('gmail-sync')
+    // Show home plan setup if AI extracted rooms, else skip to gmail
+    setStep((unitType.rooms?.length ?? 0) > 0 ? 'home-plan-setup' : 'gmail-sync')
   }
 
   // ── Progress display ──────────────────────────────────────────────────────
@@ -280,7 +315,7 @@ function OnboardingContent() {
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center">
-                <Building2 size={20} className="text-gold-500" />
+                <Home size={20} className="text-gold-500" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-white">Property Details</h2>
@@ -343,6 +378,48 @@ function OnboardingContent() {
           </div>
         )}
 
+        {/* ── Step 2b: Home Plan Setup ── */}
+        {step === 'home-plan-setup' && linkedProject && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center">
+                <Sparkles size={18} className="text-gold-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Arrange Your Home</h2>
+                <p className="text-xs text-vault-text-muted">Drag furniture to match your real layout</p>
+              </div>
+            </div>
+
+            <FloorPlanCanvas
+              rooms={linkedProject.unitType.rooms ?? []}
+              floorPlanUrl={linkedProject.unitType.floorPlanUrl}
+              mode="edit"
+              totalArea={linkedProject.unitType.area}
+              onItemsChange={setHomePlanItems}
+            />
+
+            <p className="text-xs text-vault-text-muted text-center">
+              Tap furniture to change color or style. You can edit this anytime later.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep('gmail-sync')}
+                className="flex-1 py-3.5 rounded-2xl glass gold-border text-vault-text font-semibold text-sm"
+              >
+                Skip for now
+              </button>
+              <button
+                onClick={() => setStep('gmail-sync')}
+                className="flex-1 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm flex items-center justify-center gap-2 hover:shadow-gold-glow transition-all"
+              >
+                Looks good <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Step 3: Gmail Sync ── */}
         {step === 'gmail-sync' && (
           <div className="space-y-4 animate-fade-in">
@@ -350,7 +427,7 @@ function OnboardingContent() {
             {linkedProject && (
               <div className="card p-4 border-gold-500/20 bg-gold-500/5 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gold-500/15 flex items-center justify-center flex-shrink-0">
-                  <Building2 size={16} className="text-gold-500" />
+                  <Home size={16} className="text-gold-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white truncate">{linkedProject.project.name}</p>
@@ -550,6 +627,13 @@ function OnboardingContent() {
                 Your Digital Passport is now configured. Add warranty assets, upload documents, and use the AI Assistant to query your home data instantly.
               </p>
             </div>
+
+            {finishError && (
+              <div className="card p-4 border-red-500/30 bg-red-500/10 flex items-start gap-2">
+                <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-300 break-words">{finishError}</p>
+              </div>
+            )}
 
             <button
               onClick={handleFinish}

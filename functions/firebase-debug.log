@@ -1,0 +1,107 @@
+[debug] [2026-03-16T10:54:17.929Z] ----------------------------------------------------------------------
+[debug] [2026-03-16T10:54:17.931Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\balac\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions:processBrochure
+[debug] [2026-03-16T10:54:17.931Z] CLI Version:   15.9.0
+[debug] [2026-03-16T10:54:17.931Z] Platform:      win32
+[debug] [2026-03-16T10:54:17.931Z] Node Version:  v24.13.0
+[debug] [2026-03-16T10:54:17.932Z] Time:          Mon Mar 16 2026 16:24:17 GMT+0530 (India Standard Time)
+[debug] [2026-03-16T10:54:17.932Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-16T10:54:18.697Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-16T10:54:18.698Z] > authorizing via signed-in user (balachanderraidu@gmail.com)
+[debug] [2026-03-16T10:54:18.699Z] [iam] checking project digital-passport-peroneira for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-03-16T10:54:18.700Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:18.700Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:18.700Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions [none]
+[debug] [2026-03-16T10:54:18.700Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions  x-goog-user-project=digital-passport-peroneira
+[debug] [2026-03-16T10:54:18.700Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-03-16T10:54:20.073Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions 200
+[debug] [2026-03-16T10:54:20.073Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-03-16T10:54:20.073Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:20.073Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:20.073Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/digital-passport-peroneira/serviceAccounts/digital-passport-peroneira@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-03-16T10:54:20.073Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/digital-passport-peroneira/serviceAccounts/digital-passport-peroneira@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-03-16T10:54:21.666Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/digital-passport-peroneira/serviceAccounts/digital-passport-peroneira@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2026-03-16T10:54:21.666Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/digital-passport-peroneira/serviceAccounts/digital-passport-peroneira@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'digital-passport-peroneira'...
+[info] 
+[info] i  deploying functions 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run build
+[info] +  functions: Finished running predeploy script. 
+[debug] [2026-03-16T10:54:26.321Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:26.321Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:26.321Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira [none]
+[debug] [2026-03-16T10:54:27.649Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira 200
+[debug] [2026-03-16T10:54:27.649Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira {"projectNumber":"307549127866","projectId":"digital-passport-peroneira","lifecycleState":"ACTIVE","name":"digital-passport-peroneira","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2026-03-07T06:31:25.131426Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2026-03-16T10:54:27.652Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:27.652Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:27.653Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/digital-passport-peroneira/adminSdkConfig [none]
+[debug] [2026-03-16T10:54:29.048Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/digital-passport-peroneira/adminSdkConfig 200
+[debug] [2026-03-16T10:54:29.048Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/digital-passport-peroneira/adminSdkConfig {"projectId":"digital-passport-peroneira","storageBucket":"digital-passport-peroneira.firebasestorage.app"}
+[debug] [2026-03-16T10:54:29.049Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:29.049Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T10:54:29.049Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/digital-passport-peroneira/configs [none]
+[debug] [2026-03-16T10:54:29.533Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/digital-passport-peroneira/configs 200
+[debug] [2026-03-16T10:54:29.533Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/digital-passport-peroneira/configs {}
+[debug] [2026-03-16T10:54:29.534Z] Validating nodejs source
+[warn] !  functions: Runtime Node.js 20 will be deprecated on 2026-04-30 and will be decommissioned on 2026-10-30, after which you will not be able to deploy without upgrading. Consider upgrading now to avoid disruption. See https://cloud.google.com/functions/docs/runtime-support for full details on the lifecycle policy 
+[warn] !  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[debug] [2026-03-16T10:54:35.572Z] > [functions] package.json contents: {
+  "name": "digital-passport-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for Digital Passport",
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').copyFileSync('src/mupdf-render.js','lib/mupdf-render.js')\"",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "@google/genai": "^0.9.0",
+    "@google/generative-ai": "^0.15.0",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^7.1.0",
+    "googleapis": "^140.0.0",
+    "mupdf": "^1.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "private": true
+}
+[debug] [2026-03-16T10:54:35.572Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2026-03-16T10:54:35.573Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-03-16T10:54:35.579Z] Found firebase-functions binary at 'C:\GitHub\Digital Passport\functions\node_modules\.bin\firebase-functions'
+[debug] [2026-03-16T11:25:58.516Z] ----------------------------------------------------------------------
+[debug] [2026-03-16T11:25:58.517Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\balac\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions:processBrochure
+[debug] [2026-03-16T11:25:58.518Z] CLI Version:   15.9.0
+[debug] [2026-03-16T11:25:58.518Z] Platform:      win32
+[debug] [2026-03-16T11:25:58.518Z] Node Version:  v24.13.0
+[debug] [2026-03-16T11:25:58.518Z] Time:          Mon Mar 16 2026 16:55:58 GMT+0530 (India Standard Time)
+[debug] [2026-03-16T11:25:58.518Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-16T11:25:59.249Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-16T11:25:59.250Z] > authorizing via signed-in user (balachanderraidu@gmail.com)
+[debug] [2026-03-16T11:25:59.250Z] [iam] checking project digital-passport-peroneira for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-03-16T11:25:59.250Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T11:25:59.250Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T11:25:59.251Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions [none]
+[debug] [2026-03-16T11:25:59.251Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions  x-goog-user-project=digital-passport-peroneira
+[debug] [2026-03-16T11:25:59.251Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-03-16T11:26:00.570Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions 200
+[debug] [2026-03-16T11:26:00.570Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/digital-passport-peroneira:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-03-16T11:26:00.570Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T11:26:00.570Z] Checked if tokens are valid: true, expires at: 1773661961023
+[debug] [2026-03-16T11:26:00.570Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/digital-passport-peroneira/serviceAccounts/digital-passport-peroneira@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-03-16T11:26:00.570Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/digital-passport-peroneira/serviceAccounts/digital-passport-peroneira@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}

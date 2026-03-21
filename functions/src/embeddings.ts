@@ -15,13 +15,16 @@ import { GoogleGenAI } from '@google/genai'
 
 const MODEL = 'gemini-embedding-2-preview'
 
+// PDF size limit: ~8MB base64 ≈ 6MB binary, safely within the 8192 token limit
+const PDF_SIZE_LIMIT_BYTES = 8 * 1024 * 1024
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type EmbedPart =
   | { type: 'text'; text: string }
-  | { type: 'pdf';  base64: string }
+  | { type: 'pdf';  base64: string; fallbackText?: string }
   | { type: 'image'; base64: string; mimeType: string }
 
 // ---------------------------------------------------------------------------
@@ -31,33 +34,40 @@ export type EmbedPart =
 async function embedPart(part: EmbedPart, apiKey: string): Promise<number[]> {
   const ai = new GoogleGenAI({ apiKey })
 
-  let contents: object
+  // For oversized PDFs, fall back to text embedding to avoid token-limit errors
+  if (part.type === 'pdf' && Buffer.byteLength(part.base64, 'base64') > PDF_SIZE_LIMIT_BYTES) {
+    const fallback = part.fallbackText?.trim()
+    if (fallback) {
+      console.warn('[embeddings] PDF too large, falling back to text embedding')
+      return embedPart({ type: 'text', text: fallback }, apiKey)
+    }
+    throw new Error('[embeddings] PDF exceeds size limit and no fallback text provided')
+  }
+
+  // Build the contents array — must be a flat array of Part objects
+  let contents: object[]
 
   if (part.type === 'text') {
-    contents = { parts: [{ text: part.text }] }
+    contents = [{ text: part.text }]
   } else if (part.type === 'pdf') {
-    contents = {
-      parts: [
-        {
-          inlineData: {
-            data: part.base64,
-            mimeType: 'application/pdf',
-          },
+    contents = [
+      {
+        inlineData: {
+          data: part.base64,
+          mimeType: 'application/pdf',
         },
-      ],
-    }
+      },
+    ]
   } else {
     // image
-    contents = {
-      parts: [
-        {
-          inlineData: {
-            data: part.base64,
-            mimeType: part.mimeType,
-          },
+    contents = [
+      {
+        inlineData: {
+          data: part.base64,
+          mimeType: part.mimeType,
         },
-      ],
-    }
+      },
+    ]
   }
 
   const result = await ai.models.embedContent({
@@ -86,9 +96,14 @@ export async function embedText(text: string, apiKey: string): Promise<number[]>
 /**
  * Embed a base64-encoded PDF document.
  * The model ingests the whole PDF natively (text + layout + images).
+ * If the PDF is too large, falls back to embedding fallbackText if provided.
  */
-export async function embedPdf(base64Pdf: string, apiKey: string): Promise<number[]> {
-  return embedPart({ type: 'pdf', base64: base64Pdf }, apiKey)
+export async function embedPdf(
+  base64Pdf: string,
+  apiKey: string,
+  fallbackText?: string
+): Promise<number[]> {
+  return embedPart({ type: 'pdf', base64: base64Pdf, fallbackText }, apiKey)
 }
 
 /**

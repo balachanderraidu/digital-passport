@@ -7,6 +7,7 @@ import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeSnags, updateSnagStatus, type Snag } from '@/lib/firestore'
+import { DEMO_SNAGS } from '@/lib/demo-data'
 
 type SnagStatus = 'open' | 'in-progress' | 'fixed'
 type Urgency = 'low' | 'medium' | 'high'
@@ -25,12 +26,23 @@ const STATUS_STEPS: { key: SnagStatus; label: string }[] = [
 
 export default function SnagDetailClient({ id }: { id: string }) {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { activePropertyId } = useProperty()
   const [snag, setSnag] = useState<Snag | null>(null)
   const [loading, setLoading] = useState(true)
   const [advancing, setAdvancing] = useState(false)
 
+  const isDemo = !authLoading && !user
+
+  // Demo mode
+  useEffect(() => {
+    if (!isDemo) return
+    const found = DEMO_SNAGS.find((s) => s.id === id) ?? null
+    setSnag(found)
+    setLoading(false)
+  }, [isDemo, id])
+
+  // Real user
   useEffect(() => {
     if (!user) return
     setLoading(true)
@@ -162,7 +174,7 @@ export default function SnagDetailClient({ id }: { id: string }) {
 
         {/* CTA buttons */}
         <div className="grid grid-cols-2 gap-3">
-          {snag.status !== 'fixed' && (
+          {snag.status !== 'fixed' && !isDemo && (
             <button
               onClick={advance}
               disabled={advancing}

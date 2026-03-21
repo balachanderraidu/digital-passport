@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Bell, ChevronRight, X, Loader2, Upload, Plus, Hammer, Sparkles, ChevronDown } from 'lucide-react'
+import { PWAInstallButton } from '@/components/PWAInstallButton'
 import { cn, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { AssetDrawer } from '@/components/twin/AssetDrawer'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { PropertySwitcher } from '@/components/PropertySwitcher'
+import { RoomMinimap } from '@/components/floorplan/RoomMinimap'
+import { RoomDetailSheet } from '@/components/floorplan/RoomDetailSheet'
+import { PassportModeBadge } from '@/components/PassportModeBadge'
 import {
   subscribeDashboardStats,
   subscribeWarrantyAssets,
@@ -20,6 +24,13 @@ import {
   type Property,
   type AppEvent,
 } from '@/lib/firestore'
+import {
+  DEMO_PROPERTY, DEMO_PROPERTY_ACTIVE,
+  DEMO_ROOMS, DEMO_WARRANTY_ASSETS,
+  DEMO_SNAGS, DEMO_SNAGS_ACTIVE,
+  DEMO_EVENTS, DEMO_STATS, DEMO_STATS_ACTIVE,
+  DEMO_ROOM_SPECS,
+} from '@/lib/demo-data'
 
 // Canonical hotspot definitions — positions are fixed layout-wise
 const HOTSPOT_DEFS = [
@@ -29,6 +40,20 @@ const HOTSPOT_DEFS = [
   { key: 'kitchen-hob',  label: 'Hob',          x: 73, y: 32, icon: '🍳', zone: 'Kitchen' },
   { key: 'wardrobe',     label: 'Wardrobe',     x: 32, y: 80, icon: '🚪', zone: 'Master Bedroom' },
 ]
+
+// Room name → emoji icon for the AI SVG hotspot overlay
+const ROOM_ICONS: Record<string, string> = {
+  'Living Room':    '🛋️',
+  'Kitchen':        '🍳',
+  'Master Bedroom': '🛏️',
+  'Bedroom 2':      '🛏️',
+  'Bedroom 3':      '🛏️',
+  'Bathroom':       '🚿',
+  'Balcony':        '🌿',
+  'Study':          '💻',
+  'Dining Room':    '🍽️',
+}
+function getRoomIcon(name: string) { return ROOM_ICONS[name] ?? '🏠' }
 
 type StatusType = 'active' | 'expiring' | 'expired'
 
@@ -122,7 +147,27 @@ export default function DashboardPage() {
   const [showNotif, setShowNotif] = useState(false)
   const [show3D, setShow3D] = useState(false)
   const [showSwitcher, setShowSwitcher] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState<typeof DEMO_ROOMS[0] | null>(null)
 
+  const isDemo = !authLoading && !user
+
+  const [demoMode, setDemoMode] = useState<'passive' | 'active'>('passive')
+  const demoProperty = demoMode === 'active' ? DEMO_PROPERTY_ACTIVE : DEMO_PROPERTY
+  const demoSnags    = demoMode === 'active' ? DEMO_SNAGS_ACTIVE    : DEMO_SNAGS
+  const demoStats    = demoMode === 'active' ? DEMO_STATS_ACTIVE    : DEMO_STATS
+  const demoAssets   = demoMode === 'active' ? DEMO_WARRANTY_ASSETS.slice(0, 2) : DEMO_WARRANTY_ASSETS
+
+  // Demo mode: inject placeholder data
+  useEffect(() => {
+    if (!isDemo) return
+    setStats(demoStats)
+    setWarrantyAssets(demoAssets)
+    setRecentSnags(demoSnags)
+    setProperty(demoProperty)
+    setEvents(DEMO_EVENTS)
+  }, [isDemo, demoMode])
+
+  // Real user: subscribe to Firestore
   useEffect(() => {
     if (!user) return
     const unsubStats = subscribeDashboardStats(user.uid, setStats, activePropertyId)
@@ -176,7 +221,7 @@ export default function DashboardPage() {
   // Property display
   const propName = property?.name ?? 'My Residence'
   const propUnit = property ? `${property.unit} · ${property.location}` : 'Set up your property →'
-  const isNewUser = stats.assetCount === 0 && !property
+  const isNewUser = !isDemo && stats.assetCount === 0 && !property
 
   if (authLoading) {
     return (
@@ -204,25 +249,35 @@ export default function DashboardPage() {
                 <ChevronDown size={18} className="text-gold-500 group-hover:opacity-80 mt-1" />
               )}
             </button>
-            {property ? (
-              <p className="text-sm text-vault-text-muted mt-0.5">{propUnit}</p>
+            {property || isDemo ? (
+              <div className="mt-0.5 flex items-center gap-2 flex-wrap">
+                <p className="text-sm text-vault-text-muted">
+                  {isDemo
+                    ? `${DEMO_PROPERTY.unit} · ${DEMO_PROPERTY.location}`
+                    : `${property!.unit} · ${property!.location}`}
+                </p>
+                <PassportModeBadge occupancy={isDemo ? demoProperty.occupancy : property?.occupancy} />
+              </div>
             ) : (
               <Link href="/onboarding" className="text-sm text-gold-500 font-semibold mt-0.5 block">
                 Set up your property →
               </Link>
             )}
           </div>
-          <button
-            onClick={() => setShowNotif((v) => !v)}
-            className="relative w-10 h-10 rounded-xl glass gold-border flex items-center justify-center mt-1"
-          >
-            <Bell size={18} className="text-gold-500" />
-            {notifItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold-500 rounded-full text-[9px] font-bold text-charcoal-300 flex items-center justify-center">
-                {notifItems.length}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 mt-1">
+            <PWAInstallButton />
+            <button
+              onClick={() => setShowNotif((v) => !v)}
+              className="relative w-10 h-10 rounded-xl glass gold-border flex items-center justify-center"
+            >
+              <Bell size={18} className="text-gold-500" />
+              {notifItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold-500 rounded-full text-[9px] font-bold text-charcoal-300 flex items-center justify-center">
+                  {notifItems.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
         {showSwitcher && <PropertySwitcher onClose={() => setShowSwitcher(false)} />}
 
@@ -241,12 +296,42 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {/* Demo mode toggle — Active vs Passive */}
+        {isDemo && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-[9px] font-bold text-vault-text-muted uppercase tracking-widest">Passport Mode</span>
+            <div className="flex gap-1 p-0.5 glass rounded-lg flex-1">
+              <button
+                onClick={() => setDemoMode('passive')}
+                className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
+                  demoMode === 'passive'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'text-vault-text-muted hover:text-vault-text'
+                }`}
+              >
+                🏠 Passive
+              </button>
+              <button
+                onClick={() => setDemoMode('active')}
+                className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
+                  demoMode === 'active'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'text-vault-text-muted hover:text-vault-text'
+                }`}
+              >
+                🔨 Active
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Quick actions */}
-        <div className="grid grid-cols-3 gap-2 mt-3">
+        <div className="grid grid-cols-2 gap-2 mt-3">
           {[
             { label: 'Upload Doc', icon: <Upload size={14} />, href: '/vault' },
-            { label: 'Add Asset', icon: <Plus size={14} />, href: '/warranty' },
-            { label: 'Log Snag', icon: <Hammer size={14} />, href: '/snags/new' },
+            { label: 'Add Asset',  icon: <Plus size={14} />, href: '/warranty' },
+            { label: 'Log Snag',   icon: <Hammer size={14} />, href: '/snags/new' },
+            { label: 'Home Plan',  icon: <Sparkles size={14} />, href: '/home-plan' },
           ].map((action) => (
             <Link
               key={action.label}
@@ -281,37 +366,73 @@ export default function DashboardPage() {
       <div className="px-5 mt-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-white">
-            {property?.floorPlanUrl ? 'Floor Plan' : 'Interactive Home Twin'}
+            {(isDemo || property?.rooms?.length) ? 'Home Twin' : property?.floorPlanUrl ? 'Floor Plan' : 'Interactive Home Twin'}
           </h2>
-          {!property?.floorPlanUrl && (
-            <button
-              onClick={() => setShow3D((v) => !v)}
-              className="flex items-center gap-1 text-xs text-gold-500 font-semibold"
-            >
-              {show3D ? '3D Coming Soon ✨' : <>3D View <ChevronRight size={14} /></>}
-            </button>
-          )}
+          <Link href="/home-plan" className="flex items-center gap-1 text-xs text-gold-500 font-semibold">
+            {isDemo || property?.rooms?.length ? 'Edit Plan' : 'Set Up'} <ChevronRight size={14} />
+          </Link>
         </div>
 
-        {property?.floorPlanUrl ? (
-          /* Real floor plan PNG from Firestore */
+        {isDemo ? (
+          /* Demo mode: SVG room minimap with clickable rooms */
+          <>
+            <RoomMinimap
+              rooms={DEMO_ROOMS}
+              warrantyAssets={warrantyAssets}
+              propertyLabel={DEMO_PROPERTY.unitTypeLabel}
+              area={DEMO_PROPERTY.area}
+              isDemo
+              onRoomClick={(r) => setSelectedRoom(r)}
+            />
+            <RoomDetailSheet
+              room={selectedRoom}
+              spec={selectedRoom ? DEMO_ROOM_SPECS[selectedRoom.name] ?? null : null}
+              warrantyCount={warrantyAssets.filter((a) => a.zone === selectedRoom?.name || a.zone?.includes(selectedRoom?.name?.split(' ')[0] ?? '')).length}
+              onClose={() => setSelectedRoom(null)}
+            />
+          </>
+        ) : property?.floorPlanUrl ? (
+          /* Floor plan PNG from brochure */
           <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={property.floorPlanUrl}
               alt={`${property.unitTypeLabel ?? property.floorPlanType} floor plan`}
               className="w-full object-contain"
-              style={{ maxHeight: '440px' }}
+              style={{ maxHeight: '280px' }}
               loading="lazy"
             />
+            {/* Room hotspots from bounding boxes */}
+            {(property.rooms ?? []).map((room) => {
+              const cx = room.x + room.w / 2
+              const cy = room.y + room.h / 2
+              const status = getZoneStatus(warrantyAssets, room.name)
+              const colors: Record<string, string> = {
+                active: 'border-green-500/60 bg-green-500/10',
+                expiring: 'border-yellow-500/60 bg-yellow-500/10',
+                expired: 'border-red-500/60 bg-red-500/10',
+              }
+              return (
+                <button
+                  key={room.name}
+                  onClick={() => handleHotspotSelect({ key: room.name, label: room.name, x: cx, y: cy, icon: getRoomIcon(room.name), zone: room.name })}
+                  className="absolute flex flex-col items-center gap-0.5 group transform -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: `${cx}%`, top: `${cy}%` }}
+                >
+                  <div className={cn('w-8 h-8 rounded-xl border flex items-center justify-center text-sm transition-all group-hover:scale-110 group-hover:border-gold-500 shadow-card backdrop-blur-sm', colors[status] ?? colors.active)}>
+                    {getRoomIcon(room.name)}
+                  </div>
+                </button>
+              )
+            })}
             <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg bg-vault-card/90 border border-vault-border backdrop-blur-sm">
               <p className="text-[10px] font-bold text-gold-500">{property.unitTypeLabel ?? property.floorPlanType}</p>
               <p className="text-[9px] text-vault-text-muted">{(property.area ?? 0).toLocaleString()} sq ft</p>
             </div>
           </div>
         ) : (
-          /* SVG wireframe fallback with interactive hotspots */
-          <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface" style={{ height: '300px' }}>
+          /* No floor plan — generic wireframe with static hotspots */
+          <div className="relative w-full rounded-2xl overflow-hidden border border-vault-border bg-vault-surface" style={{ height: '260px' }}>
             <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="iso-grid" x="0" y="0" width="40" height="23" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
@@ -321,43 +442,27 @@ export default function DashboardPage() {
               </defs>
               <rect width="100%" height="100%" fill="url(#iso-grid)" />
             </svg>
-
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-                <rect x="20" y="20" width="220" height="140" rx="12" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                <text x="125" y="97" fill="rgba(255,215,0,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">LIVING AREA</text>
-                <rect x="260" y="20" width="120" height="100" rx="12" fill="rgba(34,197,94,0.03)" stroke="rgba(34,197,94,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                <text x="320" y="75" fill="rgba(34,197,94,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">KITCHEN</text>
-                <rect x="20" y="180" width="180" height="100" rx="12" fill="rgba(99,102,241,0.04)" stroke="rgba(99,102,241,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                <text x="110" y="234" fill="rgba(99,102,241,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">MASTER BED</text>
-                <rect x="220" y="180" width="160" height="100" rx="12" fill="rgba(59,130,246,0.03)" stroke="rgba(59,130,246,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                <text x="300" y="234" fill="rgba(59,130,246,0.3)" fontSize="11" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600">STUDY</text>
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="20" width="180" height="120" rx="10" fill="rgba(255,215,0,0.04)" stroke="rgba(255,215,0,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="110" y="85" fill="rgba(255,215,0,0.3)" fontSize="10" textAnchor="middle" fontFamily="Inter" fontWeight="600">LIVING AREA</text>
+                <rect x="220" y="20" width="160" height="85" rx="10" fill="rgba(34,197,94,0.03)" stroke="rgba(34,197,94,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="300" y="66" fill="rgba(34,197,94,0.3)" fontSize="10" textAnchor="middle" fontFamily="Inter" fontWeight="600">KITCHEN</text>
+                <rect x="20" y="155" width="155" height="85" rx="10" fill="rgba(99,102,241,0.04)" stroke="rgba(99,102,241,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="97" y="200" fill="rgba(99,102,241,0.3)" fontSize="10" textAnchor="middle" fontFamily="Inter" fontWeight="600">MASTER BED</text>
+                <rect x="195" y="155" width="185" height="85" rx="10" fill="rgba(59,130,246,0.03)" stroke="rgba(59,130,246,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                <text x="287" y="200" fill="rgba(59,130,246,0.3)" fontSize="10" textAnchor="middle" fontFamily="Inter" fontWeight="600">BEDROOM</text>
               </svg>
             </div>
-
             {HOTSPOT_DEFS.map((h) => (
-              <Hotspot
-                key={h.key}
-                label={h.label}
-                x={h.x}
-                y={h.y}
-                icon={h.icon}
-                status={getZoneStatus(warrantyAssets, h.zone)}
-                onSelect={() => handleHotspotSelect(h)}
-              />
+              <Hotspot key={h.key} label={h.label} x={h.x} y={h.y} icon={h.icon} status={getZoneStatus(warrantyAssets, h.zone)} onSelect={() => handleHotspotSelect(h)} />
             ))}
-
-            <div className="absolute bottom-3 right-3 flex gap-3 text-[9px] font-medium text-vault-text-muted">
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Active</div>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Expiring</div>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Expired</div>
-            </div>
+            <p className="absolute bottom-3 left-0 right-0 text-center text-xs text-vault-text-muted">Tap any node to view asset details</p>
           </div>
         )}
-        {!property?.floorPlanUrl && (
-          <p className="text-center text-xs text-vault-text-muted mt-2 mb-1">Tap any node to view asset details</p>
-        )}
       </div>
+
+
 
       {/* Open Snags */}
       <div className="px-5 mt-4">

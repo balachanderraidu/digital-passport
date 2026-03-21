@@ -7,6 +7,8 @@ import { cn, formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeSnags, type Snag } from '@/lib/firestore'
+import { DEMO_SNAGS, DEMO_PROPERTY } from '@/lib/demo-data'
+import { PassportModeBadge } from '@/components/PassportModeBadge'
 
 type Urgency = 'low' | 'medium' | 'high'
 type SnagStatus = 'open' | 'in-progress' | 'fixed'
@@ -27,11 +29,21 @@ type Tab = 'open' | 'in-progress' | 'fixed'
 
 export default function SnagsPage() {
   const { user, loading: authLoading } = useAuth()
-  const { activePropertyId } = useProperty()
+  const { activePropertyId, activeProperty } = useProperty()
   const [activeTab, setActiveTab] = useState<Tab>('open')
   const [snags, setSnags] = useState<Snag[]>([])
   const [loading, setLoading] = useState(true)
 
+  const isDemo = !authLoading && !user
+
+  // Demo mode
+  useEffect(() => {
+    if (!isDemo) return
+    setSnags(DEMO_SNAGS)
+    setLoading(false)
+  }, [isDemo])
+
+  // Real user
   useEffect(() => {
     if (!user) return
     setLoading(true)
@@ -62,7 +74,10 @@ export default function SnagsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Snag List</h1>
-            <p className="text-sm text-vault-text-muted mt-0.5">Defect tracking · Handover phase</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-sm text-vault-text-muted">Defect tracking · Punch list</p>
+              <PassportModeBadge occupancy={isDemo ? DEMO_PROPERTY.occupancy : activeProperty?.occupancy} />
+            </div>
           </div>
           <Link
             href="/snags/new"

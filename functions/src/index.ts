@@ -27,8 +27,13 @@ import { extractReceiptData } from './gemini'
 import { embedText, embedPdf, assetToEmbedText } from './embeddings'
 export { semanticSearch } from './search'
 
-admin.initializeApp()
-const db = admin.firestore()
+// Guard: only initialise Firebase Admin when actually running on Cloud Run (production).
+// K_SERVICE is set by Cloud Run / Cloud Functions v2 in production but NEVER by the
+// Firebase CLI's local discovery process (which sets FIREBASE_CONFIG, causing initializeApp
+// to hang on the GCP metadata server → 10s timeout → deploy fails).
+const isFirebaseEnv = !!process.env.K_SERVICE
+if (isFirebaseEnv) admin.initializeApp()
+const db = isFirebaseEnv ? admin.firestore() : (null as unknown as admin.firestore.Firestore)
 
 // --- Config helpers ----------------------------------------------------------
 
@@ -289,6 +294,8 @@ interface PendingUnitType {
   flatNumberPattern: string
   floorPlanUrl: string
   genericDocs: string[]
+  svgFloorPlan: string
+  rooms: Array<{ name: string; x: number; y: number; w: number; h: number }>
 }
 
 function makeBrochureKeywords(name: string, developer: string, city: string): string[] {
@@ -302,8 +309,10 @@ function makeBrochureKeywords(name: string, developer: string, city: string): st
 }
 
 async function callGeminiForBrochure(base64Pdf: string, geminiKey: string): Promise<string> {
+  // gemini-flash-latest — verified to work with this API key
   const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+
   const prompt = `You are a real estate data extractor. Analyse this residential brochure PDF carefully.
 
 Return ONLY raw JSON (no markdown) with this structure:
@@ -311,6 +320,7 @@ Return ONLY raw JSON (no markdown) with this structure:
   "projectName": "string",
   "developer": "string",
   "city": "string",
+  "towers": ["Tower 1", "Tower 2"],
   "unitTypes": [
     {
       "label": "3BHK East",
@@ -321,22 +331,34 @@ Return ONLY raw JSON (no markdown) with this structure:
       "configuration": "East-facing",
       "floorRange": [3, 36],
       "flatNumberPattern": "",
-      "floorPlanPage": 16
+      "floorPlanPage": 16,
+      "rooms": [
+        { "name": "Living Room",    "x": 5,  "y": 5,  "w": 40, "h": 35 },
+        { "name": "Kitchen",        "x": 50, "y": 5,  "w": 25, "h": 20 },
+        { "name": "Master Bedroom", "x": 5,  "y": 45, "w": 35, "h": 40 },
+        { "name": "Bathroom",       "x": 45, "y": 55, "w": 15, "h": 20 }
+      ]
     }
   ]
 }
 
 Rules:
 - List EACH distinct unit type separately (east/west are separate).
+- towers: list ALL tower or block names exactly as shown. Use [] if none mentioned.
 - carpetArea: RERA carpet area in sq ft. 0 if not found.
 - superBuiltUpArea: total/super built-up area in sq ft. 0 if not found.
 - floorPlanPage: 1-indexed page number for THIS unit type floor plan. 0 if not found.
 - floorRange: [minFloor, maxFloor]. Use [2, 36] if unknown.
+- rooms: for EACH unit type, find its floor plan and estimate each room's bounding box.
+  x/y/w/h are percentages (0-100) of the floor plan image area.
+  Include: Living Room, Kitchen, Master Bedroom, Bedroom 2, Bedroom 3, Bathroom, Balcony, Study, Dining Room (only rooms present).
+  Approximate is fine — user can adjust in the editor.
 - Return ONLY valid JSON.`
 
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(120_000), // 120s — large PDF needs time
     body: JSON.stringify({
       contents: [
         {
@@ -346,14 +368,90 @@ Rules:
           ],
         },
       ],
-      generationConfig: { temperature: 0.1, responseMimeType: 'application/json' },
+      generationConfig: { temperature: 0.1 },
     }),
   })
-  if (!resp.ok) throw new Error(`Gemini error: ${resp.status}`)
+
+  if (!resp.ok) {
+    const errBody = await resp.text().catch(() => '')
+    throw new Error(`Gemini error: ${resp.status} ${errBody.slice(0, 200)}`)
+  }
+
   const json = await resp.json() as {
     candidates?: { content?: { parts?: { text?: string }[] } }[]
   }
   return json.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+}
+
+// ---------------------------------------------------------------------------
+// generateFloorPlanSvg — Gemini 2.0 Flash converts a floor plan PNG → SVG
+// ---------------------------------------------------------------------------
+
+interface FloorRoom { name: string; cx: number; cy: number }
+interface FloorPlanData { svg: string; rooms: FloorRoom[] }
+
+async function generateFloorPlanSvg(
+  pngBase64: string,
+  geminiKey: string
+): Promise<FloorPlanData> {
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`
+
+  const prompt = `You are a floor plan SVG generator. Analyze this residential floor plan image.
+
+Return ONLY raw JSON (no markdown) with exactly this structure:
+{
+  "svg": "<svg viewBox=\\"0 0 400 300\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>",
+  "rooms": [{"name": "Living Room", "cx": 30, "cy": 45}]
+}
+
+SVG rules:
+- viewBox MUST be "0 0 400 300"
+- Draw each room as a <rect> with rx="4" fill="rgba(255,255,255,0.05)" stroke="rgba(255,215,0,0.25)" stroke-width="1.5"
+- Add a <text> label centred in each room: font-size="9" fill="rgba(255,255,255,0.45)" text-anchor="middle" dominant-baseline="middle"
+- Include walls as strokes only — no fills that obscure other elements
+- Keep the total SVG under 2800 characters
+- Only include: living area, kitchen, master bedroom, secondary bedrooms, bathroom(s), balcony, dining, study
+
+rooms rules:
+- cx and cy are the room's center as a percentage (0-100) relative to the 400×300 viewBox
+- Allowed names (use exactly): Living Room, Kitchen, Master Bedroom, Bedroom 2, Bedroom 3, Bathroom, Balcony, Study, Dining Room`
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(45_000), // 45s — needs more tokens now
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: 'image/png', data: pngBase64 } },
+        ],
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        // No responseMimeType — JSON mode was truncating SVG strings at ~70 chars
+        maxOutputTokens: 4096,
+      },
+    }),
+  })
+
+  if (!resp.ok) throw new Error(`[generateFloorPlanSvg] Gemini error: ${resp.status}`)
+
+  const json = await resp.json() as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+  }
+  const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+  // Extract JSON from free-text response (model may wrap in ```json ... ```)
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) throw new Error('[generateFloorPlanSvg] No JSON block found in response')
+  const data = JSON.parse(jsonMatch[0]) as FloorPlanData
+
+  if (!data.svg || !Array.isArray(data.rooms)) {
+    throw new Error('[generateFloorPlanSvg] Invalid response structure')
+  }
+  return data
 }
 
 export const processBrochure = onCall(
@@ -382,6 +480,7 @@ export const processBrochure = onCall(
         projectName?: string
         developer?: string
         city?: string
+        towers?: string[]
         unitTypes?: Array<{
           label?: string
           bedrooms?: number
@@ -392,6 +491,7 @@ export const processBrochure = onCall(
           floorRange?: [number, number]
           flatNumberPattern?: string
           floorPlanPage?: number
+          rooms?: Array<{ name: string; x: number; y: number; w: number; h: number }>
         }>
       }
 
@@ -401,33 +501,38 @@ export const processBrochure = onCall(
       const rawUnitTypes = extracted.unitTypes ?? []
       console.log(`[processBrochure] Extracted ${rawUnitTypes.length} unit types for "${projectName}"`)
 
-      // 3. mupdf (via JS helper): render unique floor plan pages to PNG
-      const { renderPdfPageToPng } = require('./mupdf-render') as {
-        renderPdfPageToPng: (buf: Buffer, idx: number, dpi: number) => Promise<Buffer>
-      }
+      // 3. mupdf: render unique floor plan pages to PNG (non-fatal)
       const uniquePages = [
         ...new Set(rawUnitTypes.map((ut) => ut.floorPlanPage ?? 0).filter((p) => p > 0)),
       ]
       const pageToUrl = new Map<number, string>()
       const ts = Date.now()
 
-      for (const pageNum of uniquePages) {
-        console.log(`[processBrochure] Rendering page ${pageNum} with mupdf...`)
-        try {
-          const png = await renderPdfPageToPng(pdfBuffer, pageNum - 1, 100)
-          const imgPath = `pending/${uid}/${ts}/floorplan-page${pageNum}.png`
-          const imgFile = bucket.file(imgPath)
-          await imgFile.save(png, { metadata: { contentType: 'image/png' } })
-          await imgFile.makePublic()
-          const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`
-          pageToUrl.set(pageNum, url)
-          console.log(`[processBrochure] Uploaded page ${pageNum}: ${Math.round(png.length / 1024)}KB`)
-        } catch (renderErr) {
-          console.warn(`[processBrochure] Render failed for page ${pageNum}:`, renderErr)
+      try {
+        const { renderPdfPageToPng } = require('./mupdf-render') as {
+          renderPdfPageToPng: (buf: Buffer, idx: number, dpi: number) => Promise<Buffer>
         }
+
+        for (const pageNum of uniquePages) {
+          console.log(`[processBrochure] Rendering page ${pageNum} with mupdf...`)
+          try {
+            const png = await renderPdfPageToPng(pdfBuffer, pageNum - 1, 100)
+            const imgPath = `pending/${uid}/${ts}/floorplan-page${pageNum}.png`
+            const imgFile = bucket.file(imgPath)
+            await imgFile.save(png, { metadata: { contentType: 'image/png' } })
+            await imgFile.makePublic()
+            const url = `https://storage.googleapis.com/${bucket.name}/${imgPath}`
+            pageToUrl.set(pageNum, url)
+            console.log(`[processBrochure] Uploaded page ${pageNum}: ${Math.round(png.length / 1024)}KB`)
+          } catch (renderErr) {
+            console.warn(`[processBrochure] Render failed for page ${pageNum}:`, renderErr)
+          }
+        }
+      } catch (mupdfErr) {
+        console.warn('[processBrochure] mupdf unavailable, skipping floor plan rendering:', mupdfErr)
       }
 
-      // 4. Build unit type list
+      // 4. Build unit type list with rooms from Gemini extraction
       const unitTypes: PendingUnitType[] = rawUnitTypes.map((ut) => {
         const carpetArea = ut.carpetArea ?? 0
         const sbuArea = ut.superBuiltUpArea ?? 0
@@ -445,19 +550,14 @@ export const processBrochure = onCall(
           flatNumberPattern: ut.flatNumberPattern ?? '',
           floorPlanUrl,
           genericDocs: floorPlanUrl ? [floorPlanUrl] : [],
+          svgFloorPlan: '',
+          rooms: (ut.rooms ?? []).map((r) => ({ name: r.name, x: r.x, y: r.y, w: r.w, h: r.h })),
         }
       })
 
-      // 5. Embed the PDF with Gemini Embedding 2 for semantic project search
-      let brochureEmbedding: number[] = []
-      try {
-        console.log(`[processBrochure] Generating PDF embedding...`)
-        brochureEmbedding = await embedPdf(base64Pdf, geminiKey)
-        console.log(`[processBrochure] Embedding generated: dim=${brochureEmbedding.length}`)
-      } catch (embedErr) {
-        // Non-fatal — proceed without embedding
-        console.warn('[processBrochure] Embedding failed (non-fatal):', embedErr)
-      }
+      // Step 5: PDF embedding DISABLED — was crashing via unhandled AbortSignal rejection.
+      // Re-enable once brochure processing is confirmed stable.
+      const brochureEmbedding: number[] = []
 
       // 6. Write to /pendingProjects - NOT /projects
       const pendingRef = await db.collection('pendingProjects').add({
@@ -472,16 +572,20 @@ export const processBrochure = onCall(
         submittedAt: FieldValue.serverTimestamp(),
       })
 
+      const towers = extracted.towers ?? []
+
       console.log(`[processBrochure] Created pendingProject: ${pendingRef.id}`)
       return {
-        pendingProjectId: pendingRef.id,
+        projectId: pendingRef.id,
         projectName,
-        unitTypesCount: unitTypes.length,
+        towers,
+        unitTypes,
         embeddingDim: brochureEmbedding.length,
       }
     } catch (err) {
-      console.error('[processBrochure] Error:', err)
-      throw new HttpsError('internal', 'Failed to process brochure. Please try again.')
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[processBrochure] Error:', msg)
+      throw new HttpsError('internal', `Failed to process brochure: ${msg.slice(0, 200)}`)
     }
   }
 )
