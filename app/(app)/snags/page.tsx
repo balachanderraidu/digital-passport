@@ -153,49 +153,71 @@ export default function SnagsPage() {
           </div>
         )}
 
-        <div className="space-y-3 pb-28">
+        <div className="pb-28">
           {!loading && filteredSnags.length === 0 && (
             <div className="text-center py-12 text-vault-text-muted">
               <CheckCircle2 size={40} className="mx-auto mb-3 text-green-500/40" />
               <p className="text-sm font-medium">No snags in this category</p>
             </div>
           )}
-          {!loading && filteredSnags.map((snag) => (
-            <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-4 card-hover block">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {snag.photoUrl ? (
-                    <img src={snag.photoUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Camera size={18} className="text-vault-text-muted" />
-                  )}
+
+          {/* Urgency groups: High → Medium → Low */}
+          {!loading && (['high', 'medium', 'low'] as Urgency[]).map((urgency) => {
+            const group = filteredSnags.filter((s) => s.urgency === urgency)
+            if (group.length === 0) return null
+            const cfg = URGENCY_CONFIG[urgency]
+            const dotColor = urgency === 'high' ? 'bg-red-500' : urgency === 'medium' ? 'bg-amber-500' : 'bg-stone-400'
+            return (
+              <div key={urgency} className="mb-5">
+                {/* Group header */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
+                  <span className={cn('text-[10px] font-bold uppercase tracking-widest', cfg.cls.replace('urgency-high', 'text-red-400').replace('urgency-medium', 'text-amber-400').replace('urgency-low', 'text-stone-400'))}>
+                    {cfg.label} Priority
+                  </span>
+                  <span className="text-[10px] text-vault-text-muted">({group.length})</span>
+                  <div className="flex-1 h-px bg-vault-border" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-vault-text leading-tight">{snag.title}</p>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <MapPin size={11} className="text-vault-text-muted" />
-                    <span className="text-xs text-vault-text-muted">{snag.location}</span>
-                    <span className="text-vault-border">·</span>
-                    <span className="text-xs text-vault-text-muted">{snag.category}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', URGENCY_CONFIG[snag.urgency as Urgency].cls)}>
-                      {URGENCY_CONFIG[snag.urgency as Urgency].label}
-                    </span>
-                    <span className={cn('text-[10px] font-semibold', STATUS_CONFIG[snag.status as SnagStatus].color)}>
-                      {STATUS_CONFIG[snag.status as SnagStatus].label}
-                    </span>
-                    <span className="text-[9px] text-vault-text-muted ml-auto">
-                      {snag.createdAt ? formatDateTime(snag.createdAt.toDate().toISOString()) : '—'}
-                    </span>
-                  </div>
+
+                <div className="space-y-2.5">
+                  {group.map((snag) => (
+                    <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-4 card-hover block">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {snag.photoUrl ? (
+                            <img src={snag.photoUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Camera size={18} className="text-vault-text-muted" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-vault-text leading-tight">{snag.title}</p>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <MapPin size={11} className="text-vault-text-muted" />
+                            <span className="text-xs text-vault-text-muted">{snag.location}</span>
+                            <span className="text-vault-border">·</span>
+                            <span className="text-xs text-vault-text-muted">{snag.category}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', cfg.cls)}>
+                              {cfg.label}
+                            </span>
+                            <span className="text-[9px] text-vault-text-muted ml-auto">
+                              {snag.createdAt ? formatDateTime(snag.createdAt.toDate().toISOString()) : '—'}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-                <ChevronRight size={16} className="text-vault-text-muted flex-shrink-0 mt-1" />
               </div>
-            </Link>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
   )
 }
+

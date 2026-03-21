@@ -12,6 +12,7 @@ import { PropertySwitcher } from '@/components/PropertySwitcher'
 import { RoomMinimap } from '@/components/floorplan/RoomMinimap'
 import { RoomDetailSheet } from '@/components/floorplan/RoomDetailSheet'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
+import { PropertyTimeline } from '@/components/PropertyTimeline'
 import {
   subscribeDashboardStats,
   subscribeWarrantyAssets,
@@ -29,7 +30,7 @@ import {
   DEMO_ROOMS, DEMO_WARRANTY_ASSETS,
   DEMO_SNAGS, DEMO_SNAGS_ACTIVE,
   DEMO_EVENTS, DEMO_STATS, DEMO_STATS_ACTIVE,
-  DEMO_ROOM_SPECS,
+  DEMO_ROOM_SPECS, DEMO_TIMELINE_EVENTS,
 } from '@/lib/demo-data'
 
 // Canonical hotspot definitions — positions are fixed layout-wise
@@ -284,15 +285,15 @@ export default function DashboardPage() {
         {/* Live quick stats */}
         <div className="grid grid-cols-3 gap-2.5 mt-5">
           {[
-            { label: 'Assets', value: stats.assetCount, sub: 'tracked' },
-            { label: 'Warranties', value: stats.expiringSoonCount, sub: 'expiring soon' },
-            { label: 'Snags', value: stats.openSnagCount, sub: 'open' },
+            { label: 'Assets', value: stats.assetCount, sub: 'tracked', href: '/warranty' },
+            { label: 'Warranties', value: stats.expiringSoonCount, sub: 'expiring soon', href: '/warranty', alert: stats.expiringSoonCount > 0 },
+            { label: 'Snags', value: stats.openSnagCount, sub: 'open', href: '/snags', alert: stats.openSnagCount > 0 },
           ].map((stat) => (
-            <div key={stat.label} className="card p-3 text-center">
-              <div className="text-xl font-bold gold-text">{stat.value}</div>
+            <Link key={stat.label} href={stat.href} className="card p-3 text-center hover:border-gold-500/40 transition-all">
+              <div className={cn('text-xl font-bold', stat.alert ? 'text-amber-400' : 'gold-text')}>{stat.value}</div>
               <div className="text-[10px] font-medium text-vault-text-muted mt-0.5">{stat.label}</div>
               <div className="text-[9px] text-vault-muted">{stat.sub}</div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -507,10 +508,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Activity Timeline */}
-      {events.length > 0 && (
-        <div className="px-5 mt-5 pb-28">
-          <h2 className="text-sm font-bold text-white mb-3">Recent Activity</h2>
+      {/* Property Timeline / Activity */}
+      <div className="px-5 mt-5 pb-28">
+        <h2 className="text-sm font-bold text-white mb-3">Property Timeline</h2>
+        {isDemo ? (
+          <PropertyTimeline events={DEMO_TIMELINE_EVENTS} />
+        ) : events.length > 0 ? (
           <div className="space-y-2">
             {events.slice(0, 5).map((event) => (
               <div key={event.id} className="card p-3.5 flex items-center gap-3">
@@ -524,11 +527,15 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8 text-vault-text-muted">
+            <p className="text-sm">No activity yet</p>
+          </div>
+        )}
+      </div>
 
-      {events.length === 0 && expiringWarranties.length === 0 && (
-        <div className="pb-28" />
+      {events.length === 0 && expiringWarranties.length === 0 && isDemo && (
+        <div className="pb-8" />
       )}
 
       {/* AI Assistant shortcut fab */}

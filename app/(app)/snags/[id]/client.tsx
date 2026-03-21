@@ -7,7 +7,7 @@ import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeSnags, updateSnagStatus, type Snag } from '@/lib/firestore'
-import { DEMO_SNAGS } from '@/lib/demo-data'
+import { DEMO_SNAGS, DEMO_ITEM_LINKS } from '@/lib/demo-data'
 
 type SnagStatus = 'open' | 'in-progress' | 'fixed'
 type Urgency = 'low' | 'medium' | 'high'
@@ -171,6 +171,25 @@ export default function SnagDetailClient({ id }: { id: string }) {
             </p>
           )}
         </div>
+
+        {/* Linked spec item cross-reference */}
+        {(() => {
+          const linkedItem = Object.entries(DEMO_ITEM_LINKS).find(
+            ([, link]) => link.snagIds?.includes(snag.id)
+          )
+          if (!linkedItem) return null
+          const [itemName] = linkedItem
+          return (
+            <div className="card p-3.5 mb-4 flex items-start gap-3 border-gold-500/20">
+              <span className="text-lg flex-shrink-0">🔗</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-bold text-vault-text-muted uppercase tracking-widest mb-1">Linked Spec Item</p>
+                <p className="text-sm font-semibold text-vault-text leading-snug">{itemName}</p>
+                <p className="text-[10px] text-vault-text-muted mt-0.5">{snag.location} · Tap room in Home Twin to view full spec</p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* CTA buttons */}
         <div className="grid grid-cols-2 gap-3">

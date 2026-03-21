@@ -732,3 +732,239 @@ export const DEMO_STATS: DashboardStats = {
   expiringSoonCount: 1,   // LG AC
   openSnagCount: DEMO_SNAGS.filter((s) => s.status === 'open').length,
 }
+
+// ─── Property Timeline ─────────────────────────────────────────────────────────
+// Chronological milestones — the "life of the property" feed.
+
+export interface TimelineEvent {
+  id: string
+  date: string           // YYYY-MM-DD
+  category: 'purchase' | 'legal' | 'renovation' | 'installation' | 'service' | 'snag' | 'warranty' | 'document'
+  icon: string
+  title: string
+  detail: string
+  badge?: string         // short status label
+  badgeColor?: string    // tailwind text colour class
+  linkedId?: string      // warrantyId, snagId, vaultDocId etc.
+}
+
+export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
+  // ── 2023 ──────────────────────────────────────────────────────────────────
+  {
+    id: 'tl-1',
+    date: '2023-06-10',
+    category: 'purchase',
+    icon: '🏠',
+    title: 'Property Booked',
+    detail: 'Unit 1202, Oriana Tower B — Prestige Cybercity, Hyderabad. Booking amount ₹5,00,000 paid.',
+  },
+  {
+    id: 'tl-2',
+    date: '2023-08-22',
+    category: 'legal',
+    icon: '📝',
+    title: 'Sale Agreement Signed',
+    detail: 'Registered sale agreement executed. Stamp duty ₹1,24,000 paid at SRO Kondapur.',
+    badge: 'Legal',
+    badgeColor: 'text-blue-400',
+    linkedId: 'vd-1',
+  },
+  {
+    id: 'tl-3',
+    date: '2023-06-15',
+    category: 'installation',
+    icon: '🌀',
+    title: 'Dyson V11 Vacuum — Purchased',
+    detail: 'Dyson V11 Absolute added to household. 2-year warranty registered.',
+    linkedId: 'wa-8',
+  },
+
+  // ── 2024 ──────────────────────────────────────────────────────────────────
+  {
+    id: 'tl-4',
+    date: '2024-03-05',
+    category: 'renovation',
+    icon: '🔨',
+    title: 'Interior Work Commenced',
+    detail: 'Prism Interiors started renovations — flooring, false ceiling, modular kitchen, and wardrobes.',
+    badge: 'Active Phase',
+    badgeColor: 'text-amber-400',
+  },
+  {
+    id: 'tl-5',
+    date: '2024-03-18',
+    category: 'installation',
+    icon: '❄️',
+    title: 'LG AC 1.5T Installed',
+    detail: 'LG RS-Q19JNXE installed in living room by LG Authorised Service, Hyderabad. Invoice #LG-INST-2024-0012.',
+    linkedId: 'wa-1',
+  },
+  {
+    id: 'tl-6',
+    date: '2024-08-22',
+    category: 'installation',
+    icon: '📺',
+    title: 'Samsung 55″ QLED Mounted',
+    detail: 'TV wall-mounted (75° tilt bracket) by Samsung SmartCare. Invoice #SC-INST-2024-0445.',
+    linkedId: 'wa-2',
+  },
+  {
+    id: 'tl-7',
+    date: '2024-08-28',
+    category: 'renovation',
+    icon: '🏁',
+    title: 'Interior Works Completed',
+    detail: 'Renovation signed off by Prism Interiors. Snag inspection done — 3 minor issues logged.',
+    badge: 'Passive Phase',
+    badgeColor: 'text-emerald-400',
+  },
+  {
+    id: 'tl-8',
+    date: '2024-08-30',
+    category: 'installation',
+    icon: '🚿',
+    title: 'Racold Water Heater Installed',
+    detail: 'Racold Pronto Neo 25L mounted in bathroom. Invoice #RAC-INST-2024-0199.',
+    linkedId: 'wa-6',
+  },
+  {
+    id: 'tl-9',
+    date: '2024-09-01',
+    category: 'renovation',
+    icon: '🛏️',
+    title: 'Moved In',
+    detail: 'Property handed over. Keys collected from Prestige site office. Passport status: Passive.',
+    badge: 'Moved In',
+    badgeColor: 'text-emerald-400',
+  },
+  {
+    id: 'tl-10',
+    date: '2024-09-01',
+    category: 'installation',
+    icon: '🧊',
+    title: 'Samsung Refrigerator Installed',
+    detail: 'Samsung 265L RT28T3722S8 placed and levelled. Invoice #SC-INST-2024-0446.',
+    linkedId: 'wa-4',
+  },
+  {
+    id: 'tl-11',
+    date: '2024-09-10',
+    category: 'installation',
+    icon: '🍽️',
+    title: 'IFB Dishwasher Installed',
+    detail: 'IFB under-counter dishwasher plumbed in by IFB Authorised, Hyderabad. Invoice #IFB-INST-2024-0203.',
+    linkedId: 'wa-3',
+  },
+  {
+    id: 'tl-12',
+    date: '2024-09-05',
+    category: 'service',
+    icon: '🔧',
+    title: 'LG AC — First Annual Service',
+    detail: 'Coil cleaned, drain pipe flushed, gas pressure 8.2 bar verified. Invoice #LG-SVC-2024-0891. ₹850.',
+    linkedId: 'wa-1',
+  },
+  {
+    id: 'tl-13',
+    date: '2024-10-02',
+    category: 'installation',
+    icon: '❄️',
+    title: 'Panasonic AC — Master Bed Installed',
+    detail: 'Panasonic 1.5T inverter AC installed in master bedroom. Invoice #PAN-INST-2024-0088.',
+    linkedId: 'wa-7',
+  },
+  {
+    id: 'tl-14',
+    date: '2024-11-15',
+    category: 'snag',
+    icon: '🔴',
+    title: 'Snag Logged: Bathroom Floor Tiles',
+    detail: 'Two tiles near the shower partition cracked. High urgency — raised with Prestige Cybercity FM.',
+    badge: 'Open',
+    badgeColor: 'text-red-400',
+    linkedId: 'sn-1',
+  },
+  {
+    id: 'tl-15',
+    date: '2024-12-20',
+    category: 'service',
+    icon: '🧹',
+    title: 'IFB Dishwasher — Self Clean',
+    detail: 'Filter basket descaled. Limescale removed from spray arms.',
+    linkedId: 'wa-3',
+  },
+  {
+    id: 'tl-16',
+    date: '2024-12-28',
+    category: 'document',
+    icon: '🧾',
+    title: 'GST Invoice Uploaded',
+    detail: 'GST ₹14,80,000 at 5% on undivided share uploaded to Vault. OCR indexed.',
+    linkedId: 'vd-5',
+  },
+
+  // ── 2025 ──────────────────────────────────────────────────────────────────
+  {
+    id: 'tl-17',
+    date: '2025-01-10',
+    category: 'service',
+    icon: '🔧',
+    title: 'Racold Heater — Annual Service',
+    detail: 'Anode rod 30% consumed, tank flushed, thermostat at 55°C. Invoice #RAC-SVC-2025-0012. ₹600.',
+    linkedId: 'wa-6',
+  },
+  {
+    id: 'tl-18',
+    date: '2025-02-18',
+    category: 'warranty',
+    icon: '🛡️',
+    title: 'IFB Dishwasher — Warranty Repair',
+    detail: 'Inlet valve replaced under warranty (E3 error). Invoice #IFB-REP-2025-0041.',
+    badge: 'Warranty Claim',
+    badgeColor: 'text-purple-400',
+    linkedId: 'wa-3',
+  },
+  {
+    id: 'tl-19',
+    date: '2025-02-28',
+    category: 'service',
+    icon: '🔧',
+    title: 'Panasonic AC — Annual Service',
+    detail: 'Coil washed, drain cleared, firmware v3.1.2 installed. Invoice #PAN-SVC-2025-0031. ₹950.',
+    linkedId: 'wa-7',
+  },
+  {
+    id: 'tl-20',
+    date: '2025-03-05',
+    category: 'snag',
+    icon: '🟡',
+    title: 'Kitchen Cabinet Repair — In Progress',
+    detail: 'Right upper cabinet door realigned by Hafele service. Fischer anchor replaced. Invoice #HFP-REP-2025-0007. ₹350.',
+    badge: 'In Progress',
+    badgeColor: 'text-amber-400',
+    linkedId: 'sn-2',
+  },
+  {
+    id: 'tl-21',
+    date: '2025-03-10',
+    category: 'service',
+    icon: '🔧',
+    title: 'LG AC — Second Annual Service',
+    detail: 'Refrigerant topped up 150g, remote battery replaced. Invoice #LG-SVC-2025-0214. ₹1,200.',
+    badge: '⚠️ Expiring Soon',
+    badgeColor: 'text-amber-400',
+    linkedId: 'wa-1',
+  },
+  {
+    id: 'tl-22',
+    date: '2025-03-21',
+    category: 'warranty',
+    icon: '⚠️',
+    title: 'LG AC Warranty — Expiring in 15 Days',
+    detail: 'Warranty for LG RS-Q19JNXE expires soon. Consider AMC renewal with LG Authorised, Hyderabad (+91 98490 11223).',
+    badge: 'Action Needed',
+    badgeColor: 'text-amber-400',
+    linkedId: 'wa-1',
+  },
+]
+

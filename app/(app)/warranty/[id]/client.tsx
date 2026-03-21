@@ -10,7 +10,7 @@ import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeWarrantyAssets, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
-import { DEMO_WARRANTY_ASSETS } from '@/lib/demo-data'
+import { DEMO_WARRANTY_ASSETS, DEMO_ITEM_LINKS } from '@/lib/demo-data'
 
 export default function WarrantyDetailClient({ id }: { id: string }) {
   const router = useRouter()
@@ -180,6 +180,48 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
             Book Service
           </button>
         </div>
+
+        {/* Service History — from DEMO_ITEM_LINKS keyed by asset name */}
+        {(() => {
+          const itemKey = Object.keys(DEMO_ITEM_LINKS).find(k =>
+            asset.name.toLowerCase().includes(k.split(' ')[0].toLowerCase()) ||
+            k.toLowerCase().includes(asset.name.split(' ')[0].toLowerCase())
+          )
+          const link = itemKey ? DEMO_ITEM_LINKS[itemKey] : null
+          const history = link?.serviceHistory ?? []
+          if (history.length === 0) return null
+          const SERVICE_ICON: Record<string, string> = {
+            'Installation': '🔌', 'Annual Service': '🔧', 'Repair': '🛠️', 'Inspection': '🔍', 'Cleaning': '🧹',
+          }
+          return (
+            <div className="mb-6">
+              <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-widest">Service History</h3>
+              <div className="ml-1 pl-3 border-l border-vault-border space-y-3.5">
+                {[...history].reverse().map((ev, i) => (
+                  <div key={i} className="relative">
+                    <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-vault-muted border border-vault-border flex items-center justify-center">
+                      <span className="text-[6px]">{SERVICE_ICON[ev.type] ?? '•'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-vault-text">{ev.type}</span>
+                      {ev.cost !== undefined && ev.cost > 0 && <span className="text-[9px] text-vault-text-muted">₹{ev.cost.toLocaleString()}</span>}
+                      {ev.cost === 0 && <span className="text-[9px] font-bold text-green-500">Free / Warranty</span>}
+                      {ev.invoiceRef && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold-500/10 border border-gold-500/20 text-gold-400 font-mono">#{ev.invoiceRef}</span>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-vault-text-muted mt-0.5">
+                      {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {' · '}<span className="font-semibold text-vault-text">{ev.tech}</span>
+                    </p>
+                    {ev.contact && <p className="text-[9px] text-blue-400 mt-0.5">{ev.contact}</p>}
+                    <p className="text-[10px] text-vault-text mt-1 leading-relaxed">{ev.notes}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Delete confirmation */}

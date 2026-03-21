@@ -242,6 +242,33 @@ export default function ProfilePage() {
         )}
       </div>
 
+      {/* Property Registration Details — Demo mode */}
+      {isDemo && (
+        <div className="mx-5 mb-4">
+          <p className="text-[10px] font-semibold text-vault-text-muted uppercase tracking-widest mb-3 px-1">Property Registration</p>
+          <div className="card p-4 space-y-3">
+            {[
+              { label: 'Registration No.',   value: 'REG/HYD/2023/081204', icon: '🔖' },
+              { label: 'Developer',          value: 'Prestige Estates Projects Ltd', icon: '🏢' },
+              { label: 'Project',            value: 'Prestige Cybercity — Oriana', icon: '🏙️' },
+              { label: 'SRO (Kondapur)',     value: 'SRO-KDP-2023-08', icon: '⚖️' },
+              { label: 'Possession Date',    value: '1 Sep 2024', icon: '🗓️' },
+              { label: 'RERA No.',           value: 'P02400005021', icon: '📋' },
+              { label: 'Carpet Area',        value: '1,456 sq ft (UDS: 312 sq ft)', icon: '📐' },
+              { label: 'Stamp Duty Paid',    value: '₹1,24,000 (1% LRS scheme)', icon: '🧾' },
+            ].map(({ label, value, icon }) => (
+              <div key={label} className="flex items-center gap-3 pb-3 border-b border-vault-border/40 last:border-0 last:pb-0">
+                <span className="text-base flex-shrink-0">{icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-bold text-vault-text-muted uppercase tracking-widest mb-0.5">{label}</p>
+                  <p className="text-xs font-semibold text-vault-text leading-snug">{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* All Properties */}
       <div className="mx-5 mb-4">
         <div className="flex items-center justify-between mb-3 px-1">
@@ -253,6 +280,7 @@ export default function ProfilePage() {
             <Plus size={12} /> Add
           </button>
         </div>
+
         <div className="space-y-2">
           {isDemo ? (
             /* Demo property card */
