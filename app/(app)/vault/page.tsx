@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Upload, HardDrive, FileText, FileImage, File, X,
   CloudUpload, Loader2, Eye, Lock, StickyNote, Calendar, Search,
@@ -186,6 +187,14 @@ export default function VaultPage() {
     if (!user) return
     return subscribeAllVaultCategories(user.uid, setVaultData, activePropertyId)
   }, [user, activePropertyId])
+
+  // Check URL for quick action triggers
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('upload=true')) {
+      if (isDemo) setShowDemoPrompt(true)
+      else setUploading(true)
+    }
+  }, [isDemo])
 
   const allDocs = Object.values(vaultData).flat()
   const totalBytes = allDocs.reduce((sum, d) => sum + (d.size || 0), 0)

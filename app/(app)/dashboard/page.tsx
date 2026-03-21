@@ -329,8 +329,8 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-2 mt-3">
           {[
-            { label: 'Upload Doc', icon: <Upload size={14} />, href: '/vault' },
-            { label: 'Add Asset',  icon: <Plus size={14} />, href: '/warranty' },
+            { label: 'Upload Doc', icon: <Upload size={14} />, href: '/vault?upload=true' },
+            { label: 'Add Asset',  icon: <Plus size={14} />, href: '/warranty?add=true' },
             { label: 'Log Snag',   icon: <Hammer size={14} />, href: '/snags/new' },
             { label: 'Home Plan',  icon: <Sparkles size={14} />, href: '/home-plan' },
           ].map((action) => (

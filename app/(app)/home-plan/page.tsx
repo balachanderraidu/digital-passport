@@ -10,7 +10,9 @@ import { FloorPlanCanvas } from '@/components/floorplan/FloorPlanCanvas'
 import { ItemPanel } from '@/components/floorplan/ItemPanel'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { DEMO_PROPERTY, DEMO_ROOMS } from '@/lib/demo-data'
+import { DEMO_PROPERTY, DEMO_ROOMS, DEMO_ROOM_SPECS, DEMO_WARRANTY_ASSETS } from '@/lib/demo-data'
+import { RoomMinimap } from '@/components/floorplan/RoomMinimap'
+import { RoomDetailSheet } from '@/components/floorplan/RoomDetailSheet'
 
 export default function HomePlanPage() {
   const router = useRouter()
@@ -130,23 +132,46 @@ export default function HomePlanPage() {
             <div className="flex items-center gap-1.5 mb-3">
               <HelpCircle size={12} className="text-vault-text-muted" />
               <p className="text-xs text-vault-text-muted">
-                {selectedItem ? 'Item selected — edit below' : 'Tap a room or furniture item'}
+                {isDemo 
+                  ? 'Tap any room to explore details and tracking'
+                  : selectedItem 
+                     ? 'Item selected — edit below' 
+                     : 'Tap a room or furniture item'}
               </p>
             </div>
 
-            <FloorPlanCanvas
-              rooms={rooms}
-              floorPlanUrl={floorPlanUrl}
-              initialItems={items.length > 0 ? items : undefined}
-              mode={isDemo ? 'view' : 'edit'}
-              totalArea={effectiveProperty?.area}
-              onItemsChange={isDemo ? undefined : handleItemsChange}
-              onItemSelect={isDemo ? undefined : handleItemSelect}
-              onRoomSelect={isDemo ? undefined : handleRoomSelect}
-            />
+            {isDemo ? (
+              <>
+                <RoomMinimap
+                  rooms={rooms}
+                  warrantyAssets={DEMO_WARRANTY_ASSETS}
+                  propertyLabel={effectiveProperty?.unitTypeLabel}
+                  area={effectiveProperty?.area}
+                  isDemo
+                  onRoomClick={(r) => setSelectedRoom(r)}
+                />
+                <RoomDetailSheet
+                  room={selectedRoom}
+                  spec={selectedRoom ? DEMO_ROOM_SPECS[selectedRoom.name] ?? null : null}
+                  warrantyCount={DEMO_WARRANTY_ASSETS.filter((a) => a.zone === selectedRoom?.name || a.zone?.includes(selectedRoom?.name?.split(' ')[0] ?? '')).length}
+                  onClose={() => setSelectedRoom(null)}
+                />
+              </>
+            ) : (
+              <FloorPlanCanvas
+                rooms={rooms}
+                floorPlanUrl={floorPlanUrl}
+                initialItems={items.length > 0 ? items : undefined}
+                mode="edit"
+                totalArea={effectiveProperty?.area}
+                onItemsChange={handleItemsChange}
+                onItemSelect={handleItemSelect}
+                onRoomSelect={handleRoomSelect}
+              />
+            )}
 
-            {/* Room info strip */}
-            {selectedRoom && (
+            {/* Room info strip for edit mode */}
+            {!isDemo && selectedRoom && (
               <div className="mt-3 card p-3 border-vault-border rounded-2xl">
                 <p className="text-xs font-bold text-white">{selectedRoom.name}</p>
                 <p className="text-xs text-vault-text-muted mt-0.5">

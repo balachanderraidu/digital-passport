@@ -41,7 +41,18 @@ export default function NewSnagPage() {
   }
 
   async function handleSubmit() {
-    if (!user || !location || !category || !urgency) return
+    if (!user) {
+      if (location && category && urgency) {
+        setSubmitting(true)
+        setTimeout(() => {
+          setSubmitting(false)
+          router.push('/snags')
+        }, 800)
+      }
+      return
+    }
+    if (!location || !category || !urgency) return
+    
     setSubmitting(true)
     try {
       const title = description || `${category} issue — ${location}`

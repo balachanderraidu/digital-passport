@@ -91,6 +91,15 @@ export default function WarrantyPage() {
     return unsub
   }, [user, activePropertyId])
 
+  // Check URL for quick action triggers
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('add=true')) {
+      setShowAddAsset(true)
+      // Remove query param without reload
+      window.history.replaceState({}, '', '/warranty')
+    }
+  }, [])
+
   const assetsWithStatus = assets.map((a) => ({
     ...a,
     status: getWarrantyStatus(a.warrantyExpiry),
@@ -105,7 +114,20 @@ export default function WarrantyPage() {
   const sorted = [...filtered].sort((a, b) => a.daysLeft - b.daysLeft)
 
   async function handleSave() {
-    if (!user || !form.name || !form.purchaseDate || !form.warrantyExpiry) return
+    if (!user) {
+      if (isDemo && form.name && form.purchaseDate && form.warrantyExpiry) {
+        setSaving(true)
+        setTimeout(() => {
+          setSaving(false)
+          setForm(DEFAULT_FORM)
+          setInvoiceFile(null)
+          setShowAddAsset(false)
+        }, 800)
+      }
+      return
+    }
+    if (!form.name || !form.purchaseDate || !form.warrantyExpiry) return
+    
     setSaving(true)
     try {
       let invoiceUrl: string | null = null
