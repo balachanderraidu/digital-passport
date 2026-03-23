@@ -54,7 +54,7 @@ export const DEMO_SNAGS_ACTIVE: Snag[] = [
     category: 'False Ceiling',
     urgency: 'high',
     status: 'open',
-    photoUrl: null,
+    photoUrl: '/demo-assets/snag_structural.png',
     createdAt: ts(2),
     updatedAt: ts(2),
   },
@@ -65,7 +65,7 @@ export const DEMO_SNAGS_ACTIVE: Snag[] = [
     category: 'Stonework',
     urgency: 'medium',
     status: 'open',
-    photoUrl: null,
+    photoUrl: '/demo-assets/snag_structural.png',
     createdAt: ts(3),
     updatedAt: ts(3),
   },
@@ -416,6 +416,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
     warrantyExpiry: isoDate(15),      // expiring soon
     nextService: isoDate(15),
     invoiceUrl: null,
+    photoUrl: '/demo-assets/asset_ac.png',
     source: 'manual',
     createdAt: ts(365),
   },
@@ -431,6 +432,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
     warrantyExpiry: isoDate(165),
     nextService: null,
     invoiceUrl: null,
+    photoUrl: '/demo-assets/asset_tv.png',
     source: 'gmail_sync',
     createdAt: ts(200),
   },
@@ -446,6 +448,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
     warrantyExpiry: isoDate(550),
     nextService: isoDate(90),
     invoiceUrl: null,
+    photoUrl: '/demo-assets/asset_washer.png',
     source: 'gmail_sync',
     createdAt: ts(180),
   },
@@ -461,6 +464,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
     warrantyExpiry: isoDate(-30),     // already expired
     nextService: null,
     invoiceUrl: null,
+    photoUrl: '/demo-assets/asset_fridge.png',
     source: 'manual',
     createdAt: ts(730),
   },
@@ -506,6 +510,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
     warrantyExpiry: isoDate(640),
     nextService: isoDate(275),
     invoiceUrl: null,
+    photoUrl: '/demo-assets/asset_ac.png',
     source: 'gmail_sync',
     createdAt: ts(90),
   },
@@ -630,7 +635,7 @@ export const DEMO_SNAGS: Snag[] = [
     category: 'Tiling',
     urgency: 'high',
     status: 'open',
-    photoUrl: null,
+    photoUrl: '/demo-assets/snag_paint.png',
     createdAt: ts(5),
     updatedAt: ts(5),
   },
@@ -652,7 +657,7 @@ export const DEMO_SNAGS: Snag[] = [
     category: 'Waterproofing',
     urgency: 'high',
     status: 'open',
-    photoUrl: null,
+    photoUrl: '/demo-assets/snag_paint.png',
     createdAt: ts(8),
     updatedAt: ts(8),
   },
@@ -968,3 +973,120 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
   },
 ]
 
+// ─── DEEP DEMO MULTI-PROPERTY ARCHITECTURE ──────────────────────────────────────
+
+export const p_villa: Property = {
+  id: 'p_villa',
+  name: 'Premium Villa (Self-Occupied)',
+  unit: 'Villa 42, Cloud 9',
+  area: 4500,
+  floorPlanType: '5BHK Triplex',
+  location: 'Gachibowli, Hyderabad',
+  gmailLinked: true,
+  projectId: 'demo-project',
+  unitTypeId: '5bhk-villa',
+  unitTypeLabel: 'Luxury Triplex',
+  occupancy: 'residing',
+  floorPlanUrl: '/demo-assets/floor_plan.png',
+  createdAt: ts(90),
+}
+
+export const p_rental: Property = {
+  id: 'p_rental',
+  name: 'Rental Apartment (Tenant)',
+  unit: 'Apt 14B, Lakeside Towers',
+  area: 1250,
+  floorPlanType: '2BHK',
+  location: 'Kondapur, Hyderabad',
+  gmailLinked: false,
+  projectId: 'demo-project',
+  unitTypeId: '2bhk-west',
+  unitTypeLabel: '2BHK West',
+  occupancy: 'rented',
+  floorPlanUrl: '/demo-assets/floor_plan.png',
+  createdAt: ts(120),
+}
+
+export const p_empty: Property = {
+  id: 'p_empty',
+  name: 'Empty Bare Shell',
+  unit: 'Plot 104, Green Meadows',
+  area: 2400,
+  floorPlanType: 'Plot',
+  location: 'Outskirts, Hyderabad',
+  gmailLinked: false,
+  projectId: 'demo-project',
+  unitTypeId: 'demo-empty',
+  unitTypeLabel: 'Bare Shell',
+  occupancy: 'empty',
+  floorPlanUrl: '/demo-assets/floor_plan.png',
+  createdAt: ts(5),
+}
+
+export const p_construction: Property = {
+  id: 'p_construction',
+  name: 'Active Construction Site',
+  unit: 'Tower 3, Floor 8',
+  area: 1800,
+  floorPlanType: '3BHK',
+  location: 'Financial District',
+  gmailLinked: false,
+  projectId: 'demo-project',
+  unitTypeId: 'demo-active',
+  unitTypeLabel: 'Under Construction',
+  occupancy: 'renovation',
+  floorPlanUrl: '/demo-assets/floor_plan.png',
+  createdAt: ts(1),
+}
+
+export const DEMO_PROPERTIES = [p_villa, p_rental, p_empty, p_construction]
+
+export const DEMO_DATA_CATALOG: Record<string, any> = {
+  p_villa: {
+    property: p_villa,
+    assets: DEMO_WARRANTY_ASSETS,
+    snags: DEMO_SNAGS,
+    vault: DEMO_VAULT_DOCS,
+    stats: DEMO_STATS,
+    rooms: DEMO_ROOMS,
+    roomsSpecs: DEMO_ROOM_SPECS,
+    events: DEMO_EVENTS,
+  },
+  p_rental: {
+    property: p_rental,
+    // Rental only has fixed items, no TVs/Gaming consoles.
+    assets: DEMO_WARRANTY_ASSETS.filter(a => ['Kitchen', 'Utility', 'General'].includes(a.zone)),
+    snags: [],
+    vault: {},
+    stats: { assetCount: 6, expiringSoonCount: 0, openSnagCount: 0 },
+    rooms: DEMO_ROOMS.slice(0, 3),
+    roomsSpecs: {},
+    events: [],
+  },
+  p_empty: {
+    property: p_empty,
+    assets: [],
+    snags: [],
+    vault: {},
+    stats: { assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 },
+    rooms: [],
+    roomsSpecs: {},
+    events: [],
+  },
+  p_construction: {
+    property: p_construction,
+    assets: [],
+    snags: DEMO_SNAGS_ACTIVE,
+    vault: {},
+    stats: { assetCount: 0, expiringSoonCount: 0, openSnagCount: 5 },
+    rooms: DEMO_ROOMS,
+    roomsSpecs: {}, // No final finishes yet
+    events: [],
+  }
+}
+
+export function useDemoDataHook(activePropertyId: string | null) {
+  const safeId = activePropertyId || 'p_villa'
+  // Fallback to p_villa (the original rich demo) if invalid 
+  return DEMO_DATA_CATALOG[safeId] || DEMO_DATA_CATALOG.p_villa
+}

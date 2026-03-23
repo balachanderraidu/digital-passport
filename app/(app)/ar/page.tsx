@@ -5,11 +5,19 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ScanFace, BoxSelect, Sparkles, Zap, ShieldCheck, X, Camera, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/useAuth'
+import { useProperty } from '@/lib/useProperty'
+import { useDemoDataHook } from '@/lib/demo-data'
 
 export default function ARVisionPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+  const { activePropertyId } = useProperty()
+  const isDemo = !authLoading && !user
+  const demoContext = useDemoDataHook(activePropertyId)
+
   const [isScanning, setIsScanning] = useState(false)
-  const [scanResult, setScanResult] = useState(false)
+  const [scanResult, setScanResult] = useState<any>(null)
   const [error, setError] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -42,7 +50,41 @@ export default function ARVisionPage() {
 
       // Simulate a scan result after 3.5 seconds
       setTimeout(() => {
-        if (streamRef.current) setScanResult(true)
+        if (!streamRef.current) return
+        
+        let resultData = {
+          icon: ShieldCheck, iconColor: 'text-gold-400', iconBg: 'bg-gold-500/20',
+          title: 'Samsung 55" QLED TV', subtitle: 'Living Room · Serial: SQ49102X',
+          badgeText: 'Active Warranty', badgeColor: 'bg-green-500/20 text-green-400 border-green-500/20',
+          subText: '342 days left', actionText: 'View Passport Details'
+        }
+
+        if (isDemo) {
+          if (demoContext.property.id === 'p_rental') {
+            resultData = {
+              icon: Zap, iconColor: 'text-amber-400', iconBg: 'bg-amber-500/20',
+              title: 'AC Unit Filter', subtitle: 'Living Room · Needs Maintenance',
+              badgeText: 'Action Required', badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/20',
+              subText: 'Last cleaned: 8 months ago', actionText: 'Schedule Cleaning'
+            }
+          } else if (demoContext.property.id === 'p_construction') {
+            resultData = {
+              icon: BoxSelect, iconColor: 'text-blue-400', iconBg: 'bg-blue-500/20',
+              title: 'MEP Overlay: Column C-12', subtitle: 'Conduit Depth: 4cm · Concrete Curing: OK',
+              badgeText: 'Structural Scan', badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/20',
+              subText: 'Matches Blueprint V2', actionText: 'Save Scan to Timeline'
+            }
+          } else if (demoContext.property.id === 'p_empty') {
+            resultData = {
+              icon: Sparkles, iconColor: 'text-purple-400', iconBg: 'bg-purple-500/20',
+              title: 'Wall Area 4', subtitle: 'Bare Paint · 120 sqft calculated',
+              badgeText: 'Estimator', badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/20',
+              subText: 'Requires 2 gallons of paint', actionText: 'Get Fit-out Quotes'
+            }
+          }
+        }
+
+        setScanResult(resultData)
       }, 3500)
     } catch (err) {
       setError('Camera access denied or unavailable.')
@@ -52,7 +94,7 @@ export default function ARVisionPage() {
   function closeScanner() {
     stopCamera()
     setIsScanning(false)
-    setScanResult(false)
+    setScanResult(null)
   }
 
   if (isScanning) {
@@ -111,25 +153,27 @@ export default function ARVisionPage() {
 
             {/* Simulated Result Card */}
             {scanResult && (
-              <div className="absolute bottom-28 left-6 right-6 p-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-gold-500/30 animate-slide-up z-20">
+              <div className="absolute bottom-28 left-6 right-6 p-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-vault-border/50 animate-slide-up z-20">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gold-500/20 flex items-center justify-center flex-shrink-0">
-                    <ShieldCheck className="text-gold-400" size={24} />
+                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0", scanResult.iconBg)}>
+                    <scanResult.icon className={scanResult.iconColor} size={24} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Samsung 55" QLED TV</h3>
-                    <p className="text-[10px] text-vault-text-muted mt-0.5">Living Room · Serial: SQ49102X</p>
+                    <h3 className="text-sm font-bold text-white">{scanResult.title}</h3>
+                    <p className="text-[10px] text-vault-text-muted mt-0.5">{scanResult.subtitle}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-bold border border-green-500/20">Active Warranty</span>
-                      <span className="text-[9px] text-vault-text-muted">342 days left</span>
+                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-bold border", scanResult.badgeColor)}>
+                        {scanResult.badgeText}
+                      </span>
+                      <span className="text-[9px] text-vault-text-muted">{scanResult.subText}</span>
                     </div>
                   </div>
                 </div>
                 <button 
                   onClick={closeScanner}
-                  className="w-full mt-4 py-2 rounded-xl bg-vault-surface border border-gold-500/20 text-gold-400 text-xs font-bold"
+                  className="w-full mt-4 py-2 rounded-xl bg-vault-surface border border-vault-border/50 text-white text-xs font-bold"
                 >
-                  View Passport Details
+                  {scanResult.actionText}
                 </button>
               </div>
             )}

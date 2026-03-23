@@ -10,21 +10,35 @@ import {
   type Property,
 } from '@/lib/firestore'
 import { PropertyContext } from '@/lib/useProperty'
+import { DEMO_PROPERTIES } from '@/lib/demo-data'
 
 export function PropertyProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [allProperties, setAllProperties] = useState<Property[]>([])
+  
   const [activePropertyId, setActivePropertyIdState] = useState<string>(() => {
-    // Fast init from localStorage to avoid flash
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('dp_active_pid') ?? 'primary'
+      return localStorage.getItem('dp_active_pid') ?? 'p_villa'
     }
-    return 'primary'
+    return 'p_villa'
   })
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+
+    // Demo Mode handling
+    if (!user) {
+      setAllProperties(DEMO_PROPERTIES)
+      
+      // Ensure the ID maps to a valid demo property
+      if (!DEMO_PROPERTIES.find(p => p.id === activePropertyId)) {
+        setActivePropertyIdState('p_villa')
+      }
+      
+      setIsLoading(false)
+      return
+    }
 
     const u1 = subscribeAllProperties(user.uid, (props) => {
       setAllProperties(props)

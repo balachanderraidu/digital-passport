@@ -7,7 +7,8 @@ import { cn, formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeSnags, type Snag } from '@/lib/firestore'
-import { DEMO_SNAGS, DEMO_PROPERTY } from '@/lib/demo-data'
+import { useDemoDataHook } from '@/lib/demo-data'
+import { PageGuide } from '@/components/PageGuide'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
 
 type Urgency = 'low' | 'medium' | 'high'
@@ -35,13 +36,14 @@ export default function SnagsPage() {
   const [loading, setLoading] = useState(true)
 
   const isDemo = !authLoading && !user
+  const demoContext = useDemoDataHook(activePropertyId)
 
   // Demo mode
   useEffect(() => {
     if (!isDemo) return
-    setSnags(DEMO_SNAGS)
+    setSnags(demoContext.snags)
     setLoading(false)
-  }, [isDemo])
+  }, [isDemo, demoContext.snags])
 
   // Real user
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function SnagsPage() {
             <h1 className="text-2xl font-bold text-white">Snag List</h1>
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-sm text-vault-text-muted">Defect tracking · Punch list</p>
-              <PassportModeBadge occupancy={isDemo ? DEMO_PROPERTY.occupancy : activeProperty?.occupancy} />
+              <PassportModeBadge occupancy={isDemo ? demoContext.property.occupancy : activeProperty?.occupancy} />
             </div>
           </div>
           <Link
@@ -86,6 +88,13 @@ export default function SnagsPage() {
             <Plus size={15} />
             Log Snag
           </Link>
+        </div>
+
+        <div className="mt-4">
+          <PageGuide id="snags" title="Punch List & Defect Tracking">
+            Log construction defects or maintenance issues here. Attach photos, set priority levels, and 
+            track the contractor's progress until the issue is perfectly resolved.
+          </PageGuide>
         </div>
 
         {/* Progress */}

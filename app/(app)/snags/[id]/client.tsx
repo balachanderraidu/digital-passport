@@ -106,14 +106,17 @@ export default function SnagDetailClient({ id }: { id: string }) {
       </div>
 
       <div className="px-5 pb-28">
-        {/* Photo */}
-        <div className="relative rounded-2xl overflow-hidden border border-vault-border bg-vault-surface mb-4 flex flex-col items-center justify-center gap-2" style={{ height: '200px' }}>
+        {/* Photo Hero */}
+        <div className="relative rounded-2xl overflow-hidden border border-vault-border shadow-2xl bg-vault-surface mb-5 w-full aspect-[4/3] flex flex-col items-center justify-center gap-2 group">
           {snag.photoUrl ? (
-            <img src={snag.photoUrl} alt="Snag photo" className="w-full h-full object-cover" />
+            <>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
+              <img src={snag.photoUrl} alt="Snag photo" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            </>
           ) : (
             <>
-              <Camera size={32} className="text-vault-text-muted/40" />
-              <p className="text-xs font-medium text-vault-text-muted">No photo attached</p>
+              <Camera size={32} className="text-vault-text-muted/40 z-10 relative" />
+              <p className="text-xs font-medium text-vault-text-muted z-10 relative">No photo attached</p>
             </>
           )}
         </div>

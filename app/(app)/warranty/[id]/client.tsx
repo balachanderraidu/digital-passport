@@ -113,6 +113,19 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
           )}
         </div>
 
+        {/* Hero Image */}
+        {asset.photoUrl && (
+          <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-5 border border-vault-border shadow-2xl relative group">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 pointer-events-none" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={asset.photoUrl} 
+              alt={asset.name} 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          </div>
+        )}
+
         {/* Asset card */}
         <div className="card p-4 flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl glass-gold gold-border flex items-center justify-center text-3xl flex-shrink-0">

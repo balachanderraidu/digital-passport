@@ -13,6 +13,8 @@ import { RoomMinimap } from '@/components/floorplan/RoomMinimap'
 import { RoomDetailSheet } from '@/components/floorplan/RoomDetailSheet'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
 import { PropertyTimeline } from '@/components/PropertyTimeline'
+import { PageGuide } from '@/components/PageGuide'
+import { AIWalkthroughWidget } from '@/components/tenant/AIWalkthroughWidget'
 import {
   subscribeDashboardStats,
   subscribeWarrantyAssets,
@@ -26,11 +28,8 @@ import {
   type AppEvent,
 } from '@/lib/firestore'
 import {
-  DEMO_PROPERTY, DEMO_PROPERTY_ACTIVE,
-  DEMO_ROOMS, DEMO_WARRANTY_ASSETS,
-  DEMO_SNAGS, DEMO_SNAGS_ACTIVE,
-  DEMO_EVENTS, DEMO_STATS, DEMO_STATS_ACTIVE,
-  DEMO_ROOM_SPECS, DEMO_TIMELINE_EVENTS,
+  useDemoDataHook,
+  DEMO_TIMELINE_EVENTS,
 } from '@/lib/demo-data'
 
 // Canonical hotspot definitions — positions are fixed layout-wise
@@ -148,15 +147,11 @@ export default function DashboardPage() {
   const [showNotif, setShowNotif] = useState(false)
   const [show3D, setShow3D] = useState(false)
   const [showSwitcher, setShowSwitcher] = useState(false)
-  const [selectedRoom, setSelectedRoom] = useState<typeof DEMO_ROOMS[0] | null>(null)
+  const [selectedRoom, setSelectedRoom] = useState<any | null>(null)
 
   const isDemo = !authLoading && !user
-
-  const [demoMode, setDemoMode] = useState<'passive' | 'active'>('passive')
-  const demoProperty = demoMode === 'active' ? DEMO_PROPERTY_ACTIVE : DEMO_PROPERTY
-  const demoSnags    = demoMode === 'active' ? DEMO_SNAGS_ACTIVE    : DEMO_SNAGS
-  const demoStats    = demoMode === 'active' ? DEMO_STATS_ACTIVE    : DEMO_STATS
-  const demoAssets   = demoMode === 'active' ? DEMO_WARRANTY_ASSETS.slice(0, 2) : DEMO_WARRANTY_ASSETS
+  const demoContext = useDemoDataHook(activePropertyId)
+  const { property: demoProperty, stats: demoStats, snags: demoSnags, assets: demoAssets, events: demoEvents, rooms: demoRooms } = demoContext
 
   // Demo mode: inject placeholder data
   useEffect(() => {
@@ -165,8 +160,8 @@ export default function DashboardPage() {
     setWarrantyAssets(demoAssets)
     setRecentSnags(demoSnags)
     setProperty(demoProperty)
-    setEvents(DEMO_EVENTS)
-  }, [isDemo, demoMode])
+    setEvents(demoEvents)
+  }, [isDemo, activePropertyId, demoProperty])
 
   // Real user: subscribe to Firestore
   useEffect(() => {
@@ -254,7 +249,7 @@ export default function DashboardPage() {
               <div className="mt-0.5 flex items-center gap-2 flex-wrap">
                 <p className="text-sm text-vault-text-muted">
                   {isDemo
-                    ? `${DEMO_PROPERTY.unit} · ${DEMO_PROPERTY.location}`
+                    ? `${demoProperty.unit} · ${demoProperty.location}`
                     : `${property!.unit} · ${property!.location}`}
                 </p>
                 <PassportModeBadge occupancy={isDemo ? demoProperty.occupancy : property?.occupancy} />
@@ -282,6 +277,13 @@ export default function DashboardPage() {
         </div>
         {showSwitcher && <PropertySwitcher onClose={() => setShowSwitcher(false)} />}
 
+        <div className="mt-6">
+          <PageGuide id="dashboard" title="The Command Center">
+            Welcome to your Digital Passport. This dashboard provides a live overview of your property's 
+            health—tracking total assets, impending warranty expirations, and open construction snags in real time.
+          </PageGuide>
+        </div>
+
         {/* Live quick stats */}
         <div className="grid grid-cols-3 gap-2.5 mt-5">
           {[
@@ -296,35 +298,6 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
-
-        {/* Demo mode toggle — Active vs Passive */}
-        {isDemo && (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-[9px] font-bold text-vault-text-muted uppercase tracking-widest">Passport Mode</span>
-            <div className="flex gap-1 p-0.5 glass rounded-lg flex-1">
-              <button
-                onClick={() => setDemoMode('passive')}
-                className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
-                  demoMode === 'passive'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'text-vault-text-muted hover:text-vault-text'
-                }`}
-              >
-                🏠 Passive
-              </button>
-              <button
-                onClick={() => setDemoMode('active')}
-                className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
-                  demoMode === 'active'
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    : 'text-vault-text-muted hover:text-vault-text'
-                }`}
-              >
-                🔨 Active
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-2 mt-3">
@@ -344,6 +317,10 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
+
+        {isDemo && demoProperty.id === 'p_rental' && (
+          <AIWalkthroughWidget />
+        )}
 
         {/* AR Vision Banner */}
         <div className="mt-3">
@@ -401,16 +378,16 @@ export default function DashboardPage() {
           /* Demo mode: SVG room minimap with clickable rooms */
           <>
             <RoomMinimap
-              rooms={DEMO_ROOMS}
+              rooms={demoRooms}
               warrantyAssets={warrantyAssets}
-              propertyLabel={DEMO_PROPERTY.unitTypeLabel}
-              area={DEMO_PROPERTY.area}
+              propertyLabel={demoProperty.unitTypeLabel}
+              area={demoProperty.area}
               isDemo
               onRoomClick={(r) => setSelectedRoom(r)}
             />
             <RoomDetailSheet
               room={selectedRoom}
-              spec={selectedRoom ? DEMO_ROOM_SPECS[selectedRoom.name] ?? null : null}
+              spec={selectedRoom ? demoContext.roomsSpecs[selectedRoom.name] ?? null : null}
               warrantyCount={warrantyAssets.filter((a) => a.zone === selectedRoom?.name || a.zone?.includes(selectedRoom?.name?.split(' ')[0] ?? '')).length}
               onClose={() => setSelectedRoom(null)}
             />

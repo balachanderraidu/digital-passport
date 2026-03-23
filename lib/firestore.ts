@@ -29,12 +29,13 @@ export interface WarrantyAsset {
   brand: string
   model: string
   serialNumber: string
-  purchaseDate: string        // ISO date string
-  warrantyExpiry: string      // ISO date string
+  purchaseDate: string        // YYYY-MM-DD
+  warrantyExpiry: string      // YYYY-MM-DD
   nextService: string | null  // ISO date string
   invoiceUrl: string | null   // Storage URL
-  source?: string
-  createdAt: Timestamp | null
+  photoUrl?: string | null  // New Premium Image field
+  source: 'manual' | 'gmail_sync'
+  createdAt: Timestamp
 }
 
 export interface VaultDoc {

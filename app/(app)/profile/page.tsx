@@ -20,7 +20,8 @@ import {
 } from '@/lib/firestore'
 import { exportPassportPDF } from '@/lib/pdfExport'
 import { cn } from '@/lib/utils'
-import { DEMO_PROPERTY, DEMO_STATS } from '@/lib/demo-data'
+import { useDemoDataHook } from '@/lib/demo-data'
+import { PageGuide } from '@/components/PageGuide'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
 
 function GoogleIcon() {
@@ -80,6 +81,8 @@ export default function ProfilePage() {
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   const isDemo = !authLoading && !user
+  const demoContext = useDemoDataHook(activePropertyId)
+  const effectiveStats = isDemo ? demoContext.stats : stats
 
   const displayName = user?.displayName ?? profile?.displayName ?? (isDemo ? 'Guest User' : 'Guest')
   const photoURL = user?.photoURL ?? profile?.photoURL ?? null
@@ -242,6 +245,13 @@ export default function ProfilePage() {
         )}
       </div>
 
+      <div className="mx-5 mb-4">
+        <PageGuide id="profile" title="Account & Subscriptions">
+          Manage your personal identifiers, view property registration details, and access your 
+          Digital Passport subscriptions and linked Google Workspace accounts.
+        </PageGuide>
+      </div>
+
       {/* Property Registration Details — Demo mode */}
       {isDemo && (
         <div className="mx-5 mb-4">
@@ -282,34 +292,17 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-2">
-          {isDemo ? (
-            /* Demo property card */
-            <div className="w-full p-3.5 rounded-2xl glass-gold gold-border flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gold-500/20 flex items-center justify-center flex-shrink-0">
-                <Building2 size={15} className="text-gold-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gold-500 truncate">{DEMO_PROPERTY.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-vault-text-muted truncate">{DEMO_PROPERTY.unit} · {DEMO_PROPERTY.location}</p>
-                  <PassportModeBadge occupancy={DEMO_PROPERTY.occupancy} />
-                </div>
-              </div>
-              <Check size={14} className="text-gold-500 flex-shrink-0" />
-            </div>
-          ) : (
-            <>
-              {allProperties.map((p) => {
-                const isActive = p.id === activePropertyId
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => switchProperty(p.id)}
-                    className={cn(
-                      'w-full p-3.5 rounded-2xl flex items-center gap-3 transition-all text-left',
-                      isActive ? 'glass-gold gold-border' : 'card'
-                    )}
-                  >
+          {allProperties.map((p) => {
+            const isActive = p.id === activePropertyId
+            return (
+              <button
+                key={p.id}
+                onClick={isDemo ? () => {} : () => switchProperty(p.id)}
+                className={cn(
+                  'w-full p-3.5 rounded-2xl flex items-center gap-3 transition-all text-left',
+                  isActive ? 'glass-gold gold-border' : 'card'
+                )}
+              >
                     <div className={cn(
                       'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
                       isActive ? 'bg-gold-500/20' : 'bg-vault-muted/20'
@@ -327,15 +320,13 @@ export default function ProfilePage() {
                   </button>
                 )
               })}
-              {allProperties.length === 0 && (
-                <button onClick={() => router.push('/onboarding')} className="w-full card p-3.5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gold-500/10 flex items-center justify-center">
-                    <Home size={15} className="text-gold-500" />
-                  </div>
-                  <span className="text-sm font-semibold text-gold-500">Set Up Your Property</span>
-                </button>
-              )}
-            </>
+          {allProperties.length === 0 && (
+            <button onClick={() => router.push('/onboarding')} className="w-full card p-3.5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gold-500/10 flex items-center justify-center">
+                <Home size={15} className="text-gold-500" />
+              </div>
+              <span className="text-sm font-semibold text-gold-500">Set Up Your Property</span>
+            </button>
           )}
         </div>
       </div>
@@ -343,9 +334,9 @@ export default function ProfilePage() {
       {/* Quick Stats */}
       <div className="mx-5 mb-4 grid grid-cols-3 gap-2.5">
         {[
-          { label: 'Assets', value: isDemo ? DEMO_STATS.assetCount : stats.assetCount, sub: 'tracked' },
-          { label: 'Warranties', value: isDemo ? DEMO_STATS.expiringSoonCount : stats.expiringSoonCount, sub: 'expiring' },
-          { label: 'Snags', value: isDemo ? DEMO_STATS.openSnagCount : stats.openSnagCount, sub: 'open' },
+          { label: 'Assets', value: effectiveStats.assetCount, sub: 'tracked' },
+          { label: 'Warranties', value: effectiveStats.expiringSoonCount, sub: 'expiring' },
+          { label: 'Snags', value: effectiveStats.openSnagCount, sub: 'open' },
         ].map((s) => (
           <div key={s.label} className="card p-3 text-center">
             <div className="text-xl font-bold gold-text">{s.value}</div>

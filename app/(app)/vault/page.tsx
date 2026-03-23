@@ -18,7 +18,8 @@ import {
 } from '@/lib/firestore'
 import { addEvent } from '@/lib/firestore'
 import { uploadVaultFile } from '@/lib/storage'
-import { DEMO_VAULT_DOCS } from '@/lib/demo-data'
+import { useDemoDataHook } from '@/lib/demo-data'
+import { PageGuide } from '@/components/PageGuide'
 
 // ─── Category metadata ────────────────────────────────────────────────────────
 
@@ -181,8 +182,9 @@ export default function VaultPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isDemo = !authLoading && !user
+  const demoContext = useDemoDataHook(activePropertyId)
 
-  useEffect(() => { if (isDemo) setVaultData(DEMO_VAULT_DOCS) }, [isDemo])
+  useEffect(() => { if (isDemo) setVaultData(demoContext.vault) }, [isDemo, demoContext.vault])
   useEffect(() => {
     if (!user) return
     return subscribeAllVaultCategories(user.uid, setVaultData, activePropertyId)
@@ -243,6 +245,11 @@ export default function VaultPage() {
             <Upload size={15} /> Upload
           </button>
         </div>
+
+        <PageGuide id="vault" title="Secure Document Control">
+          The Home Vault encrypts and stores your crucial property documents—from title deeds to tax receipts. 
+          Upload pictures of papers directly from your phone to instantly digitize your records.
+        </PageGuide>
 
         {/* Storage meter */}
         <div className="card p-4">

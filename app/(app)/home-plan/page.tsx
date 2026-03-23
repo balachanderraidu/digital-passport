@@ -10,7 +10,8 @@ import { FloorPlanCanvas } from '@/components/floorplan/FloorPlanCanvas'
 import { ItemPanel } from '@/components/floorplan/ItemPanel'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { DEMO_PROPERTY, DEMO_ROOMS, DEMO_ROOM_SPECS, DEMO_WARRANTY_ASSETS } from '@/lib/demo-data'
+import { useDemoDataHook } from '@/lib/demo-data'
+import { PageGuide } from '@/components/PageGuide'
 import { RoomMinimap } from '@/components/floorplan/RoomMinimap'
 import { RoomDetailSheet } from '@/components/floorplan/RoomDetailSheet'
 
@@ -21,10 +22,12 @@ export default function HomePlanPage() {
 
   // Demo mode — use placeholder data when not signed in
   const isDemo = !user
-  const effectiveProperty = property ?? (isDemo ? DEMO_PROPERTY : null)
+  const demoContext = useDemoDataHook(propertyId)
+  
+  const effectiveProperty = property ?? (isDemo ? demoContext.property : null)
   const effectiveRooms: FloorPlanRoom[] = property?.rooms?.length
     ? property.rooms
-    : isDemo ? DEMO_ROOMS : []
+    : isDemo ? demoContext.rooms : []
   const effectiveFloorPlanUrl = property?.floorPlanUrl
 
   const [items, setItems] = useState<HomePlanItem[]>(property?.homePlan ?? [])
@@ -103,7 +106,7 @@ export default function HomePlanPage() {
           <div>
             <h1 className="text-base font-bold text-white">Home Plan</h1>
             <p className="text-xs text-vault-text-muted">
-              {effectiveProperty?.name} · {isDemo ? DEMO_PROPERTY.unit : (property?.unit ?? '')}
+              {effectiveProperty?.name} · {effectiveProperty?.unit ?? ''}
               {isDemo && <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded-full bg-gold-500/10 text-gold-500 border border-gold-500/20">Demo</span>}
             </p>
           </div>
@@ -125,7 +128,12 @@ export default function HomePlanPage() {
       </div>
 
       {/* Canvas area */}
-      <div className="flex-1 px-4 pb-32">
+      <div className="flex-1 px-4 pb-32 pt-2">
+        <PageGuide id="home-plan" title="Interactive Blueprint">
+          Tap any room on the floor plan to view exact dimensions, linked paint colors, and fixed assets 
+          like appliances or sanitary ware specific to that space.
+        </PageGuide>
+
         {hasRooms ? (
           <>
             {/* Hint */}
@@ -144,7 +152,7 @@ export default function HomePlanPage() {
               <>
                 <RoomMinimap
                   rooms={rooms}
-                  warrantyAssets={DEMO_WARRANTY_ASSETS}
+                  warrantyAssets={demoContext.assets}
                   propertyLabel={effectiveProperty?.unitTypeLabel}
                   area={effectiveProperty?.area}
                   isDemo
@@ -152,8 +160,8 @@ export default function HomePlanPage() {
                 />
                 <RoomDetailSheet
                   room={selectedRoom}
-                  spec={selectedRoom ? DEMO_ROOM_SPECS[selectedRoom.name] ?? null : null}
-                  warrantyCount={DEMO_WARRANTY_ASSETS.filter((a) => a.zone === selectedRoom?.name || a.zone?.includes(selectedRoom?.name?.split(' ')[0] ?? '')).length}
+                  spec={selectedRoom ? demoContext.roomsSpecs[selectedRoom.name] ?? null : null}
+                  warrantyCount={demoContext.assets.filter((a: any) => a.zone === selectedRoom?.name || a.zone?.includes(selectedRoom?.name?.split(' ')[0] ?? '')).length}
                   onClose={() => setSelectedRoom(null)}
                 />
               </>

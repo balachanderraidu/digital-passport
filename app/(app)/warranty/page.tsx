@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeWarrantyAssets, addWarrantyAsset, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
 import { uploadInvoice } from '@/lib/storage'
-import { DEMO_WARRANTY_ASSETS, DEMO_PROPERTY, DEMO_ITEM_LINKS } from '@/lib/demo-data'
+import { useDemoDataHook, DEMO_ITEM_LINKS } from '@/lib/demo-data'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
 
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
@@ -72,13 +72,14 @@ export default function WarrantyPage() {
   const invoiceRef = useRef<HTMLInputElement>(null)
 
   const isDemo = !authLoading && !user
+  const demoContext = useDemoDataHook(activePropertyId)
 
   // Demo mode
   useEffect(() => {
     if (!isDemo) return
-    setAssets(DEMO_WARRANTY_ASSETS)
+    setAssets(demoContext.assets)
     setLoadingAssets(false)
-  }, [isDemo])
+  }, [isDemo, demoContext.assets])
 
   // Real user
   useEffect(() => {
@@ -172,7 +173,7 @@ export default function WarrantyPage() {
             <h1 className="text-2xl font-bold text-white">Warranty Center</h1>
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-sm text-vault-text-muted">Service & warranty automation</p>
-              <PassportModeBadge occupancy={isDemo ? DEMO_PROPERTY.occupancy : activeProperty?.occupancy} />
+              <PassportModeBadge occupancy={isDemo ? demoContext.property.occupancy : activeProperty?.occupancy} />
             </div>
           </div>
           <button
