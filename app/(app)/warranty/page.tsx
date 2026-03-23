@@ -147,6 +147,7 @@ export default function WarrantyPage() {
         warrantyExpiry: form.warrantyExpiry,
         nextService: form.nextService || null,
         invoiceUrl,
+        source: 'manual',
       }, activePropertyId)
       setForm(DEFAULT_FORM)
       setInvoiceFile(null)
@@ -245,15 +246,21 @@ export default function WarrantyPage() {
                 <div key={asset.id} className="relative flex gap-4">
                   <div
                     className={cn(
-                      'relative z-10 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl',
+                      'relative z-10 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden',
+                      asset.photoUrl ? 'border border-vault-border' :
                       asset.status === 'active'
-                        ? 'bg-green-500/10 border border-green-500/30'
+                        ? 'bg-green-500/10 border border-green-500/30 text-xl'
                         : asset.status === 'expiring'
-                        ? 'bg-yellow-500/10 border border-yellow-500/30'
-                        : 'bg-red-500/10 border border-red-500/30'
+                        ? 'bg-yellow-500/10 border border-yellow-500/30 text-xl'
+                        : 'bg-red-500/10 border border-red-500/30 text-xl'
                     )}
                   >
-                    {asset.icon}
+                    {asset.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={asset.photoUrl} alt={asset.name} className="w-full h-full object-cover" />
+                    ) : (
+                      asset.icon
+                    )}
                   </div>
 
                   <Link href={`/warranty/${asset.id}`} className="flex-1 card p-4 card-hover block">

@@ -30,8 +30,8 @@ export function AIWalkthroughWidget() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src="https://images.unsplash.com/photo-1598928506311-c55dd1b6e159?auto=format&fit=crop&q=80&w=800"
-            alt="Interior" 
+            src="/demo-assets/rental_interior.png"
+            alt="Rental interior walkthrough" 
             className="w-full h-full object-cover opacity-60 transition-all group-hover:scale-105 group-hover:opacity-80"
           />
           <div className="absolute inset-0 flex items-center justify-center">

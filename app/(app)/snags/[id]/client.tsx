@@ -7,7 +7,7 @@ import { cn, formatDate, formatDateTime } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeSnags, updateSnagStatus, type Snag } from '@/lib/firestore'
-import { DEMO_SNAGS, DEMO_ITEM_LINKS } from '@/lib/demo-data'
+import { DEMO_SNAGS, DEMO_SNAGS_ACTIVE, DEMO_ITEM_LINKS, DEMO_DATA_CATALOG } from '@/lib/demo-data'
 
 type SnagStatus = 'open' | 'in-progress' | 'fixed'
 type Urgency = 'low' | 'medium' | 'high'
@@ -37,7 +37,13 @@ export default function SnagDetailClient({ id }: { id: string }) {
   // Demo mode
   useEffect(() => {
     if (!isDemo) return
-    const found = DEMO_SNAGS.find((s) => s.id === id) ?? null
+    // Search across all demo snag arrays to support any property context
+    const allDemoSnags = [
+      ...DEMO_SNAGS,
+      ...DEMO_SNAGS_ACTIVE,
+      ...Object.values(DEMO_DATA_CATALOG).flatMap((c: any) => c.snags ?? []),
+    ]
+    const found = allDemoSnags.find((s) => s.id === id) ?? null
     setSnag(found)
     setLoading(false)
   }, [isDemo, id])

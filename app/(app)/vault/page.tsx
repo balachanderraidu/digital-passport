@@ -336,14 +336,21 @@ export default function VaultPage() {
                   onClick={() => setPreviewDoc(d)}
                   className="w-full card p-3.5 flex items-center gap-3 text-left hover:border-gold-500/30 transition-all"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0">
-                    <FileIcon type={d.type} />
+                  <div className="relative w-10 h-10 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-vault-muted/50 flex items-center justify-center">
+                      <FileIcon type={d.type} />
+                    </div>
+                    {meta?.icon && (
+                      <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-vault-surface border border-vault-border flex items-center justify-center text-[9px]">
+                        {meta.icon}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-vault-text truncate">{d.name}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded-md border', meta?.color ?? 'text-vault-text-muted border-vault-border')}>
-                        {meta?.icon} {meta?.label}
+                        {meta?.label}
                       </span>
                       <span className="text-[9px] text-vault-text-muted">{formatFileSize(d.size)}</span>
                       {d.ocr && <span className="text-[9px] font-bold text-gold-500 bg-gold-500/10 px-1.5 py-0.5 rounded-md">OCR ✓</span>}

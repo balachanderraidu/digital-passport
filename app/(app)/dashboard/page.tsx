@@ -243,7 +243,7 @@ export default function DashboardPage() {
               className="flex items-center gap-1.5 group"
             >
               <h1 className="text-2xl font-bold text-white">{propName}</h1>
-              {allProperties.length > 1 && (
+              {(allProperties.length > 1 || isDemo) && (
                 <ChevronDown size={18} className="text-gold-500 group-hover:opacity-80 mt-1" />
               )}
             </button>
@@ -485,7 +485,14 @@ export default function DashboardPage() {
           <div className="space-y-2.5">
             {recentSnags.filter((s) => s.status === 'open').slice(0, 3).map((snag) => (
               <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-3.5 flex items-center gap-3 card-hover block">
-                <span className="text-xl">🔨</span>
+                <div className="w-12 h-12 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {snag.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={snag.photoUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl">🔨</span>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-vault-text truncate">{snag.title}</p>
                   <p className="text-xs font-medium mt-0.5 text-red-400">{snag.location} · Open</p>

@@ -299,27 +299,37 @@ export default function ProfilePage() {
                 key={p.id}
                 onClick={isDemo ? () => {} : () => switchProperty(p.id)}
                 className={cn(
-                  'w-full p-3.5 rounded-2xl flex items-center gap-3 transition-all text-left',
+                  'w-full rounded-2xl flex items-center gap-0 transition-all text-left overflow-hidden',
                   isActive ? 'glass-gold gold-border' : 'card'
                 )}
               >
-                    <div className={cn(
-                      'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
-                      isActive ? 'bg-gold-500/20' : 'bg-vault-muted/20'
-                    )}>
-                      <Building2 size={15} className={isActive ? 'text-gold-500' : 'text-vault-text-muted'} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn('text-sm font-bold truncate', isActive ? 'text-gold-500' : 'text-white')}>{p.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-xs text-vault-text-muted truncate">{p.unit} · {p.location}</p>
-                        <PassportModeBadge occupancy={p.occupancy} />
-                      </div>
-                    </div>
-                    {isActive && <Check size={14} className="text-gold-500 flex-shrink-0" />}
-                  </button>
-                )
-              })}
+                {/* Hero thumbnail */}
+                {(p as any).heroImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={(p as any).heroImageUrl}
+                    alt={p.name}
+                    className="w-16 h-14 object-cover flex-shrink-0 rounded-l-2xl"
+                  />
+                ) : (
+                  <div className={cn(
+                    'w-16 h-14 flex items-center justify-center flex-shrink-0 rounded-l-2xl text-xl',
+                    isActive ? 'bg-gold-500/20' : 'bg-vault-muted/20'
+                  )}>
+                    🏢
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 px-3 py-2.5">
+                  <p className={cn('text-sm font-bold truncate', isActive ? 'text-gold-500' : 'text-white')}>{p.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-vault-text-muted truncate">{p.unit} · {p.location}</p>
+                    <PassportModeBadge occupancy={p.occupancy} />
+                  </div>
+                </div>
+                {isActive && <Check size={14} className="text-gold-500 flex-shrink-0 mr-3" />}
+              </button>
+            )
+          })}
           {allProperties.length === 0 && (
             <button onClick={() => router.push('/onboarding')} className="w-full card p-3.5 flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-gold-500/10 flex items-center justify-center">

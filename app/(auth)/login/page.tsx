@@ -443,9 +443,32 @@ export default function LoginPage() {
           </div>
           <button
             onClick={handleDemoLogin}
-            className="w-full py-3 rounded-2xl glass text-vault-text-muted text-xs font-semibold hover:text-vault-text transition-colors"
+            className="w-full rounded-2xl glass border border-vault-border hover:border-gold-500/30 transition-all text-left overflow-hidden group"
           >
-            🧪 Try Demo Mode
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-vault-border/50">
+              <span className="text-base">🧪</span>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-white">Try Demo Mode</p>
+                <p className="text-[10px] text-vault-text-muted">Explore with 4 realistic properties</p>
+              </div>
+              <span className="text-[10px] font-bold text-gold-500 group-hover:translate-x-0.5 transition-transform">→</span>
+            </div>
+            {/* Property scenario thumbnails */}
+            <div className="grid grid-cols-4 gap-0">
+              {[
+                { src: '/demo-assets/villa_hero.png', label: 'Villa' },
+                { src: '/demo-assets/rental_hero.png', label: 'Rental' },
+                { src: '/demo-assets/construction_site.png', label: 'Construction' },
+                { src: '/demo-assets/empty_shell.png', label: 'Bare Shell' },
+              ].map(({ src, label }) => (
+                <div key={label} className="relative aspect-[4/3] overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={label} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <p className="absolute bottom-1 left-0 right-0 text-center text-[8px] font-bold text-white">{label}</p>
+                </div>
+              ))}
+            </div>
           </button>
         </div>
 

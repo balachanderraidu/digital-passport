@@ -6,7 +6,7 @@ export function ConstructionTimelineWidget() {
     <div className="card overflow-hidden mt-6 mx-5">
       <div className="relative h-48 w-full bg-vault-muted/20">
         <Image 
-          src="/demo-assets/site_foundation.png"
+          src="/demo-assets/construction_site.png"
           alt="Active Construction Site"
           fill
           className="object-cover"

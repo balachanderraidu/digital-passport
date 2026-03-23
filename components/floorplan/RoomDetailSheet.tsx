@@ -437,6 +437,32 @@ export function RoomDetailSheet({ room, spec, warrantyCount = 0, onClose }: Prop
           <div className="w-10 h-1 bg-vault-muted rounded-full" />
         </div>
 
+        {/* Room photo hero (if available) */}
+        {(() => {
+          const ROOM_PHOTOS: Record<string, string> = {
+            'Living Room': '/demo-assets/room_living.png',
+            'Master Bedroom': '/demo-assets/room_master_bed.png',
+            'Kitchen': '/demo-assets/room_kitchen.png',
+            'Bathroom': '/demo-assets/room_bathroom.png',
+            'Balcony': '/demo-assets/room_balcony.png',
+            'Study': '/demo-assets/room_study.png',
+            'Bedroom 2': '/demo-assets/room_bedroom2.png',
+            'Bedroom 3': '/demo-assets/room_bedroom2.png',
+          }
+          const photoSrc = ROOM_PHOTOS[room.name]
+          if (!photoSrc) return null
+          return (
+            <div className="relative h-36 w-full overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photoSrc} alt={room.name} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-vault-surface via-vault-surface/20 to-transparent" />
+              <div className="absolute bottom-2 left-4">
+                <p className="text-[9px] font-bold text-vault-text-muted uppercase tracking-widest">Room Photo</p>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Header */}
         <div className="px-5 pb-3 pt-1 flex items-center gap-3 border-b border-vault-border">
           <div className="w-12 h-12 rounded-2xl bg-vault-muted/30 flex items-center justify-center text-2xl flex-shrink-0">

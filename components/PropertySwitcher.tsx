@@ -1,12 +1,80 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Check, Plus, X, Building2 } from 'lucide-react'
+import { Check, Plus, X } from 'lucide-react'
 import { useProperty } from '@/lib/useProperty'
 import { cn } from '@/lib/utils'
+import type { Property } from '@/lib/firestore'
 
 interface PropertySwitcherProps {
   onClose: () => void
+}
+
+const OCCUPANCY_META: Record<string, { label: string; emoji: string; color: string }> = {
+  residing:   { label: 'Residing',     emoji: '🏠', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+  rented:     { label: 'Rented Out',   emoji: '🔑', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  renovation: { label: 'Construction', emoji: '🏗️', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+  empty:      { label: 'Bare Shell',   emoji: '🪟', color: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' },
+}
+
+function OccupancyBadge({ occupancy }: { occupancy?: string }) {
+  const meta = occupancy ? OCCUPANCY_META[occupancy] : null
+  if (!meta) return null
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border',
+      meta.color
+    )}>
+      {meta.emoji} {meta.label}
+    </span>
+  )
+}
+
+function PropertyCard({ p, isActive, onSelect }: { p: Property; isActive: boolean; onSelect: () => void }) {
+  return (
+    <button
+      onClick={onSelect}
+      className={cn(
+        'w-full rounded-2xl flex items-center gap-3 transition-all text-left overflow-hidden',
+        isActive ? 'glass-gold gold-border' : 'card hover:border-gold-500/20'
+      )}
+    >
+      {/* Hero thumbnail */}
+      {p.heroImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={p.heroImageUrl}
+          alt={p.name}
+          className="w-20 h-16 object-cover flex-shrink-0 rounded-l-2xl"
+        />
+      ) : (
+        <div className={cn(
+          'w-20 h-16 flex-shrink-0 flex items-center justify-center rounded-l-2xl text-2xl',
+          isActive ? 'bg-gold-500/20' : 'bg-vault-muted/20'
+        )}>
+          {OCCUPANCY_META[p.occupancy ?? '']?.emoji ?? '🏢'}
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0 py-2 pr-3">
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className={cn('text-sm font-bold truncate', isActive ? 'text-gold-500' : 'text-white')}>
+            {p.name}
+          </p>
+          {isActive && <Check size={14} className="text-gold-500 flex-shrink-0" />}
+        </div>
+        <p className="text-xs text-vault-text-muted truncate mb-1">
+          {[p.unit, p.location].filter(Boolean).join(' · ')}
+        </p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <OccupancyBadge occupancy={p.occupancy} />
+          <span className="text-[10px] text-vault-text-muted">
+            {p.floorPlanType} · {(p.area ?? 0).toLocaleString()} sq ft
+          </span>
+        </div>
+      </div>
+    </button>
+  )
 }
 
 export function PropertySwitcher({ onClose }: PropertySwitcherProps) {
@@ -36,39 +104,18 @@ export function PropertySwitcher({ onClose }: PropertySwitcherProps) {
           <div className="space-y-2 mb-4">
             {allProperties.length === 0 && (
               <div className="text-center py-8 text-vault-text-muted">
-                <Building2 size={32} className="mx-auto mb-2 opacity-30" />
+                <span className="text-4xl block mb-2">🏢</span>
                 <p className="text-sm">No properties yet</p>
               </div>
             )}
-            {allProperties.map((p) => {
-              const isActive = p.id === activePropertyId
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => { switchProperty(p.id); onClose() }}
-                  className={cn(
-                    'w-full p-4 rounded-2xl flex items-center gap-3 transition-all text-left',
-                    isActive ? 'glass-gold gold-border' : 'card hover:border-gold-500/20'
-                  )}
-                >
-                  <div className={cn(
-                    'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                    isActive ? 'bg-gold-500/20 border border-gold-500/40' : 'bg-vault-muted/20'
-                  )}>
-                    <Building2 size={18} className={isActive ? 'text-gold-500' : 'text-vault-text-muted'} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn('text-sm font-bold truncate', isActive ? 'text-gold-500' : 'text-white')}>
-                      {p.name}
-                    </p>
-                    <p className="text-xs text-vault-text-muted mt-0.5 truncate">
-                      {[p.unit, p.floorPlanType, p.location].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-                  {isActive && <Check size={16} className="text-gold-500 flex-shrink-0" />}
-                </button>
-              )
-            })}
+            {allProperties.map((p) => (
+              <PropertyCard
+                key={p.id}
+                p={p}
+                isActive={p.id === activePropertyId}
+                onSelect={() => { switchProperty(p.id); onClose() }}
+              />
+            ))}
           </div>
 
           <button

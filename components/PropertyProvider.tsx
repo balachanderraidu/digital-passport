@@ -14,7 +14,9 @@ import { DEMO_PROPERTIES } from '@/lib/demo-data'
 
 export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth()
-  const [allProperties, setAllProperties] = useState<Property[]>([])
+  // Pre-seed with demo properties so the PropertySwitcher is never empty on first render.
+  // Real user properties will be prepended once the Firestore subscription fires.
+  const [allProperties, setAllProperties] = useState<Property[]>(DEMO_PROPERTIES)
   
   const [activePropertyId, setActivePropertyIdState] = useState<string>(() => {
     if (typeof window !== 'undefined') {

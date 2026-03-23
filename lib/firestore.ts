@@ -138,6 +138,7 @@ export interface Property {
   unitTypeId?: string
   unitTypeLabel?: string
   floorPlanUrl?: string     // Firebase Storage URL for the floor plan PNG
+  heroImageUrl?: string     // Hero/thumbnail image for the property card
   rooms?: FloorPlanRoom[]   // AI-extracted room bounding boxes
   homePlan?: HomePlanItem[] // User-edited Konva canvas state
   occupancy?: 'residing' | 'rented' | 'empty' | 'renovation'

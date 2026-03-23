@@ -173,6 +173,7 @@ function generateReply(
 
 export default function AssistantPage() {
   const { user, loading: authLoading } = useAuth()
+  const { activePropertyId } = useProperty()
   const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -188,7 +189,6 @@ export default function AssistantPage() {
   const [assets, setAssets] = useState<WarrantyAsset[]>([])
   const [snags, setSnags] = useState<Snag[]>([])
   const [property, setProperty] = useState<Property | null>(null)
-  const { activePropertyId } = useProperty()
   const bottomRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 
