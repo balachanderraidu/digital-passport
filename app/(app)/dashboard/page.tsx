@@ -527,7 +527,7 @@ export default function DashboardPage() {
       <div className="px-5 mt-5 pb-28">
         <h2 className="text-sm font-bold text-white mb-3">Property Timeline</h2>
         {isDemo ? (
-          <PropertyTimeline events={DEMO_TIMELINE_EVENTS} />
+          <PropertyTimeline events={demoContext.timeline || DEMO_TIMELINE_EVENTS} />
         ) : events.length > 0 ? (
           <div className="space-y-2">
             {events.slice(0, 5).map((event) => (
