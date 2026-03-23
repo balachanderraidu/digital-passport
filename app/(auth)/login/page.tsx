@@ -12,7 +12,7 @@ import {
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/useAuth'
 import { getProperty, getUserProfile, saveUserProfile } from '@/lib/firestore'
-import { KeyRound, Phone, Loader2, RefreshCw } from 'lucide-react'
+import { KeyRound, Phone, Loader2, RefreshCw, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 async function routeAfterSignIn(
@@ -58,6 +58,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Beta Gate States
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [waitlistEmail, setWaitlistEmail] = useState('')
+  const [waitlistJoined, setWaitlistJoined] = useState(false)
+
+  useEffect(() => {
+    setIsAdmin(window.location.search.includes('admin=true'))
+  }, [])
+
+  // Beta Gate States
   const confirmationRef = useRef<ConfirmationResult | null>(null)
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null)
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -222,31 +232,63 @@ export default function LoginPage() {
           <p className="text-vault-text-muted mt-1.5 text-sm font-medium">Your Home. Secured.</p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex gap-1 p-1 glass rounded-2xl mb-6">
-          <button
-            onClick={() => { setTab('google'); setError('') }}
-            className={cn(
-              'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2',
-              tab === 'google'
-                ? 'bg-gold-500 text-charcoal-300 shadow-gold-glow-sm'
-                : 'text-vault-text-muted hover:text-vault-text'
+        {/* Login Gate */}
+        {!isAdmin ? (
+          <div className="glass rounded-3xl p-6 mb-6 text-center border-gold-500/20">
+            <h2 className="text-sm font-bold text-white mb-2">Request Beta Access</h2>
+            <p className="text-[10px] text-vault-text-muted mb-5 leading-relaxed">
+              Digital Passport is currently in private beta. Join the waitlist to get early access to your home's True Digital Twin.
+            </p>
+            {waitlistJoined ? (
+              <div className="py-3 px-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center justify-center gap-2">
+                <CheckCircle2 size={16} /> You're on the list!
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="name@email.com"
+                  className="flex-1 min-w-0 py-3 px-4 bg-vault-surface border border-vault-border rounded-xl text-xs text-vault-text focus:border-gold-500 focus:bg-vault-card transition-all placeholder:text-vault-muted"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                />
+                <button
+                  onClick={() => setWaitlistJoined(true)}
+                  disabled={!waitlistEmail.includes('@')}
+                  className="py-3 px-4 bg-gold-500 text-charcoal-300 rounded-xl text-xs font-bold hover:bg-gold-400 disabled:opacity-50 disabled:bg-vault-muted disabled:text-vault-text-muted transition-all"
+                >
+                  Join
+                </button>
+              </div>
             )}
-          >
-            <GoogleIcon /> Google
-          </button>
-          <button
-            onClick={() => { setTab('phone'); setError('') }}
-            className={cn(
-              'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2',
-              tab === 'phone'
-                ? 'bg-gold-500 text-charcoal-300 shadow-gold-glow-sm'
-                : 'text-vault-text-muted hover:text-vault-text'
-            )}
-          >
-            <Phone size={14} /> Phone OTP
-          </button>
-        </div>
+          </div>
+        ) : (
+          <div className="animate-fade-in">
+            {/* Tab switcher */}
+            <div className="flex gap-1 p-1 glass rounded-2xl mb-6">
+              <button
+                onClick={() => { setTab('google'); setError('') }}
+                className={cn(
+                  'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2',
+                  tab === 'google'
+                    ? 'bg-gold-500 text-charcoal-300 shadow-gold-glow-sm'
+                    : 'text-vault-text-muted hover:text-vault-text'
+                )}
+              >
+                <GoogleIcon /> Google
+              </button>
+              <button
+                onClick={() => { setTab('phone'); setError('') }}
+                className={cn(
+                  'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2',
+                  tab === 'phone'
+                    ? 'bg-gold-500 text-charcoal-300 shadow-gold-glow-sm'
+                    : 'text-vault-text-muted hover:text-vault-text'
+                )}
+              >
+                <Phone size={14} /> Phone OTP
+              </button>
+            </div>
 
         {/* ── Google Tab ── */}
         {tab === 'google' && (
@@ -386,8 +428,10 @@ export default function LoginPage() {
           </div>
         )}
 
-        {error && (
-          <p className="text-red-400 text-xs font-medium px-1 mt-3 animate-fade-in">{error}</p>
+            {error && (
+              <p className="text-red-400 text-xs font-medium px-1 mt-3 animate-fade-in">{error}</p>
+            )}
+          </div>
         )}
 
         {/* Divider + Demo */}

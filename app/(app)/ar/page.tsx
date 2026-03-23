@@ -1,11 +1,152 @@
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ScanFace, BoxSelect, Sparkles, Zap, ShieldCheck } from 'lucide-react'
+import { ChevronLeft, ScanFace, BoxSelect, Sparkles, Zap, ShieldCheck, X, Camera, Lock } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function ARVisionPage() {
   const router = useRouter()
+  const [isScanning, setIsScanning] = useState(false)
+  const [scanResult, setScanResult] = useState(false)
+  const [error, setError] = useState('')
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+
+  // Stop camera when closing
+  function stopCamera() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopCamera()
+  }, [])
+
+  async function launchScanner() {
+    setIsScanning(true)
+    setScanResult(false)
+    setError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+
+      // Simulate a scan result after 3.5 seconds
+      setTimeout(() => {
+        if (streamRef.current) setScanResult(true)
+      }, 3500)
+    } catch (err) {
+      setError('Camera access denied or unavailable.')
+    }
+  }
+
+  function closeScanner() {
+    stopCamera()
+    setIsScanning(false)
+    setScanResult(false)
+  }
+
+  if (isScanning) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center overflow-hidden">
+        {/* Live Camera Feed */}
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          playsInline 
+          muted 
+          className="absolute inset-0 w-full h-full object-cover opacity-70"
+        />
+
+        {error ? (
+          <div className="relative z-10 p-6 glass rounded-2xl text-center max-w-xs">
+            <Lock className="w-12 h-12 text-red-400 mx-auto mb-3" />
+            <p className="text-sm font-bold text-white mb-2">Camera Access Required</p>
+            <p className="text-xs text-vault-text-muted mb-4">{error}</p>
+            <button onClick={closeScanner} className="px-4 py-2 bg-vault-surface rounded-xl text-xs font-bold border border-vault-border">Go Back</button>
+          </div>
+        ) : (
+          <>
+            {/* HUD Overlay */}
+            <div className="absolute top-12 left-6 right-6 flex items-center justify-between z-10">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-white tracking-widest uppercase">Live Scan</span>
+              </div>
+              <button onClick={closeScanner} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scanning Reticle */}
+            <div className="relative w-64 h-64 z-10">
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-gold-500" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-gold-500" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-gold-500" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-gold-500" />
+              
+              {!scanResult && (
+                <div 
+                  className="absolute left-0 right-0 h-[2px] bg-gold-500 shadow-[0_0_15px_rgba(255,215,0,0.8)]"
+                  style={{ animation: 'scan 2s ease-in-out infinite alternate' }}
+                />
+              )}
+            </div>
+
+            {/* Helper Text */}
+            {!scanResult && (
+              <p className="absolute bottom-28 text-sm font-medium text-white/80 tracking-wide z-10 animate-pulse">
+                Point at furniture or walls...
+              </p>
+            )}
+
+            {/* Simulated Result Card */}
+            {scanResult && (
+              <div className="absolute bottom-28 left-6 right-6 p-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-gold-500/30 animate-slide-up z-20">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gold-500/20 flex items-center justify-center flex-shrink-0">
+                    <ShieldCheck className="text-gold-400" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Samsung 55" QLED TV</h3>
+                    <p className="text-[10px] text-vault-text-muted mt-0.5">Living Room · Serial: SQ49102X</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-bold border border-green-500/20">Active Warranty</span>
+                      <span className="text-[9px] text-vault-text-muted">342 days left</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={closeScanner}
+                  className="w-full mt-4 py-2 rounded-xl bg-vault-surface border border-gold-500/20 text-gold-400 text-xs font-bold"
+                >
+                  View Passport Details
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        <style>{`
+          @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+          }
+        `}</style>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-dvh bg-vault-bg flex flex-col relative overflow-hidden">
@@ -89,12 +230,12 @@ export default function ARVisionPage() {
       
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-vault-bg via-vault-bg/90 to-transparent pb-safe">
-        <Link 
-          href="/dashboard"
-          className="w-full flex items-center justify-center py-4 rounded-2xl bg-vault-surface border border-vault-border text-white text-sm font-bold active:scale-95 transition-all"
+        <button 
+          onClick={launchScanner}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gold-500 text-charcoal-300 text-sm font-bold shadow-gold-glow-sm hover:scale-[1.02] active:scale-95 transition-all"
         >
-          Return to Dashboard
-        </Link>
+          <Camera size={18} /> Launch Scanner
+        </button>
       </div>
 
     </div>
