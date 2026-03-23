@@ -338,8 +338,8 @@ export default function WarrantyPage() {
       {/* Add Asset Modal */}
       {showAddAsset && (
         <>
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 animate-fade-in" onClick={() => setShowAddAsset(false)} />
-          <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border animate-slide-up max-h-[90dvh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[55] animate-fade-in" onClick={() => setShowAddAsset(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border animate-slide-up max-h-[90dvh] overflow-y-auto pb-safe">
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-vault-muted" />
             </div>

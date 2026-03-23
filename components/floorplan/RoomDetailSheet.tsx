@@ -425,11 +425,11 @@ export function RoomDetailSheet({ room, spec, warrantyCount = 0, onClose }: Prop
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" onClick={onClose} />
 
       {/* Sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border max-h-[85vh] flex flex-col shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border max-h-[85vh] flex flex-col shadow-2xl pb-safe"
         style={{ animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1) forwards' }}
       >
         {/* Handle */}

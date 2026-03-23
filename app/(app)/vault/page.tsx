@@ -53,9 +53,9 @@ function DocPreviewSheet({ doc, onClose }: { doc: VaultDoc | null; onClose: () =
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/65 backdrop-blur-sm z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[55]" onClick={onClose} />
       <div
-        className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl pb-safe"
         style={{ animation: 'slideUp 0.25s cubic-bezier(0.32,0.72,0,1) forwards' }}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -135,9 +135,9 @@ function DocPreviewSheet({ doc, onClose }: { doc: VaultDoc | null; onClose: () =
 function DemoUploadSheet({ onClose }: { onClose: () => void }) {
   return (
     <>
-      <div className="fixed inset-0 bg-black/65 backdrop-blur-sm z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[55]" onClick={onClose} />
       <div
-        className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl px-6 pb-10"
+        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl px-6 pb-safe"
         style={{ animation: 'slideUp 0.25s cubic-bezier(0.32,0.72,0,1) forwards' }}
       >
         <div className="flex justify-center pt-3 pb-4">
@@ -358,8 +358,8 @@ export default function VaultPage() {
       {/* Upload drawer (real users only) */}
       {uploading && !isDemo && (
         <>
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={() => !saving && setUploading(false)} />
-          <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-vault-surface border-t border-vault-border max-h-[90dvh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[55]" onClick={() => !saving && setUploading(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border max-h-[90dvh] overflow-y-auto pb-safe">
             <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-vault-muted" /></div>
             <div className="px-6 pb-10">
               <div className="flex items-center justify-between mb-5">

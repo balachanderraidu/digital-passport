@@ -8,10 +8,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <PropertyProvider>
-        <div className="min-h-dvh bg-vault-bg flex flex-col">
+        <div className="min-h-dvh bg-vault-bg">
           <DemoBanner />
           <ProfileReminderBanner />
-          <main className="flex-1 safe-bottom overflow-y-auto">
+          <main className="safe-bottom">
             {children}
           </main>
           <BottomNav />
