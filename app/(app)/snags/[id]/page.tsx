@@ -8,7 +8,9 @@ export function generateStaticParams() {
     // Active (construction) mode snags
     ...['sn-a1', 'sn-a2', 'sn-a3', 'sn-a4', 'sn-a5', 'sn-a6'],
     // Rental mode snags
-    ...['sn-rental-1', 'sn-rental-2'],
+    ...['sn-rental-1', 'sn-rental-2', 'sn-rental-3'],
+    // Construction property snags
+    ...['sn-c1', 'sn-c2', 'sn-c3', 'sn-c4', 'sn-c5', 'sn-c6'],
   ].map(id => ({ id }))
 }
 

@@ -15,9 +15,10 @@ import {
 } from '@/lib/firestore'
 import { getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import {
-  DEMO_WARRANTY_ASSETS, DEMO_SNAGS, DEMO_PROPERTY,
   DEMO_ITEM_LINKS, DEMO_TIMELINE_EVENTS, DEMO_ROOM_SPECS,
+  useDemoDataHook,
 } from '@/lib/demo-data'
+import { PageGuide } from '@/components/PageGuide'
 
 interface Message {
   id: string
@@ -48,8 +49,7 @@ function generateReply(
   // Property queries
   if (q.includes('property') || q.includes('home') || q.includes('house') || q.includes('flat') || q.includes('apartment')) {
     if (isDemo) {
-      const p = DEMO_PROPERTY
-      return `🏠 **${p.name}**\n\nUnit: ${p.unit}\nLocation: ${p.location}\nType: 3BHK East-facing · Floor 12\nCarpet Area: 1,456 sq ft (UDS: 312 sq ft)\nDeveloper: Prestige Estates\nRERA: P02400005021\nPossession: 1 Sep 2024\nStatus: ${p.occupancy !== 'renovation' ? 'Passive (Occupied)' : 'Active (Under Construction)'}`
+      if (property) return `🏠 **${property.name}**\n\nUnit: ${property.unit}\nLocation: ${property.location}\nType: ${property.floorPlanType}\nCarpet Area: ${property.area} sq ft\nStatus: ${property.occupancy === 'rented' ? '🔑 Rented out' : property.occupancy === 'renovation' ? '🏗️ Under Construction' : property.occupancy === 'empty' ? '🪟 Empty / Bare Shell' : '🏠 Owner Occupied'}`
     }
     if (!property) return "I don't see a property set up yet. Head to Onboarding to add your home details."
     return `🏠 **${property.name}**\n\nUnit: ${property.unit || 'N/A'}\nLocation: ${property.location || 'N/A'}\nType: ${property.floorPlanType || 'N/A'}\nArea: ${property.area > 0 ? `${property.area} sq ft` : 'N/A'}\nGmail sync: ${property.gmailLinked ? '✅ Connected' : '❌ Not connected'}`
@@ -95,9 +95,9 @@ function generateReply(
   if (q.includes('summary') || q.includes('overview') || q.includes('everything') || q.includes('all')) {
     const expiringCount = assets.filter((a) => getWarrantyStatus(a.warrantyExpiry) === 'expiring').length
     const openSnags = snags.filter((s) => s.status === 'open').length
-    const propName = isDemo ? DEMO_PROPERTY.name : property?.name ?? 'your home'
-    const extraDemo = isDemo ? `\n🔧 Service events: 12 logged · ₹3,600 spent in 2025\n🏗️ Passport mode: ${DEMO_PROPERTY.occupancy !== 'renovation' ? 'Passive (Occupied)' : 'Active (Construction)'}` : ''
-    return `📋 **${propName} Summary**\n\n🛡️ Warranties: ${assets.length} total, ${expiringCount} expiring soon\n🔨 Snags: ${openSnags} open, ${snags.length} total\n📦 Assets tracked: ${assets.length}${extraDemo}${property || isDemo ? `\n\n📍 ${isDemo ? `${DEMO_PROPERTY.unit} · ${DEMO_PROPERTY.location}` : `${property!.unit} · ${property!.location}`}` : ''}`
+    const propName = property?.name ?? 'your home'
+    const extraDemo = isDemo && property ? `\n🔧 Mode: ${property.occupancy === 'rented' ? '🔑 Rental' : property.occupancy === 'renovation' ? '🏗️ Construction' : property.occupancy === 'empty' ? '🪟 Bare Shell' : '🏠 Owner Occupied'}` : ''
+    return `📋 **${propName} Summary**\n\n🛡️ Warranties: ${assets.length} total, ${expiringCount} expiring soon\n🔨 Snags: ${openSnags} open, ${snags.length} total\n📦 Assets tracked: ${assets.length}${extraDemo}${property ? `\n\n📍 ${property.unit} · ${property.location}` : ''}`
   }
 
   // Warranty queries
@@ -175,6 +175,7 @@ export default function AssistantPage() {
   const { user, loading: authLoading } = useAuth()
   const { activePropertyId } = useProperty()
   const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
+  const demoCtx = useDemoDataHook(activePropertyId)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -192,12 +193,13 @@ export default function AssistantPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  // Demo mode — load static demo data
+  // Demo mode — load context-aware per-property demo data
   useEffect(() => {
     if (!isDemo) return
-    setAssets(DEMO_WARRANTY_ASSETS as unknown as WarrantyAsset[])
-    setSnags(DEMO_SNAGS as unknown as Snag[])
-  }, [isDemo])
+    setAssets(demoCtx.assets || [])
+    setSnags(demoCtx.snags || [])
+    setProperty(demoCtx.property || null)
+  }, [isDemo, demoCtx])
 
   useEffect(() => {
     if (!user) return
@@ -255,7 +257,7 @@ export default function AssistantPage() {
       id: '0',
       role: 'assistant',
       text: isDemo
-        ? `Hi! I'm your Digital Passport AI, trained on Oriana Unit 1202. Ask me about warranties (${DEMO_WARRANTY_ASSETS.length} tracked), open snags, service history, room specs, or property details.`
+        ? `Hi! I'm your Digital Passport AI, trained on ${demoCtx.property?.name || 'your property'}. Ask me about warranties (${(demoCtx.assets || []).length} tracked), open snags (${(demoCtx.snags || []).filter((s: {status: string}) => s.status === 'open').length} open), service history, room specs, or property details.`
         : "Hi! I'm your Digital Passport AI. Ask me anything about your home — warranties, open snags, appliance specs, property details, and more.",
       timestamp: new Date(),
     }])
@@ -273,7 +275,7 @@ export default function AssistantPage() {
             <div>
               <h1 className="text-xl font-bold text-white">AI Assistant</h1>
               <p className="text-xs text-vault-text-muted">
-                {property ? `Knows your ${property.name}` : 'Powered by your Passport data'}
+                {isDemo ? `Knows ${demoCtx.property?.name}` : property ? `Knows your ${property.name}` : 'Powered by your Passport data'}
               </p>
             </div>
           </div>
@@ -283,6 +285,10 @@ export default function AssistantPage() {
         </div>
 
         {/* Quick chips */}
+        <PageGuide id="assistant" title="AI Home Assistant">
+          <p>Ask anything about your property — warranty status, open snags, appliance specs, service history, or room details. The AI knows your entire Passport.</p>
+          <p className="mt-1">💬 Try: <span className="text-white">"Which warranties are expiring?"</span> · <span className="text-white">"What are the open snags?"</span> · <span className="text-white">"Tell me about my property"</span></p>
+        </PageGuide>
         <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
           {QUICK_CHIPS.map((chip) => (
             <button

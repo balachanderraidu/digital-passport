@@ -10,6 +10,7 @@ import { subscribeWarrantyAssets, addWarrantyAsset, deleteWarrantyAsset, type Wa
 import { uploadInvoice } from '@/lib/storage'
 import { useDemoDataHook, DEMO_ITEM_LINKS } from '@/lib/demo-data'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
+import { PageGuide } from '@/components/PageGuide'
 
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
 
@@ -201,7 +202,12 @@ export default function WarrantyPage() {
         )}
       </div>
 
-      {/* Filter tabs */}
+        <PageGuide id="warranty" title="Warranty & Asset Tracker">
+          <p>Track every appliance, fixture, and fitting in your home — from ACs to water heaters. Get expiry alerts before warranties lapse, store invoices, and log service visits.</p>
+          <p className="mt-1">📧 <span className="text-white font-medium">Gmail Sync</span> auto-discovers warranty emails from brands like LG, Samsung, and Bosch — no manual entry needed.</p>
+        </PageGuide>
+
+        {/* Filter tabs */}
       <div className="px-5 mt-2">
         <div className="flex gap-1 p-1 glass rounded-xl mb-4">
           {(['all', 'active', 'expiring', 'expired'] as FilterTab[]).map((tab) => (
