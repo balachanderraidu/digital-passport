@@ -434,6 +434,17 @@ export default function LoginPage() {
                 <p className="text-[10px] text-vault-text-muted leading-relaxed mt-0.5">Ask anything — expiring warranties, service costs, room specs, open snags, or property details.</p>
               </div>
             </div>
+            {/* AR Vision */}
+            <div className="flex gap-3 px-3 py-2.5 rounded-xl bg-vault-card/50 border border-vault-border border-l-2 border-l-blue-500 relative overflow-hidden">
+              <span className="text-lg flex-shrink-0 z-10">📱</span>
+              <div className="relative z-10">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">AR Vision</p>
+                  <span className="text-[8px] px-1.5 rounded bg-blue-500/20 text-blue-400 font-bold uppercase tracking-widest border border-blue-500/30">Concept</span>
+                </div>
+                <p className="text-[10px] text-vault-text-muted leading-relaxed mt-0.5">X-Ray your walls and instantly scan furniture to bring up service manuals and warranties.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

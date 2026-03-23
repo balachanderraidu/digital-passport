@@ -344,6 +344,29 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
+
+        {/* AR Vision Banner */}
+        <div className="mt-3">
+          <Link
+            href="/ar"
+            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-gold-500/30 bg-gold-500/5 relative overflow-hidden group transition-all hover:border-gold-500 hover:shadow-gold-glow-sm"
+          >
+            <div className="absolute inset-0 bg-gold-gradient opacity-0 group-hover:opacity-10 transition-opacity" />
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 rounded-lg bg-gold-500/20 flex items-center justify-center text-xl">
+                📱
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col items-start gap-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-sm font-bold text-white">AR Vision</span>
+                  <span className="text-[8px] px-1.5 py-0.5 rounded bg-gold-500/20 text-gold-400 font-bold uppercase tracking-widest border border-gold-500/30">Concept</span>
+                </div>
+                <p className="text-[10px] text-vault-text-muted leading-tight truncate w-full">X-Ray walls & scan furniture instantly</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-vault-text-muted relative z-10 group-hover:text-gold-500 transition-colors flex-shrink-0" />
+          </Link>
+        </div>
       </div>
 
       {/* New user CTA */}
