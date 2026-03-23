@@ -34,7 +34,7 @@ export function ConstructionTimelineWidget() {
       {/* Hero image */}
       <div className="relative h-44 w-full bg-vault-muted/20">
         <Image
-          src="/demo-assets/construction_site.png"
+          src="/demo-assets/construction_interior.png"
           alt="Nexus Towers — C-801 construction progress"
           fill
           className="object-cover"

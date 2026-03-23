@@ -1021,7 +1021,7 @@ export const p_villa: Property = {
   unitTypeLabel: 'Luxury Triplex',
   occupancy: 'residing',
   floorPlanUrl: '/demo-assets/floor_plan.png',
-  heroImageUrl: '/demo-assets/villa_hero.png',
+  heroImageUrl: '/demo-assets/villa_exterior.png',
   createdAt: ts(90),
 }
 
@@ -1038,7 +1038,7 @@ export const p_rental: Property = {
   unitTypeLabel: '2BHK West · Rented to Arjun & Priya',
   occupancy: 'rented',
   floorPlanUrl: '/demo-assets/floor_plan.png',
-  heroImageUrl: '/demo-assets/rental_hero.png',
+  heroImageUrl: '/demo-assets/rental_interior.png',
   createdAt: ts(120),
 }
 
