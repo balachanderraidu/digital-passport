@@ -235,13 +235,30 @@ export default function WarrantyPage() {
         )}
 
         {/* Empty state */}
-        {!loadingAssets && sorted.length === 0 && (
-          <div className="text-center py-16 text-vault-text-muted">
-            <span className="text-4xl block mb-3">🛡️</span>
-            <p className="text-sm font-medium">No assets yet</p>
-            <p className="text-xs mt-1">Tap Add Asset to start tracking warranties</p>
-          </div>
-        )}
+        {!loadingAssets && sorted.length === 0 && (() => {
+          const occupancy = isDemo ? demoContext.property?.occupancy : undefined
+          if (occupancy === 'renovation') return (
+            <div className="text-center py-16 text-vault-text-muted">
+              <span className="text-4xl block mb-3">🏗️</span>
+              <p className="text-sm font-bold text-white">No appliances yet</p>
+              <p className="text-xs mt-1">Still under construction — no fittings installed yet.<br/>Assets will appear once the property is handed over.</p>
+            </div>
+          )
+          if (occupancy === 'empty') return (
+            <div className="text-center py-16 text-vault-text-muted">
+              <span className="text-4xl block mb-3">🪟</span>
+              <p className="text-sm font-bold text-white">Bare shell — no assets yet</p>
+              <p className="text-xs mt-1">Renovation hasn't started. Once fitted out,<br/>add appliances and fixtures here.</p>
+            </div>
+          )
+          return (
+            <div className="text-center py-16 text-vault-text-muted">
+              <span className="text-4xl block mb-3">🛡️</span>
+              <p className="text-sm font-medium">No assets yet</p>
+              <p className="text-xs mt-1">Tap Add Asset to start tracking warranties</p>
+            </div>
+          )
+        })()}
 
         {/* Asset timeline */}
         {!loadingAssets && sorted.length > 0 && (

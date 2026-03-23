@@ -163,12 +163,22 @@ export default function SnagsPage() {
         )}
 
         <div className="pb-28">
-          {!loading && filteredSnags.length === 0 && (
-            <div className="text-center py-12 text-vault-text-muted">
-              <CheckCircle2 size={40} className="mx-auto mb-3 text-green-500/40" />
-              <p className="text-sm font-medium">No snags in this category</p>
-            </div>
-          )}
+          {!loading && filteredSnags.length === 0 && (() => {
+            const occupancy = isDemo ? demoContext.property?.occupancy : undefined
+            if (occupancy === 'empty' && activeTab === 'open') return (
+              <div className="text-center py-12 text-vault-text-muted">
+                <span className="text-4xl block mb-3">🪟</span>
+                <p className="text-sm font-bold text-white">No defects logged yet</p>
+                <p className="text-xs mt-1">Property is a bare shell awaiting renovation.<br />Log snags after construction begins.</p>
+              </div>
+            )
+            return (
+              <div className="text-center py-12 text-vault-text-muted">
+                <CheckCircle2 size={40} className="mx-auto mb-3 text-green-500/40" />
+                <p className="text-sm font-medium">No snags in this category</p>
+              </div>
+            )
+          })()}
 
           {/* Urgency groups: High → Medium → Low */}
           {!loading && (['high', 'medium', 'low'] as Urgency[]).map((urgency) => {
