@@ -15,6 +15,8 @@ import { PassportModeBadge } from '@/components/PassportModeBadge'
 import { PropertyTimeline } from '@/components/PropertyTimeline'
 import { PageGuide } from '@/components/PageGuide'
 import { AIWalkthroughWidget } from '@/components/tenant/AIWalkthroughWidget'
+import { ConstructionTimelineWidget } from '@/components/dashboard/ConstructionTimelineWidget'
+import { RenovationEstimatorWidget } from '@/components/dashboard/RenovationEstimatorWidget'
 import {
   subscribeDashboardStats,
   subscribeWarrantyAssets,
@@ -149,7 +151,7 @@ export default function DashboardPage() {
   const [showSwitcher, setShowSwitcher] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null)
 
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
   const { property: demoProperty, stats: demoStats, snags: demoSnags, assets: demoAssets, events: demoEvents, rooms: demoRooms } = demoContext
 
@@ -320,6 +322,12 @@ export default function DashboardPage() {
 
         {isDemo && demoProperty.id === 'p_rental' && (
           <AIWalkthroughWidget />
+        )}
+        {isDemo && demoProperty.id === 'p_construction' && (
+          <ConstructionTimelineWidget />
+        )}
+        {isDemo && demoProperty.id === 'p_empty' && (
+          <RenovationEstimatorWidget />
         )}
 
         {/* AR Vision Banner */}

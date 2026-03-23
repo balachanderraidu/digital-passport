@@ -35,7 +35,7 @@ export default function SnagsPage() {
   const [snags, setSnags] = useState<Snag[]>([])
   const [loading, setLoading] = useState(true)
 
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
 
   // Demo mode

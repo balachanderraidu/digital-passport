@@ -13,7 +13,7 @@ export default function ARVisionPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const { activePropertyId } = useProperty()
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
 
   const [isScanning, setIsScanning] = useState(false)

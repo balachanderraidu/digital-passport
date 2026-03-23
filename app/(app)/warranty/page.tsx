@@ -71,7 +71,7 @@ export default function WarrantyPage() {
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
   const invoiceRef = useRef<HTMLInputElement>(null)
 
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
 
   // Demo mode

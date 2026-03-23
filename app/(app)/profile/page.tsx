@@ -80,7 +80,7 @@ export default function ProfilePage() {
   const [savingName, setSavingName] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
   const effectiveStats = isDemo ? demoContext.stats : stats
 

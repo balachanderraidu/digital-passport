@@ -173,7 +173,7 @@ function generateReply(
 
 export default function AssistantPage() {
   const { user, loading: authLoading } = useAuth()
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',

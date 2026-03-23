@@ -181,7 +181,7 @@ export default function VaultPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const isDemo = !authLoading && !user
+  const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
 
   useEffect(() => { if (isDemo) setVaultData(demoContext.vault) }, [isDemo, demoContext.vault])

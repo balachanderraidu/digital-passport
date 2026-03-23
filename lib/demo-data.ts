@@ -405,6 +405,38 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
 
 export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
+    id: 'wa-hob-1',
+    name: 'Bosch Series 8 Induction Hob',
+    icon: '🍳',
+    zone: 'Kitchen',
+    brand: 'Bosch',
+    model: 'PXY875KW1E',
+    serialNumber: 'BSH-2024-H0992',
+    purchaseDate: isoDate(-120),
+    warrantyExpiry: isoDate(610),
+    nextService: isoDate(90),
+    invoiceUrl: null,
+    photoUrl: 'https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&q=80&w=800',
+    source: 'manual',
+    createdAt: ts(120),
+  },
+  {
+    id: 'wa-coffee-1',
+    name: 'Breville Barista Pro Espresso',
+    icon: '☕',
+    zone: 'Kitchen',
+    brand: 'Breville',
+    model: 'BES878',
+    serialNumber: 'BRV-ESX-5519',
+    purchaseDate: isoDate(-45),
+    warrantyExpiry: isoDate(320),
+    nextService: null,
+    invoiceUrl: null,
+    photoUrl: 'https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?auto=format&fit=crop&q=80&w=800',
+    source: 'manual',
+    createdAt: ts(45),
+  },
+  {
     id: 'wa-1',
     name: 'LG Split AC 1.5 Ton',
     icon: '❄️',
@@ -1056,12 +1088,45 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
     property: p_rental,
     // Rental only has fixed items, no TVs/Gaming consoles.
     assets: DEMO_WARRANTY_ASSETS.filter(a => ['Kitchen', 'Utility', 'General'].includes(a.zone)),
-    snags: [],
+    snags: [
+      {
+        id: 'sn-rental-1',
+        title: '[AI Flagged] AC Dust Filter block',
+        location: 'Master Bedroom',
+        category: 'Maintenance',
+        urgency: 'medium',
+        status: 'open',
+        photoUrl: 'https://images.unsplash.com/photo-1598928506311-c55dd1b6e159?auto=format&fit=crop&q=80&w=800',
+        createdAt: ts(0),
+        updatedAt: ts(0),
+      },
+      {
+        id: 'sn-rental-2',
+        title: '[AI Flagged] Minor wall scuff',
+        location: 'Living Room',
+        category: 'Maintenance',
+        urgency: 'low',
+        status: 'open',
+        photoUrl: null,
+        createdAt: ts(0),
+        updatedAt: ts(0),
+      }
+    ],
     vault: {},
-    stats: { assetCount: 6, expiringSoonCount: 0, openSnagCount: 0 },
+    stats: { assetCount: 6, expiringSoonCount: 0, openSnagCount: 2 },
     rooms: DEMO_ROOMS.slice(0, 3),
     roomsSpecs: {},
-    events: [],
+    events: [
+      {
+        id: 'ev-rental-1',
+        type: 'upload',
+        title: 'Monthly Walkthrough Video Submitted',
+        detail: 'Tenant successfully uploaded the Q3 walkthrough video. AI Analysis is complete.',
+        badge: 'Inspected',
+        badgeColor: 'text-blue-400',
+        linkedId: null,
+      }
+    ],
   },
   p_empty: {
     property: p_empty,
@@ -1081,7 +1146,26 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
     stats: { assetCount: 0, expiringSoonCount: 0, openSnagCount: 5 },
     rooms: DEMO_ROOMS,
     roomsSpecs: {}, // No final finishes yet
-    events: [],
+    events: [
+      {
+        id: 'ev-const-1',
+        type: 'upload',
+        title: 'Site Progress: Foundation',
+        detail: 'The project team uploaded the latest drone footage of the site. Foundation and core pouring initialized.',
+        badge: 'On Track',
+        badgeColor: 'text-green-400',
+        linkedId: null,
+      },
+      {
+        id: 'ev-const-2',
+        type: 'maintenance',
+        title: 'Payment Milestone #2 Approaching',
+        detail: '15% payment due upon completion of the Podium Slab. Expected next week.',
+        badge: 'Action Needed',
+        badgeColor: 'text-amber-400',
+        linkedId: null,
+      }
+    ],
   }
 }
 

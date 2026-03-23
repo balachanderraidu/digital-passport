@@ -30,7 +30,7 @@ export function AIWalkthroughWidget() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src="/demo-assets/tenant_video.png" 
+            src="https://images.unsplash.com/photo-1598928506311-c55dd1b6e159?auto=format&fit=crop&q=80&w=800"
             alt="Interior" 
             className="w-full h-full object-cover opacity-60 transition-all group-hover:scale-105 group-hover:opacity-80"
           />
