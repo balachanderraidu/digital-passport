@@ -1,4 +1,5 @@
 'use client'
+import 'leaflet/dist/leaflet.css'
 
 import { useRouter } from 'next/navigation'
 import { Check, Plus, X, ShieldCheck, Hammer, FolderLock, LayoutList, Map as MapIcon } from 'lucide-react'
@@ -343,7 +344,6 @@ export function PropertySwitcher({ onClose }: PropertySwitcherProps) {
 
       {/* Leaflet CSS — injected globally once */}
       <style>{`
-        @import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
         .leaflet-container { background: #0D0D0D !important; }
         .leaflet-control-attribution {
           background: rgba(13,13,13,0.7) !important;

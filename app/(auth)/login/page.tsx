@@ -12,7 +12,8 @@ import {
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/useAuth'
 import { getProperty, getUserProfile, saveUserProfile } from '@/lib/firestore'
-import { KeyRound, Phone, Loader2, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { KeyRound, Phone, Loader2, RefreshCw, CheckCircle2, Share } from 'lucide-react'
+import { PWAInstallButton } from '@/components/PWAInstallButton'
 import { cn } from '@/lib/utils'
 
 async function routeAfterSignIn(
@@ -512,6 +513,21 @@ export default function LoginPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ─── Install App ─── */}
+        <div className="mt-6 pt-5 border-t border-vault-border pb-8">
+          <p className="text-[10px] font-bold text-vault-text-muted uppercase tracking-widest text-center mb-3">Install Digital Passport</p>
+          {/* Android: native install prompt */}
+          <div className="flex justify-center mb-3">
+            <PWAInstallButton />
+          </div>
+          {/* iOS: manual share hint */}
+          <div className="flex items-center justify-center gap-2 text-[10px] text-vault-text-muted">
+            <span>On iPhone: tap</span>
+            <Share size={11} className="text-white/40" />
+            <span>→ <span className="font-semibold text-white/50">Add to Home Screen</span></span>
           </div>
         </div>
       </div>
