@@ -54,6 +54,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* Preload the explainer video so it’s ready when VideoSplash mounts */}
+        <link rel="preload" as="video" href="/explainer.mp4" type="video/mp4" />
       </head>
       <body className={`${spaceGrotesk.variable} font-sans bg-vault-bg text-vault-text antialiased`}>
         <Providers>
