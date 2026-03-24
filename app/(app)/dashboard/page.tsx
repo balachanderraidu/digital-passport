@@ -232,8 +232,19 @@ export default function DashboardPage() {
   return (
     <div className="min-h-dvh bg-vault-bg">
       {/* Header */}
-      <div className="px-5 pt-14 pb-4 bg-gradient-to-b from-vault-surface to-vault-bg">
-        <div className="flex items-start justify-between">
+      <div className="px-5 pt-14 pb-4 bg-gradient-to-b from-vault-surface to-vault-bg relative overflow-hidden">
+        {/* Property hero tint background */}
+        {(isDemo ? demoProperty.heroImageUrl : property?.heroImageUrl) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={isDemo ? demoProperty.heroImageUrl! : property!.heroImageUrl!}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none select-none"
+            style={{ objectPosition: 'center 30%' }}
+          />
+        )}
+        <div className="flex items-start justify-between relative z-10">
           <div>
             <p className="text-xs text-vault-text-muted font-medium uppercase tracking-widest mb-1">
               Good {greeting} ✦
