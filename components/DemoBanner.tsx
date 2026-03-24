@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FlaskConical, X, Play } from 'lucide-react'
+import { FlaskConical, X, PlayCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export function DemoBanner() {
@@ -20,23 +20,25 @@ export function DemoBanner() {
   }
 
   return (
-    <div className="relative z-40 bg-gold-500/10 border-b border-gold-500/25 px-4 py-2 flex items-center gap-2">
-      <FlaskConical size={13} className="text-gold-500 flex-shrink-0" />
-      <p className="text-[11px] font-semibold text-gold-500 flex-1">
-        Demo Mode — sample data only.{' '}
-        <Link href="/login" className="underline underline-offset-2 hover:text-gold-400">
+    <div className="relative z-40 bg-gold-500/10 border-b border-gold-500/25 px-3 py-2 flex items-center gap-2">
+      <FlaskConical size={12} className="text-gold-500 flex-shrink-0" />
+      <p className="text-[11px] font-semibold text-gold-500 flex-1 leading-tight">
+        Demo Mode.{' '}
+        <Link href="/login" className="underline underline-offset-2 hover:text-gold-400 opacity-70">
           Sign in
-        </Link>{' '}
-        to connect your home.
+        </Link>
       </p>
-      {/* Re-watch intro video */}
+
+      {/* Prominent Watch Intro button */}
       <button
         onClick={handleRewatch}
-        className="flex items-center gap-1 text-[10px] font-bold text-gold-500/70 hover:text-gold-500 transition-colors px-2 py-0.5 rounded-full border border-gold-500/25 hover:border-gold-500/50 flex-shrink-0"
+        className="flex items-center gap-1.5 text-[11px] font-bold text-charcoal-300 bg-gold-gradient px-3 py-1.5 rounded-full hover:shadow-gold-glow transition-all flex-shrink-0"
       >
-        <Play size={9} className="fill-current" /> Intro
+        <PlayCircle size={13} className="flex-shrink-0" />
+        Watch Intro
       </button>
-      <button onClick={() => setDismissed(true)} className="text-gold-500/60 hover:text-gold-500 transition-colors flex-shrink-0">
+
+      <button onClick={() => setDismissed(true)} className="text-gold-500/50 hover:text-gold-500 transition-colors flex-shrink-0 ml-0.5">
         <X size={13} />
       </button>
     </div>

@@ -232,37 +232,43 @@ export default function LoginPage() {
           <p className="text-vault-text-muted mt-1.5 text-sm font-medium">Your Home. Secured.</p>
         </div>
 
-        {/* Login Gate */}
-        {!isAdmin ? (
-          <div className="glass rounded-3xl p-6 mb-6 text-center border-gold-500/20">
-            <h2 className="text-sm font-bold text-white mb-2">Request Beta Access</h2>
-            <p className="text-[10px] text-vault-text-muted mb-5 leading-relaxed">
-              Digital Passport is currently in private beta. Join the waitlist to get early access to your home's True Digital Twin.
-            </p>
-            {waitlistJoined ? (
-              <div className="py-3 px-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center justify-center gap-2">
-                <CheckCircle2 size={16} /> You're on the list!
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="name@email.com"
-                  className="flex-1 min-w-0 py-3 px-4 bg-vault-surface border border-vault-border rounded-xl text-xs text-vault-text focus:border-gold-500 focus:bg-vault-card transition-all placeholder:text-vault-muted"
-                  value={waitlistEmail}
-                  onChange={(e) => setWaitlistEmail(e.target.value)}
-                />
-                <button
-                  onClick={() => setWaitlistJoined(true)}
-                  disabled={!waitlistEmail.includes('@')}
-                  className="py-3 px-4 bg-gold-500 text-charcoal-300 rounded-xl text-xs font-bold hover:bg-gold-400 disabled:opacity-50 disabled:bg-vault-muted disabled:text-vault-text-muted transition-all"
-                >
-                  Join
-                </button>
-              </div>
-            )}
+        {/* ─── HERO: Try Demo Mode ─── */}
+        <button
+          onClick={handleDemoLogin}
+          className="w-full rounded-2xl border-2 border-gold-500 bg-gold-500/5 hover:bg-gold-500/10 transition-all text-left overflow-hidden group mb-6"
+        >
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+            <div className="w-9 h-9 rounded-xl bg-gold-gradient flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">🧪</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-white">Try Demo Mode</p>
+              <p className="text-[11px] text-gold-500/80">Explore 4 real properties — no sign-in needed</p>
+            </div>
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="text-[10px] font-bold text-gold-500 bg-gold-500/10 border border-gold-500/30 px-2 py-0.5 rounded-full">Free</span>
+              <span className="text-[10px] font-bold text-gold-500 group-hover:translate-x-0.5 transition-transform">→</span>
+            </div>
           </div>
-        ) : (
+          <div className="grid grid-cols-4 gap-0">
+            {[
+              { src: '/demo-assets/villa_exterior.png', label: '🏠 Villa' },
+              { src: '/demo-assets/rental_living_room.png', label: '🔑 Rental' },
+              { src: '/demo-assets/construction_interior.png', label: '🏗️ Active' },
+              { src: '/demo-assets/bare_shell_interior.png', label: '🪟 Bare Shell' },
+            ].map(({ src, label }) => (
+              <div key={label} className="relative aspect-[3/2] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={label} className="w-full h-full object-cover opacity-70 group-hover:opacity-95 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                <p className="absolute bottom-1 left-0 right-0 text-center text-[8px] font-bold text-white">{label}</p>
+              </div>
+            ))}
+          </div>
+        </button>
+
+        {/* ─── Sign-in (admin/beta only) ─── */}
+        {isAdmin && (
           <div className="animate-fade-in">
             {/* Tab switcher */}
             <div className="flex gap-1 p-1 glass rounded-2xl mb-6">
@@ -434,44 +440,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Divider + Demo */}
-        <div className="mt-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-vault-border" />
-            <span className="text-xs text-vault-text-muted font-medium">or</span>
-            <div className="flex-1 h-px bg-vault-border" />
-          </div>
-          <button
-            onClick={handleDemoLogin}
-            className="w-full rounded-2xl glass border border-vault-border hover:border-gold-500/30 transition-all text-left overflow-hidden group"
-          >
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-vault-border/50">
-              <span className="text-base">🧪</span>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-white">Try Demo Mode</p>
-                <p className="text-[10px] text-vault-text-muted">Explore with 4 realistic properties</p>
-              </div>
-              <span className="text-[10px] font-bold text-gold-500 group-hover:translate-x-0.5 transition-transform">→</span>
-            </div>
-            {/* Property scenario thumbnails */}
-            <div className="grid grid-cols-4 gap-0">
-              {[
-                { src: '/demo-assets/villa_exterior.png', label: '🏠 Villa' },
-                { src: '/demo-assets/rental_living_room.png', label: '🔑 Rental' },
-                { src: '/demo-assets/construction_interior.png', label: '🏗️ Active' },
-                { src: '/demo-assets/bare_shell_interior.png', label: '🪟 Bare Shell' },
-              ].map(({ src, label }) => (
-                <div key={label} className="relative aspect-[4/3] overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={label} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <p className="absolute bottom-1 left-0 right-0 text-center text-[8px] font-bold text-white">{label}</p>
-                </div>
-              ))}
-            </div>
-          </button>
-        </div>
-
         <p className="text-center text-[10px] text-vault-muted mt-6 leading-relaxed">
           By continuing, you agree to our Terms of Service and Privacy Policy.
         </p>
@@ -512,6 +480,38 @@ export default function LoginPage() {
                 <p className="text-[10px] text-vault-text-muted leading-relaxed mt-0.5">X-Ray your walls and instantly scan furniture to bring up service manuals and warranties.</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Beta access — below How It Works */}
+        <div className="mt-8 pt-6 border-t border-vault-border pb-10">
+          <div className="glass rounded-2xl p-5 text-center">
+            <h2 className="text-sm font-bold text-white mb-1">Request Beta Access</h2>
+            <p className="text-[11px] text-vault-text-muted mb-4 leading-relaxed">
+              Digital Passport is in private beta. Join the waitlist for early access.
+            </p>
+            {waitlistJoined ? (
+              <div className="py-3 px-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center justify-center gap-2">
+                <CheckCircle2 size={16} /> You&apos;re on the list!
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="name@email.com"
+                  className="flex-1 min-w-0 py-3 px-4 bg-vault-surface border border-vault-border rounded-xl text-xs text-vault-text focus:border-gold-500 focus:bg-vault-card transition-all placeholder:text-vault-muted"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                />
+                <button
+                  onClick={() => setWaitlistJoined(true)}
+                  disabled={!waitlistEmail.includes('@')}
+                  className="py-3 px-4 bg-gold-500 text-charcoal-300 rounded-xl text-xs font-bold hover:bg-gold-400 disabled:opacity-50 disabled:bg-vault-muted disabled:text-vault-text-muted transition-all"
+                >
+                  Join
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
