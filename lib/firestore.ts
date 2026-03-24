@@ -142,6 +142,8 @@ export interface Property {
   rooms?: FloorPlanRoom[]   // AI-extracted room bounding boxes
   homePlan?: HomePlanItem[] // User-edited Konva canvas state
   occupancy?: 'residing' | 'rented' | 'empty' | 'renovation'
+  lat?: number              // Latitude for map view
+  lng?: number              // Longitude for map view
   createdAt: Timestamp | null
 }
 

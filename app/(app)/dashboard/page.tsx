@@ -251,11 +251,20 @@ export default function DashboardPage() {
             </p>
             <button
               onClick={() => setShowSwitcher(true)}
-              className="flex items-center gap-1.5 group"
+              className="flex items-center gap-1.5 group mt-0.5"
             >
-              <h1 className="text-2xl font-bold text-white">{propName}</h1>
+              <div className="text-left">
+                <h1 className="text-xl font-bold text-white leading-tight">
+                  {propName.split(' · ')[0]}
+                </h1>
+                {propName.includes(' · ') && (
+                  <p className="text-[11px] text-gold-500/70 font-semibold leading-tight mt-0.5">
+                    {propName.split(' · ').slice(1).join(' · ')}
+                  </p>
+                )}
+              </div>
               {(allProperties.length > 1 || isDemo) && (
-                <ChevronDown size={18} className="text-gold-500 group-hover:opacity-80 mt-1" />
+                <ChevronDown size={16} className="text-gold-500 group-hover:opacity-80 flex-shrink-0 mt-1" />
               )}
             </button>
             {property || isDemo ? (

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Demo Mode Data
  *
  * All placeholder data for the unauthenticated demo experience.
@@ -1022,6 +1022,8 @@ export const p_villa: Property = {
   occupancy: 'residing',
   floorPlanUrl: '/demo-assets/floor_plan.png',
   heroImageUrl: '/demo-assets/villa_exterior.png',
+  lat: 17.4401,
+  lng: 78.3489,
   createdAt: ts(90),
 }
 
@@ -1039,6 +1041,8 @@ export const p_rental: Property = {
   occupancy: 'rented',
   floorPlanUrl: '/demo-assets/floor_plan_2bhk.png',
   heroImageUrl: '/demo-assets/rental_interior.png',
+  lat: 17.4615,
+  lng: 78.3543,
   createdAt: ts(120),
 }
 
@@ -1056,6 +1060,8 @@ export const p_empty: Property = {
   occupancy: 'empty',
   floorPlanUrl: '/demo-assets/floor_plan_3bhk.png',
   heroImageUrl: '/demo-assets/empty_shell.png',
+  lat: 17.3120,
+  lng: 78.4294,
   createdAt: ts(5),
 }
 
@@ -1073,6 +1079,8 @@ export const p_construction: Property = {
   occupancy: 'renovation',
   floorPlanUrl: '/demo-assets/floor_plan_3bhk.png',
   heroImageUrl: '/demo-assets/construction_site.png',
+  lat: 17.4127,
+  lng: 78.3358,
   createdAt: ts(1),
 }
 
