@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Bell, ChevronRight, X, Loader2, Upload, Plus, Hammer, Sparkles, ChevronDown } from 'lucide-react'
 import { PWAInstallButton } from '@/components/PWAInstallButton'
@@ -9,6 +9,7 @@ import { AssetDrawer } from '@/components/twin/AssetDrawer'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { PropertySwitcher } from '@/components/PropertySwitcher'
+import { PropertySwitcherTour } from '@/components/PropertySwitcherTour'
 import { RoomMinimap } from '@/components/floorplan/RoomMinimap'
 import { RoomDetailSheet } from '@/components/floorplan/RoomDetailSheet'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
@@ -154,6 +155,8 @@ export default function DashboardPage() {
   const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
   const { property: demoProperty, stats: demoStats, snags: demoSnags, assets: demoAssets, events: demoEvents, rooms: demoRooms } = demoContext
+  // #9: ref for the property switcher button (used by the tour)
+  const switcherRef = useRef<HTMLButtonElement>(null)
 
   // Demo mode: inject placeholder data
   useEffect(() => {
@@ -250,6 +253,7 @@ export default function DashboardPage() {
               Good {greeting} ✦
             </p>
             <button
+              ref={switcherRef}
               onClick={() => setShowSwitcher(true)}
               className="flex items-center gap-1.5 group mt-0.5"
             >
@@ -356,6 +360,8 @@ export default function DashboardPage() {
           </div>
         </div>
         {showSwitcher && <PropertySwitcher onClose={() => setShowSwitcher(false)} />}
+        {/* #9: Property Switcher Tour — fires once on first demo visit */}
+        {isDemo && <PropertySwitcherTour targetRef={switcherRef} />}
 
         <div className="mt-6">
           <PageGuide id="dashboard" title="The Command Center">
@@ -473,7 +479,7 @@ export default function DashboardPage() {
             />
             <RoomDetailSheet
               room={selectedRoom}
-              spec={selectedRoom ? demoContext.roomsSpecs[selectedRoom.name] ?? null : null}
+              spec={selectedRoom ? (demoContext.roomSpecs as Record<string, any>)?.[selectedRoom.name] ?? null : null}
               warrantyCount={warrantyAssets.filter((a) => a.zone === selectedRoom?.name || a.zone?.includes(selectedRoom?.name?.split(' ')[0] ?? '')).length}
               onClose={() => setSelectedRoom(null)}
             />
@@ -560,7 +566,7 @@ export default function DashboardPage() {
             <p className="text-sm font-medium">All snags resolved</p>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 stagger-list">
             {recentSnags.filter((s) => s.status === 'open').slice(0, 3).map((snag) => (
               <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-3.5 flex items-center gap-3 card-hover block">
                 <div className="w-12 h-12 rounded-xl bg-vault-muted/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -586,7 +592,7 @@ export default function DashboardPage() {
       {expiringWarranties.length > 0 && (
         <div className="px-5 mt-5">
           <h2 className="text-sm font-bold text-white mb-3">Expiring Warranties</h2>
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 stagger-list">
             {expiringWarranties.map((asset) => (
               <Link key={asset.id} href={`/warranty/${asset.id}`} className="card p-3.5 flex items-center gap-3 card-hover block">
                 <span className="text-xl">{asset.icon}</span>
