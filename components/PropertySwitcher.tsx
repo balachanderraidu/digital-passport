@@ -1,10 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Check, Plus, X } from 'lucide-react'
+import { Check, Plus, X, ShieldCheck, Hammer, FolderLock } from 'lucide-react'
 import { useProperty } from '@/lib/useProperty'
 import { cn } from '@/lib/utils'
 import type { Property } from '@/lib/firestore'
+import { DEMO_DATA_CATALOG } from '@/lib/demo-data'
 
 interface PropertySwitcherProps {
   onClose: () => void
@@ -15,6 +16,14 @@ const OCCUPANCY_META: Record<string, { label: string; emoji: string; color: stri
   rented:     { label: 'Rented Out',   emoji: '🔑', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
   renovation: { label: 'Construction', emoji: '🏗️', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
   empty:      { label: 'Bare Shell',   emoji: '🪟', color: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' },
+}
+
+// Per-property quick stats from the DEMO_DATA_CATALOG
+const DEMO_STATS: Record<string, { assets: number; snags: number; docs: number; context: string }> = {
+  p_villa:        { assets: 10, snags: 5,  docs: 11, context: '5BHK · G+2 Villa' },
+  p_rental:       { assets: 4,  snags: 3,  docs: 6,  context: '2BHK · Rented Out' },
+  p_empty:        { assets: 0,  snags: 0,  docs: 4,  context: '3BHK · Bare Shell' },
+  p_construction: { assets: 0,  snags: 6,  docs: 5,  context: '3BHK · Under Construction' },
 }
 
 function OccupancyBadge({ occupancy }: { occupancy?: string }) {
@@ -31,6 +40,8 @@ function OccupancyBadge({ occupancy }: { occupancy?: string }) {
 }
 
 function PropertyCard({ p, isActive, onSelect }: { p: Property; isActive: boolean; onSelect: () => void }) {
+  const stats = DEMO_STATS[p.id]
+
   return (
     <button
       onClick={onSelect}
@@ -63,14 +74,26 @@ function PropertyCard({ p, isActive, onSelect }: { p: Property; isActive: boolea
           </p>
           {isActive && <Check size={14} className="text-gold-500 flex-shrink-0" />}
         </div>
-        <p className="text-xs text-vault-text-muted truncate mb-1">
-          {[p.unit, p.location].filter(Boolean).join(' · ')}
+        <p className="text-[10px] text-vault-text-muted truncate mb-1.5">
+          {stats?.context ?? [p.unit, p.location].filter(Boolean).join(' · ')}
         </p>
         <div className="flex items-center gap-1.5 flex-wrap">
           <OccupancyBadge occupancy={p.occupancy} />
-          <span className="text-[10px] text-vault-text-muted">
-            {p.floorPlanType} · {(p.area ?? 0).toLocaleString()} sq ft
-          </span>
+          {stats && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-0.5 text-[9px] text-vault-text-muted">
+                <ShieldCheck size={8} className="text-gold-500" /> {stats.assets}
+              </span>
+              {stats.snags > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] text-red-400 font-bold">
+                  <Hammer size={8} /> {stats.snags}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-0.5 text-[9px] text-vault-text-muted">
+                <FolderLock size={8} className="text-gold-500" /> {stats.docs}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </button>
@@ -92,9 +115,16 @@ export function PropertySwitcher({ onClose }: PropertySwitcherProps) {
           <div className="flex items-center justify-between mb-5 pt-3">
             <div>
               <h3 className="text-base font-bold text-white">Your Properties</h3>
-              <p className="text-xs text-vault-text-muted mt-0.5">
-                {allProperties.length} Passport{allProperties.length !== 1 ? 's' : ''}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-vault-text-muted">
+                  {allProperties.length} Passport{allProperties.length !== 1 ? 's' : ''}
+                </p>
+                <div className="flex items-center gap-1 text-[9px] text-vault-text-muted">
+                  <ShieldCheck size={9} className="text-gold-500" /> Assets 
+                  <Hammer size={9} className="text-red-400 ml-1" /> Snags
+                  <FolderLock size={9} className="text-gold-500 ml-1" /> Docs
+                </div>
+              </div>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-xl glass flex items-center justify-center">
               <X size={15} className="text-vault-text-muted" />

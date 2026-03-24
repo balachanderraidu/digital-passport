@@ -456,10 +456,10 @@ export default function LoginPage() {
             {/* Property scenario thumbnails */}
             <div className="grid grid-cols-4 gap-0">
               {[
-                { src: '/demo-assets/villa_hero.png', label: 'Villa' },
-                { src: '/demo-assets/rental_hero.png', label: 'Rental' },
-                { src: '/demo-assets/construction_site.png', label: 'Construction' },
-                { src: '/demo-assets/empty_shell.png', label: 'Bare Shell' },
+                { src: '/demo-assets/villa_exterior.png', label: '🏠 Villa' },
+                { src: '/demo-assets/rental_living_room.png', label: '🔑 Rental' },
+                { src: '/demo-assets/construction_interior.png', label: '🏗️ Active' },
+                { src: '/demo-assets/bare_shell_interior.png', label: '🪟 Bare Shell' },
               ].map(({ src, label }) => (
                 <div key={label} className="relative aspect-[4/3] overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

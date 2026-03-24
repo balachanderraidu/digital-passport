@@ -217,10 +217,15 @@ export default function SnagsPage() {
                             <span className="text-vault-border">·</span>
                             <span className="text-xs text-vault-text-muted">{snag.category}</span>
                           </div>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', cfg.cls)}>
                               {cfg.label}
                             </span>
+                            {isDemo && snag.id.startsWith('sn-rental') && (
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                                🤖 AI Detected
+                              </span>
+                            )}
                             <span className="text-[9px] text-vault-text-muted ml-auto">
                               {snag.createdAt ? formatDateTime(snag.createdAt.toDate().toISOString()) : '—'}
                             </span>

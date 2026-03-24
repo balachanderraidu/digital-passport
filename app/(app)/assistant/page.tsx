@@ -27,15 +27,33 @@ interface Message {
   timestamp: Date
 }
 
-const QUICK_CHIPS = [
-  { label: '🛡️ Warranty status', query: 'Which warranties are expiring soon?' },
+const BASE_CHIPS = [
+  { label: '🛡️ Expiring warranties', query: 'Which warranties are expiring soon?' },
   { label: '🔨 Open snags', query: 'Show me all open snags' },
   { label: '🏠 My property', query: 'Tell me about my property' },
-  { label: '❄️ AC details', query: 'What is my AC model and warranty?' },
-  { label: '🔧 Recent service', query: 'What was the last service done?' },
-  { label: '💰 Service cost', query: 'How much have I spent on services?' },
   { label: '📋 Summary', query: 'Give me a full home summary' },
 ]
+
+const OCCUPANCY_CHIPS: Record<string, { label: string; query: string }[]> = {
+  rented: [
+    { label: '👤 Who is my tenant?', query: 'Who is my current tenant and what is the rent?' },
+    { label: '🤖 AI walkthrough issues', query: 'What issues did the AI find in the last walkthrough?' },
+    { label: '💰 Rental yield', query: 'What is my rental income?' },
+    { label: '📋 Property summary', query: 'Give me a full home summary' },
+  ],
+  renovation: [
+    { label: '🏗️ Build progress', query: 'What is the current construction progress?' },
+    { label: '🔨 Structural snags', query: 'Show me all open snags' },
+    { label: '💳 Payment schedule', query: 'Tell me about my property' },
+    { label: '📋 Summary', query: 'Give me a full home summary' },
+  ],
+  empty: [
+    { label: '🪟 Renovation budget', query: 'What is my renovation budget and plan?' },
+    { label: '📐 Architect details', query: 'Tell me about my property' },
+    { label: '⏳ Renovation timeline', query: 'What is the renovation timeline?' },
+    { label: '📋 Summary', query: 'Give me a full home summary' },
+  ],
+}
 
 function generateReply(
   query: string,
@@ -290,7 +308,7 @@ export default function AssistantPage() {
           <p className="mt-1">💬 Try: <span className="text-white">"Which warranties are expiring?"</span> · <span className="text-white">"What are the open snags?"</span> · <span className="text-white">"Tell me about my property"</span></p>
         </PageGuide>
         <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
-          {QUICK_CHIPS.map((chip) => (
+          {(OCCUPANCY_CHIPS[property?.occupancy ?? ''] ?? BASE_CHIPS).map((chip: { label: string; query: string }) => (
             <button
               key={chip.label}
               onClick={() => sendMessage(chip.query)}
