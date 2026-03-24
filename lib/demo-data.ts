@@ -39,13 +39,13 @@ export const DEMO_PROPERTY: Property = {
   createdAt: ts(30),
 }
 
-/** Active mode variant â€” same property but in renovation/construction phase */
+/** Active mode variant — same property but in renovation/construction phase */
 export const DEMO_PROPERTY_ACTIVE: Property = {
   ...DEMO_PROPERTY,
   occupancy: 'renovation',
 }
 
-/** Snags for Active (construction) mode â€” construction-phase defects */
+/** Snags for Active (construction) mode — construction-phase defects */
 export const DEMO_SNAGS_ACTIVE: Snag[] = [
   {
     id: 'sn-a1',
@@ -123,7 +123,7 @@ export const DEMO_STATS_ACTIVE: DashboardStats = {
 }
 
 // â”€â”€â”€ Floor Plan Rooms (percentage coordinates) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Layout: realistic 3BHK â€” living + dining left, kitchen + balcony right,
+// Layout: realistic 3BHK — living + dining left, kitchen + balcony right,
 // master bed bottom-left, 2 beds bottom-right, bathrooms between.
 
 export const DEMO_ROOMS: FloorPlanRoom[] = [
@@ -191,14 +191,14 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
     paintColor: 'Warm White (AP-0101) on exposed wall',
     ceiling: 'Grid false ceiling with exhaust vent, 9.5 ft',
     furniture: [
-      'Modular kitchen â€” L-shape layout (Hafele fittings)',
+      'Modular kitchen — L-shape layout (Hafele fittings)',
       'Galaxy Black granite countertop',
       'Samsung 265L double-door refrigerator',
       'LG 28L microwave (built-in shelf)',
       'IFB dishwasher (under-counter)',
       'SS undermount sink with Grohe mixer',
     ],
-    extras: ['Chimney â€” Faber 60cm', 'Hettich soft-close hinges throughout'],
+    extras: ['Chimney — Faber 60cm', 'Hettich soft-close hinges throughout'],
   },
   'Balcony': {
     area: 80,
@@ -216,7 +216,7 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
   'Master Bedroom': {
     area: 208,
     flooring: 'Laminate wood flooring (8mm, Walnut finish)',
-    wallFinish: 'Asian Paints Premium Emulsion â€” feature wall: textured Venetian plaster',
+    wallFinish: 'Asian Paints Premium Emulsion — feature wall: textured Venetian plaster',
     paintColor: 'Sage Green (AP-5578) feature wall · Warm White rest',
     ceiling: 'Gypsum tray ceiling with hidden LED strip, 10 ft',
     furniture: [
@@ -261,7 +261,7 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
     area: 56,
     flooring: 'Anti-skid vitrified tile (300Ã—600 mm, Light Grey)',
     wallFinish: 'Full-height vitrified tile (Marble pattern, 300Ã—600 mm)',
-    paintColor: 'N/A â€” full tile coverage',
+    paintColor: 'N/A — full tile coverage',
     ceiling: 'Calcium silicate board (moisture resistant), 8.5 ft',
     furniture: [
       'Wall-hung EWC (Jaquar)',
@@ -285,7 +285,7 @@ export interface ServiceEvent {
   contact?: string      // phone or email of the technician/company
   notes: string         // description of what was done
   invoiceRef?: string   // service invoice / job-order number
-  cost?: number         // â‚¹
+  cost?: number         // ₹
 }
 
 export interface ItemLink {
@@ -302,15 +302,15 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
   '1.5T LG Split AC (window right)': {
     warrantyId: 'wa-1',
     serviceHistory: [
-      { date: '2024-03-18', type: 'Installation', tech: 'LG Authorised Service â€“ Hyderabad', contact: '+91 98490 11223', notes: 'Unit installed, tested and commissioned. Gas charged at factory spec.', invoiceRef: 'LG-INST-2024-0012', cost: 0 },
-      { date: '2024-09-05', type: 'Annual Service', tech: 'LG Authorised Service â€“ Hyderabad', contact: '+91 98490 11223', notes: 'Indoor/outdoor coil cleaned, drain pipe flushed, gas pressure verified (8.2 bar). Filter washed.', invoiceRef: 'LG-SVC-2024-0891', cost: 850 },
-      { date: '2025-03-10', type: 'Annual Service', tech: 'LG Authorised Service â€“ Hyderabad', contact: '+91 98490 11223', notes: 'Full service done â€” coil cleaned, refrigerant topped up 150g, remote battery replaced. Warranty expires in 15 days; renewal advised.', invoiceRef: 'LG-SVC-2025-0214', cost: 1200 },
+      { date: '2024-03-18', type: 'Installation', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Unit installed, tested and commissioned. Gas charged at factory spec.', invoiceRef: 'LG-INST-2024-0012', cost: 0 },
+      { date: '2024-09-05', type: 'Annual Service', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Indoor/outdoor coil cleaned, drain pipe flushed, gas pressure verified (8.2 bar). Filter washed.', invoiceRef: 'LG-SVC-2024-0891', cost: 850 },
+      { date: '2025-03-10', type: 'Annual Service', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Full service done — coil cleaned, refrigerant topped up 150g, remote battery replaced. Warranty expires in 15 days; renewal advised.', invoiceRef: 'LG-SVC-2025-0214', cost: 1200 },
     ],
   },
   'Samsung 55â€³ QLED TV on wall mount': {
     warrantyId: 'wa-2',
     serviceHistory: [
-      { date: '2024-08-22', type: 'Installation', tech: 'Samsung SmartCare â€“ Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'TV wall-mounted (75Â° tilt bracket), calibrated for room ambient lighting conditions.', invoiceRef: 'SC-INST-2024-0445', cost: 0 },
+      { date: '2024-08-22', type: 'Installation', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'TV wall-mounted (75Â° tilt bracket), calibrated for room ambient lighting conditions.', invoiceRef: 'SC-INST-2024-0445', cost: 0 },
     ],
   },
 
@@ -318,8 +318,8 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
   'Samsung 265L double-door refrigerator': {
     warrantyId: 'wa-4',
     serviceHistory: [
-      { date: '2024-09-01', type: 'Installation', tech: 'Samsung SmartCare â€“ Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'Refrigerator placed and levelled. Initial cooling cycle complete.', invoiceRef: 'SC-INST-2024-0446', cost: 0 },
-      { date: '2025-01-15', type: 'Inspection', tech: 'Samsung SmartCare â€“ Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'Condenser coils cleaned. Door seals checked â€” minor gap on right door corrected (no charge, warranty visit).', invoiceRef: 'SC-INSP-2025-0088', cost: 0 },
+      { date: '2024-09-01', type: 'Installation', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'Refrigerator placed and levelled. Initial cooling cycle complete.', invoiceRef: 'SC-INST-2024-0446', cost: 0 },
+      { date: '2025-01-15', type: 'Inspection', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'Condenser coils cleaned. Door seals checked — minor gap on right door corrected (no charge, warranty visit).', invoiceRef: 'SC-INSP-2025-0088', cost: 0 },
     ],
   },
   'LG 28L microwave (built-in shelf)': {
@@ -331,17 +331,17 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
   'IFB dishwasher (under-counter)': {
     warrantyId: 'wa-3',
     serviceHistory: [
-      { date: '2024-09-10', type: 'Installation', tech: 'IFB Authorised â€“ Hyderabad', contact: '+91 73829 44001', notes: 'Plumbing connection made to existing supply line under counter. Test cycle completed â€” no leaks detected.', invoiceRef: 'IFB-INST-2024-0203', cost: 0 },
+      { date: '2024-09-10', type: 'Installation', tech: 'IFB Authorised – Hyderabad', contact: '+91 73829 44001', notes: 'Plumbing connection made to existing supply line under counter. Test cycle completed — no leaks detected.', invoiceRef: 'IFB-INST-2024-0203', cost: 0 },
       { date: '2024-12-20', type: 'Cleaning', tech: 'Self', notes: 'Filter basket descaled using dishwasher cleaner. Limescale removed from spray arms. Door seal wiped.', cost: 0 },
-      { date: '2025-02-18', type: 'Repair', tech: 'IFB Authorised â€“ Hyderabad', contact: '+91 73829 44001', notes: 'Inlet water valve replaced â€” unit was displaying E3 error. Valve sourced from IFB warehouse. Part covered under warranty.', invoiceRef: 'IFB-REP-2025-0041', cost: 0 },
+      { date: '2025-02-18', type: 'Repair', tech: 'IFB Authorised – Hyderabad', contact: '+91 73829 44001', notes: 'Inlet water valve replaced — unit was displaying E3 error. Valve sourced from IFB warehouse. Part covered under warranty.', invoiceRef: 'IFB-REP-2025-0041', cost: 0 },
     ],
   },
-  'Modular kitchen â€” L-shape layout (Hafele fittings)': {
+  'Modular kitchen — L-shape layout (Hafele fittings)': {
     vaultDocId: 'vd-4',
     snagIds: ['sn-2'],
     serviceHistory: [
-      { date: '2024-08-28', type: 'Inspection', tech: 'Hafele Service Partner â€“ Interior Touch', contact: '+91 99890 32211 · interior.touch.hyd@gmail.com', notes: 'Post-installation snag inspection. Cabinet door hinges adjusted, drawer runners aligned to specification.', invoiceRef: 'HFP-INSP-2024-0018', cost: 0 },
-      { date: '2025-03-05', type: 'Repair', tech: 'Hafele Service Partner â€“ Interior Touch', contact: '+91 99890 32211', notes: 'Right upper cabinet door realigned â€” screw anchor had vibrated loose. Fischer plug replaced with M6 anchor. Snag sn-2 status updated to In Progress.', invoiceRef: 'HFP-REP-2025-0007', cost: 350 },
+      { date: '2024-08-28', type: 'Inspection', tech: 'Hafele Service Partner – Interior Touch', contact: '+91 99890 32211 · interior.touch.hyd@gmail.com', notes: 'Post-installation snag inspection. Cabinet door hinges adjusted, drawer runners aligned to specification.', invoiceRef: 'HFP-INSP-2024-0018', cost: 0 },
+      { date: '2025-03-05', type: 'Repair', tech: 'Hafele Service Partner – Interior Touch', contact: '+91 99890 32211', notes: 'Right upper cabinet door realigned — screw anchor had vibrated loose. Fischer plug replaced with M6 anchor. Snag sn-2 status updated to In Progress.', invoiceRef: 'HFP-REP-2025-0007', cost: 350 },
     ],
   },
 
@@ -349,14 +349,14 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
   'Panasonic 1.5T inverter AC': {
     warrantyId: 'wa-7',
     serviceHistory: [
-      { date: '2024-10-02', type: 'Installation', tech: 'Panasonic Service â€“ Hyderabad', contact: '+91 80001 23456', notes: 'Installed in master bedroom. Star-rated inverter compressor tested at rated load. Earthing verified.', invoiceRef: 'PAN-INST-2024-0088', cost: 0 },
-      { date: '2025-02-28', type: 'Annual Service', tech: 'Panasonic Service â€“ Hyderabad', contact: '+91 80001 23456', notes: 'Pre-summer service: indoor/outdoor coil washed, drain pan cleared, inverter board firmware updated to v3.1.2.', invoiceRef: 'PAN-SVC-2025-0031', cost: 950 },
+      { date: '2024-10-02', type: 'Installation', tech: 'Panasonic Service – Hyderabad', contact: '+91 80001 23456', notes: 'Installed in master bedroom. Star-rated inverter compressor tested at rated load. Earthing verified.', invoiceRef: 'PAN-INST-2024-0088', cost: 0 },
+      { date: '2025-02-28', type: 'Annual Service', tech: 'Panasonic Service – Hyderabad', contact: '+91 80001 23456', notes: 'Pre-summer service: indoor/outdoor coil washed, drain pan cleared, inverter board firmware updated to v3.1.2.', invoiceRef: 'PAN-SVC-2025-0031', cost: 950 },
     ],
   },
   'Walk-in wardrobe (6-door sliding, Italian laminate)': {
     snagIds: [],
     serviceHistory: [
-      { date: '2024-09-01', type: 'Inspection', tech: 'Prism Interiors â€“ Hyderabad', contact: 'prism.interiors.hyd@gmail.com · +91 98100 77654', notes: 'Post-installation check: all 6 sliding panels aligned and smooth. Soft-close mechanism tested on all doors. Locking mechanism verified.', invoiceRef: 'PRISM-INSP-2024-0031', cost: 0 },
+      { date: '2024-09-01', type: 'Inspection', tech: 'Prism Interiors – Hyderabad', contact: 'prism.interiors.hyd@gmail.com · +91 98100 77654', notes: 'Post-installation check: all 6 sliding panels aligned and smooth. Soft-close mechanism tested on all doors. Locking mechanism verified.', invoiceRef: 'PRISM-INSP-2024-0031', cost: 0 },
     ],
   },
 
@@ -365,15 +365,15 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
     warrantyId: 'wa-6',
     snagIds: [],
     serviceHistory: [
-      { date: '2024-08-30', type: 'Installation', tech: 'Racold Authorised â€“ Hyderabad', contact: '+91 90000 55443', notes: 'Unit wall-mounted above shower point. Pressure relief valve tested (opens at 8 bar). Earthing loop verified with tester.', invoiceRef: 'RAC-INST-2024-0199', cost: 0 },
-      { date: '2025-01-10', type: 'Annual Service', tech: 'Racold Authorised â€“ Hyderabad', contact: '+91 90000 55443', notes: 'Magnesium anode rod inspected â€” 30% consumed, still healthy (replacement advised in ~18 months). Tank flushed of sediment. Thermostat recalibrated to 55Â°C.', invoiceRef: 'RAC-SVC-2025-0012', cost: 600 },
+      { date: '2024-08-30', type: 'Installation', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Unit wall-mounted above shower point. Pressure relief valve tested (opens at 8 bar). Earthing loop verified with tester.', invoiceRef: 'RAC-INST-2024-0199', cost: 0 },
+      { date: '2025-01-10', type: 'Annual Service', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Magnesium anode rod inspected — 30% consumed, still healthy (replacement advised in ~18 months). Tank flushed of sediment. Thermostat recalibrated to 55Â°C.', invoiceRef: 'RAC-SVC-2025-0012', cost: 600 },
     ],
   },
   'Dyson V11 Vacuum Cleaner': {
     warrantyId: 'wa-8',
     serviceHistory: [
       { date: '2023-06-15', type: 'Installation', tech: 'Self', notes: 'Unboxed and assembled. All accessories tested: floor head, crevice tool, mini motorized tool.', cost: 0 },
-      { date: '2024-06-10', type: 'Cleaning', tech: 'Self', notes: 'HEPA filter washed and dried 24h. Bin emptied and rinsed. Brush bar removed â€” hair tangled at ends cleared.', cost: 0 },
+      { date: '2024-06-10', type: 'Cleaning', tech: 'Self', notes: 'HEPA filter washed and dried 24h. Bin emptied and rinsed. Brush bar removed — hair tangled at ends cleared.', cost: 0 },
     ],
   },
 
@@ -407,7 +407,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-hob-1',
     name: 'Bosch Series 8 Induction Hob',
-    icon: 'ðŸ³',
+    icon: '🍳',
     zone: 'Kitchen',
     brand: 'Bosch',
     model: 'PXY875KW1E',
@@ -455,7 +455,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-2',
     name: 'Samsung 55" QLED TV',
-    icon: 'ðŸ“º',
+    icon: '📺',
     zone: 'Living Area',
     brand: 'Samsung',
     model: 'QA55Q70CAKLXL',
@@ -471,7 +471,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-3',
     name: 'IFB Front Load Washer 7kg',
-    icon: 'ðŸ«§',
+    icon: '🫧',
     zone: 'Utility',
     brand: 'IFB',
     model: 'Senator WXS 7510',
@@ -487,7 +487,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-4',
     name: 'Samsung 265L Refrigerator',
-    icon: 'ðŸ§Š',
+    icon: '🧊',
     zone: 'Kitchen',
     brand: 'Samsung',
     model: 'RR28T3722S8',
@@ -503,7 +503,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-5',
     name: 'LG 28L Microwave Oven',
-    icon: 'ðŸ“¡',
+    icon: '📡',
     zone: 'Kitchen',
     brand: 'LG',
     model: 'MC2846SL',
@@ -519,7 +519,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-6',
     name: 'Racold 25L Water Heater',
-    icon: 'ðŸš¿',
+    icon: '🚿',
     zone: 'Bathroom',
     brand: 'Racold',
     model: 'Pronto Neo 25L',
@@ -550,7 +550,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-8',
     name: 'Dyson V11 Vacuum Cleaner',
-    icon: 'ðŸŒ€',
+    icon: '🌀',
     zone: 'Utility',
     brand: 'Dyson',
     model: 'V11 Absolute',
@@ -570,12 +570,12 @@ export const DEMO_VAULT_DOCS: Record<string, VaultDoc[]> = {
   ownership: [
     {
       id: 'vd-1',
-      name: 'Sale Agreement â€“ Oriana Unit 1202',
+      name: 'Sale Agreement – Oriana Unit 1202',
       type: 'pdf',
       size: 10_485_760,
       url: '',
       ocr: true,
-      notes: 'Registered sale agreement. Stamp duty paid â‚¹1,24,000.',
+      notes: 'Registered sale agreement. Stamp duty paid ₹1,24,000.',
       category: 'ownership',
       createdAt: ts(25),
     },
@@ -607,7 +607,7 @@ export const DEMO_VAULT_DOCS: Record<string, VaultDoc[]> = {
   interior: [
     {
       id: 'vd-4',
-      name: 'Architectural Floor Plan â€“ 3BHK East',
+      name: 'Architectural Floor Plan – 3BHK East',
       type: 'pdf',
       size: 4_718_592,
       url: '',
@@ -620,7 +620,7 @@ export const DEMO_VAULT_DOCS: Record<string, VaultDoc[]> = {
   tax: [
     {
       id: 'vd-5',
-      name: 'GST Invoice â€“ â‚¹14,80,000',
+      name: 'GST Invoice – ₹14,80,000',
       type: 'pdf',
       size: 1_258_291,
       url: '',
@@ -725,8 +725,8 @@ export const DEMO_EVENTS: AppEvent[] = [
     id: 'ev-1',
     type: 'vault_upload',
     title: 'Sale Agreement uploaded',
-    subtitle: 'Oriana Unit 1202 â€” 10.2 MB',
-    icon: 'ðŸ“„',
+    subtitle: 'Oriana Unit 1202 — 10.2 MB',
+    icon: '📄',
     createdAt: ts(2),
   },
   {
@@ -742,7 +742,7 @@ export const DEMO_EVENTS: AppEvent[] = [
     type: 'snag_opened',
     title: 'Snag reported: Bathroom tiles',
     subtitle: 'Master Bathroom · High urgency',
-    icon: 'ðŸ”¨',
+    icon: '🔨',
     createdAt: ts(5),
   },
   {
@@ -750,7 +750,7 @@ export const DEMO_EVENTS: AppEvent[] = [
     type: 'snag_fixed',
     title: 'Snag resolved: Light flickering',
     subtitle: 'Living Room · Electrician visit complete',
-    icon: 'âœ…',
+    icon: '✅',
     createdAt: ts(6),
   },
   {
@@ -758,7 +758,7 @@ export const DEMO_EVENTS: AppEvent[] = [
     type: 'asset_added',
     title: 'Gmail sync complete',
     subtitle: '3 warranty assets added from receipts',
-    icon: 'ðŸ“¬',
+    icon: '📬',
     createdAt: ts(14),
   },
 ]
@@ -772,7 +772,7 @@ export const DEMO_STATS: DashboardStats = {
 }
 
 // â”€â”€â”€ Property Timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Chronological milestones â€” the "life of the property" feed.
+// Chronological milestones — the "life of the property" feed.
 
 export interface TimelineEvent {
   id: string
@@ -792,17 +792,17 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-1',
     date: '2023-06-10',
     category: 'purchase',
-    icon: 'ðŸ ',
+    icon: '🏠',
     title: 'Property Booked',
-    detail: 'Unit 1202, Oriana Tower B â€” Prestige Cybercity, Hyderabad. Booking amount â‚¹5,00,000 paid.',
+    detail: 'Unit 1202, Oriana Tower B — Prestige Cybercity, Hyderabad. Booking amount ₹5,00,000 paid.',
   },
   {
     id: 'tl-2',
     date: '2023-08-22',
     category: 'legal',
-    icon: 'ðŸ“',
+    icon: '📝',
     title: 'Sale Agreement Signed',
-    detail: 'Registered sale agreement executed. Stamp duty â‚¹1,24,000 paid at SRO Kondapur.',
+    detail: 'Registered sale agreement executed. Stamp duty ₹1,24,000 paid at SRO Kondapur.',
     badge: 'Legal',
     badgeColor: 'text-blue-400',
     linkedId: 'vd-1',
@@ -811,8 +811,8 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-3',
     date: '2023-06-15',
     category: 'installation',
-    icon: 'ðŸŒ€',
-    title: 'Dyson V11 Vacuum â€” Purchased',
+    icon: '🌀',
+    title: 'Dyson V11 Vacuum — Purchased',
     detail: 'Dyson V11 Absolute added to household. 2-year warranty registered.',
     linkedId: 'wa-8',
   },
@@ -822,9 +822,9 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-4',
     date: '2024-03-05',
     category: 'renovation',
-    icon: 'ðŸ”¨',
+    icon: '🔨',
     title: 'Interior Work Commenced',
-    detail: 'Prism Interiors started renovations â€” flooring, false ceiling, modular kitchen, and wardrobes.',
+    detail: 'Prism Interiors started renovations — flooring, false ceiling, modular kitchen, and wardrobes.',
     badge: 'Active Phase',
     badgeColor: 'text-amber-400',
   },
@@ -841,7 +841,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-6',
     date: '2024-08-22',
     category: 'installation',
-    icon: 'ðŸ“º',
+    icon: '📺',
     title: 'Samsung 55â€³ QLED Mounted',
     detail: 'TV wall-mounted (75Â° tilt bracket) by Samsung SmartCare. Invoice #SC-INST-2024-0445.',
     linkedId: 'wa-2',
@@ -850,9 +850,9 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-7',
     date: '2024-08-28',
     category: 'renovation',
-    icon: 'ðŸ',
+    icon: '🏁',
     title: 'Interior Works Completed',
-    detail: 'Renovation signed off by Prism Interiors. Snag inspection done â€” 3 minor issues logged.',
+    detail: 'Renovation signed off by Prism Interiors. Snag inspection done — 3 minor issues logged.',
     badge: 'Passive Phase',
     badgeColor: 'text-emerald-400',
   },
@@ -860,7 +860,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-8',
     date: '2024-08-30',
     category: 'installation',
-    icon: 'ðŸš¿',
+    icon: '🚿',
     title: 'Racold Water Heater Installed',
     detail: 'Racold Pronto Neo 25L mounted in bathroom. Invoice #RAC-INST-2024-0199.',
     linkedId: 'wa-6',
@@ -869,7 +869,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-9',
     date: '2024-09-01',
     category: 'renovation',
-    icon: 'ðŸ›ï¸',
+    icon: '🛏ï¸',
     title: 'Moved In',
     detail: 'Property handed over. Keys collected from Prestige site office. Passport status: Passive.',
     badge: 'Moved In',
@@ -879,7 +879,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-10',
     date: '2024-09-01',
     category: 'installation',
-    icon: 'ðŸ§Š',
+    icon: '🧊',
     title: 'Samsung Refrigerator Installed',
     detail: 'Samsung 265L RT28T3722S8 placed and levelled. Invoice #SC-INST-2024-0446.',
     linkedId: 'wa-4',
@@ -888,7 +888,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-11',
     date: '2024-09-10',
     category: 'installation',
-    icon: 'ðŸ½ï¸',
+    icon: '🍽ï¸',
     title: 'IFB Dishwasher Installed',
     detail: 'IFB under-counter dishwasher plumbed in by IFB Authorised, Hyderabad. Invoice #IFB-INST-2024-0203.',
     linkedId: 'wa-3',
@@ -897,9 +897,9 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-12',
     date: '2024-09-05',
     category: 'service',
-    icon: 'ðŸ”§',
-    title: 'LG AC â€” First Annual Service',
-    detail: 'Coil cleaned, drain pipe flushed, gas pressure 8.2 bar verified. Invoice #LG-SVC-2024-0891. â‚¹850.',
+    icon: '🔧',
+    title: 'LG AC — First Annual Service',
+    detail: 'Coil cleaned, drain pipe flushed, gas pressure 8.2 bar verified. Invoice #LG-SVC-2024-0891. ₹850.',
     linkedId: 'wa-1',
   },
   {
@@ -907,7 +907,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     date: '2024-10-02',
     category: 'installation',
     icon: 'â„ï¸',
-    title: 'Panasonic AC â€” Master Bed Installed',
+    title: 'Panasonic AC — Master Bed Installed',
     detail: 'Panasonic 1.5T inverter AC installed in master bedroom. Invoice #PAN-INST-2024-0088.',
     linkedId: 'wa-7',
   },
@@ -915,9 +915,9 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-14',
     date: '2024-11-15',
     category: 'snag',
-    icon: 'ðŸ”´',
+    icon: '🔴',
     title: 'Snag Logged: Bathroom Floor Tiles',
-    detail: 'Two tiles near the shower partition cracked. High urgency â€” raised with Prestige Cybercity FM.',
+    detail: 'Two tiles near the shower partition cracked. High urgency — raised with Prestige Cybercity FM.',
     badge: 'Open',
     badgeColor: 'text-red-400',
     linkedId: 'sn-1',
@@ -926,8 +926,8 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-15',
     date: '2024-12-20',
     category: 'service',
-    icon: 'ðŸ§¹',
-    title: 'IFB Dishwasher â€” Self Clean',
+    icon: '🧹',
+    title: 'IFB Dishwasher — Self Clean',
     detail: 'Filter basket descaled. Limescale removed from spray arms.',
     linkedId: 'wa-3',
   },
@@ -935,9 +935,9 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-16',
     date: '2024-12-28',
     category: 'document',
-    icon: 'ðŸ§¾',
+    icon: '🧾',
     title: 'GST Invoice Uploaded',
-    detail: 'GST â‚¹14,80,000 at 5% on undivided share uploaded to Vault. OCR indexed.',
+    detail: 'GST ₹14,80,000 at 5% on undivided share uploaded to Vault. OCR indexed.',
     linkedId: 'vd-5',
   },
 
@@ -946,17 +946,17 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-17',
     date: '2025-01-10',
     category: 'service',
-    icon: 'ðŸ”§',
-    title: 'Racold Heater â€” Annual Service',
-    detail: 'Anode rod 30% consumed, tank flushed, thermostat at 55Â°C. Invoice #RAC-SVC-2025-0012. â‚¹600.',
+    icon: '🔧',
+    title: 'Racold Heater — Annual Service',
+    detail: 'Anode rod 30% consumed, tank flushed, thermostat at 55Â°C. Invoice #RAC-SVC-2025-0012. ₹600.',
     linkedId: 'wa-6',
   },
   {
     id: 'tl-18',
     date: '2025-02-18',
     category: 'warranty',
-    icon: 'ðŸ›¡ï¸',
-    title: 'IFB Dishwasher â€” Warranty Repair',
+    icon: '🛡ï¸',
+    title: 'IFB Dishwasher — Warranty Repair',
     detail: 'Inlet valve replaced under warranty (E3 error). Invoice #IFB-REP-2025-0041.',
     badge: 'Warranty Claim',
     badgeColor: 'text-purple-400',
@@ -966,18 +966,18 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-19',
     date: '2025-02-28',
     category: 'service',
-    icon: 'ðŸ”§',
-    title: 'Panasonic AC â€” Annual Service',
-    detail: 'Coil washed, drain cleared, firmware v3.1.2 installed. Invoice #PAN-SVC-2025-0031. â‚¹950.',
+    icon: '🔧',
+    title: 'Panasonic AC — Annual Service',
+    detail: 'Coil washed, drain cleared, firmware v3.1.2 installed. Invoice #PAN-SVC-2025-0031. ₹950.',
     linkedId: 'wa-7',
   },
   {
     id: 'tl-20',
     date: '2025-03-05',
     category: 'snag',
-    icon: 'ðŸŸ¡',
-    title: 'Kitchen Cabinet Repair â€” In Progress',
-    detail: 'Right upper cabinet door realigned by Hafele service. Fischer anchor replaced. Invoice #HFP-REP-2025-0007. â‚¹350.',
+    icon: '🟡',
+    title: 'Kitchen Cabinet Repair — In Progress',
+    detail: 'Right upper cabinet door realigned by Hafele service. Fischer anchor replaced. Invoice #HFP-REP-2025-0007. ₹350.',
     badge: 'In Progress',
     badgeColor: 'text-amber-400',
     linkedId: 'sn-2',
@@ -986,9 +986,9 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-21',
     date: '2025-03-10',
     category: 'service',
-    icon: 'ðŸ”§',
-    title: 'LG AC â€” Second Annual Service',
-    detail: 'Refrigerant topped up 150g, remote battery replaced. Invoice #LG-SVC-2025-0214. â‚¹1,200.',
+    icon: '🔧',
+    title: 'LG AC — Second Annual Service',
+    detail: 'Refrigerant topped up 150g, remote battery replaced. Invoice #LG-SVC-2025-0214. ₹1,200.',
     badge: 'âš ï¸ Expiring Soon',
     badgeColor: 'text-amber-400',
     linkedId: 'wa-1',
@@ -998,7 +998,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     date: '2025-03-21',
     category: 'warranty',
     icon: 'âš ï¸',
-    title: 'LG AC Warranty â€” Expiring in 15 Days',
+    title: 'LG AC Warranty — Expiring in 15 Days',
     detail: 'Warranty for LG RS-Q19JNXE expires soon. Consider AMC renewal with LG Authorised, Hyderabad (+91 98490 11223).',
     badge: 'Action Needed',
     badgeColor: 'text-amber-400',
@@ -1010,7 +1010,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
 
 export const p_villa: Property = {
   id: 'p_villa',
-  name: 'Cloud 9 Villa â€” Phase II',
+  name: 'Cloud 9 Villa — Phase II',
   unit: 'Villa 42, Cloud 9 Gachibowli',
   area: 4500,
   floorPlanType: '5BHK Triplex (G+2)',
@@ -1029,7 +1029,7 @@ export const p_villa: Property = {
 
 export const p_rental: Property = {
   id: 'p_rental',
-  name: 'Lakeside Towers â€” Apt 14B',
+  name: 'Lakeside Towers — Apt 14B',
   unit: 'Apt 14B, Lakeside Towers',
   area: 1250,
   floorPlanType: '2BHK',
@@ -1048,7 +1048,7 @@ export const p_rental: Property = {
 
 export const p_empty: Property = {
   id: 'p_empty',
-  name: 'Green Meadows â€” Plot 104',
+  name: 'Green Meadows — Plot 104',
   unit: 'Plot 104, Green Meadows Phase 3',
   area: 2400,
   floorPlanType: '3BHK Bare Shell',
@@ -1067,7 +1067,7 @@ export const p_empty: Property = {
 
 export const p_construction: Property = {
   id: 'p_construction',
-  name: 'Nexus Towers â€” Block C, Fl.8',
+  name: 'Nexus Towers — Block C, Fl.8',
   unit: 'C-801, Nexus Towers',
   area: 1800,
   floorPlanType: '3BHK',
@@ -1086,14 +1086,14 @@ export const p_construction: Property = {
 
 export const DEMO_PROPERTIES = [p_villa, p_rental, p_empty, p_construction]
 
-// â”€â”€â”€ RENTAL â€” Fixed fittings ONLY (not tenant's movable furniture) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ RENTAL — Fixed fittings ONLY (not tenant's movable furniture) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Owner tracks: AC units, water heater, electrical fittings, bathroom fixtures
 // NOT tracked: tenant's sofa, dining table, beds, fridge (their own), TV
 
 export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   {
     id: 'wa-r1',
-    name: 'LG Split AC 1.5T â€” Living Room',
+    name: 'LG Split AC 1.5T — Living Room',
     icon: 'â„ï¸',
     zone: 'Living Area',
     brand: 'LG',
@@ -1109,7 +1109,7 @@ export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   },
   {
     id: 'wa-r2',
-    name: 'Daikin Split AC 1T â€” Bedroom',
+    name: 'Daikin Split AC 1T — Bedroom',
     icon: 'â„ï¸',
     zone: 'Master Bedroom',
     brand: 'Daikin',
@@ -1126,7 +1126,7 @@ export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   {
     id: 'wa-r3',
     name: 'Racold 15L Water Heater',
-    icon: 'ðŸš¿',
+    icon: '🚿',
     zone: 'Bathroom',
     brand: 'Racold',
     model: 'Pronto Neo 15L',
@@ -1141,7 +1141,7 @@ export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   {
     id: 'wa-r4',
     name: 'Havells Bathroom Exhaust Fan',
-    icon: 'ðŸ’¨',
+    icon: '💨',
     zone: 'Bathroom',
     brand: 'Havells',
     model: 'Ventil Air DSX 150mm',
@@ -1155,13 +1155,13 @@ export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   },
 ]
 
-// â”€â”€â”€ RENTAL â€” Vault Docs (ownership + lease paperwork) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ RENTAL — Vault Docs (ownership + lease paperwork) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_VAULT_DOCS_RENTAL: Record<string, VaultDoc[]> = {
   ownership: [
     {
       id: 'vdr-1',
-      name: 'Sale Deed â€” Apt 14B, Lakeside Towers',
+      name: 'Sale Deed — Apt 14B, Lakeside Towers',
       type: 'pdf',
       size: 9_437_184,
       url: '',
@@ -1185,12 +1185,12 @@ export const DEMO_VAULT_DOCS_RENTAL: Record<string, VaultDoc[]> = {
   maintenance: [
     {
       id: 'vdr-3',
-      name: 'Lease Agreement â€” Arjun & Priya Sharma',
+      name: 'Lease Agreement — Arjun & Priya Sharma',
       type: 'pdf',
       size: 3_145_728,
       url: '',
       ocr: true,
-      notes: '11-month lease w.e.f. 01 Sep 2024. Monthly rent â‚¹24,000. Security deposit â‚¹72,000.',
+      notes: '11-month lease w.e.f. 01 Sep 2024. Monthly rent ₹24,000. Security deposit ₹72,000.',
       category: 'maintenance',
       createdAt: ts(200),
     },
@@ -1220,12 +1220,12 @@ export const DEMO_VAULT_DOCS_RENTAL: Record<string, VaultDoc[]> = {
   tax: [
     {
       id: 'vdr-6',
-      name: 'Property Tax Paid â€” FY 2024-25',
+      name: 'Property Tax Paid — FY 2024-25',
       type: 'pdf',
       size: 630_784,
       url: '',
       ocr: true,
-      notes: 'Annual property tax receipt from GHMC. â‚¹18,400 paid on 15 Apr 2024.',
+      notes: 'Annual property tax receipt from GHMC. ₹18,400 paid on 15 Apr 2024.',
       category: 'tax',
       createdAt: ts(350),
     },
@@ -1239,7 +1239,7 @@ export const DEMO_VAULT_DOCS_RENTAL: Record<string, VaultDoc[]> = {
       size: 2_097_152,
       url: '',
       ocr: true,
-      notes: 'Warranty cards for LG AC, Daikin AC, Racold heater â€” all fittings that came with the flat.',
+      notes: 'Warranty cards for LG AC, Daikin AC, Racold heater — all fittings that came with the flat.',
       category: 'warranties',
       createdAt: ts(700),
     },
@@ -1247,7 +1247,7 @@ export const DEMO_VAULT_DOCS_RENTAL: Record<string, VaultDoc[]> = {
   interior: [],
 }
 
-// â”€â”€â”€ RENTAL â€” Snags (AI-flagged from walkthrough analysis) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ RENTAL — Snags (AI-flagged from walkthrough analysis) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_SNAGS_RENTAL: Snag[] = [
   {
@@ -1285,24 +1285,24 @@ export const DEMO_SNAGS_RENTAL: Snag[] = [
   },
 ]
 
-// â”€â”€â”€ RENTAL â€” Timeline Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ RENTAL — Timeline Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
   {
     id: 'tl-r1',
     date: '2022-09-15',
     category: 'purchase',
-    icon: 'ðŸ ',
+    icon: '🏠',
     title: 'Property Purchased',
-    detail: 'Apt 14B, Lakeside Towers purchased for â‚¹68,00,000. Registered at SRO Kondapur. Stamp duty â‚¹4,08,000.',
+    detail: 'Apt 14B, Lakeside Towers purchased for ₹68,00,000. Registered at SRO Kondapur. Stamp duty ₹4,08,000.',
   },
   {
     id: 'tl-r2',
     date: '2022-10-01',
     category: 'renovation',
-    icon: 'ðŸ”¨',
+    icon: '🔨',
     title: 'Minor Fixup Works',
-    detail: 'Wall painting (2 coats Asian Paints Royale Shyne), kitchen tiles grouting, bathroom fittings replaced. Total â‚¹85,000.',
+    detail: 'Wall painting (2 coats Asian Paints Royale Shyne), kitchen tiles grouting, bathroom fittings replaced. Total ₹85,000.',
     badge: 'Completed',
     badgeColor: 'text-emerald-400',
   },
@@ -1310,9 +1310,9 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     id: 'tl-r3',
     date: '2022-11-01',
     category: 'legal',
-    icon: 'ðŸ“',
-    title: 'First Tenancy â€” Ramesh Family',
-    detail: '11-month lease at â‚¹18,500/mo. Two years of trouble-free tenancy.',
+    icon: '📝',
+    title: 'First Tenancy — Ramesh Family',
+    detail: '11-month lease at ₹18,500/mo. Two years of trouble-free tenancy.',
     badge: 'Ended Nov 2024',
     badgeColor: 'text-blue-400',
   },
@@ -1320,9 +1320,9 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     id: 'tl-r4',
     date: '2024-09-01',
     category: 'legal',
-    icon: 'ðŸ“',
-    title: 'Current Tenancy â€” Arjun & Priya Sharma',
-    detail: '11-month lease at â‚¹24,000/mo. Security deposit â‚¹72,000. Police verification done. Society NOC obtained.',
+    icon: '📝',
+    title: 'Current Tenancy — Arjun & Priya Sharma',
+    detail: '11-month lease at ₹24,000/mo. Security deposit ₹72,000. Police verification done. Society NOC obtained.',
     badge: 'Active',
     badgeColor: 'text-emerald-400',
     linkedId: 'vdr-3',
@@ -1331,9 +1331,9 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     id: 'tl-r5',
     date: '2024-10-15',
     category: 'service',
-    icon: 'ðŸ“¹',
-    title: 'AI Walkthrough #1 â€” Q3 2024',
-    detail: 'Arjun submitted the first monthly walkthrough video. AI analysis: âœ… Cleanliness good, âœ… No structural modifications, âœ… Fittings intact.',
+    icon: '📹',
+    title: 'AI Walkthrough #1 — Q3 2024',
+    detail: 'Arjun submitted the first monthly walkthrough video. AI analysis: ✅ Cleanliness good, ✅ No structural modifications, ✅ Fittings intact.',
     badge: 'All Clear',
     badgeColor: 'text-emerald-400',
   },
@@ -1341,9 +1341,9 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     id: 'tl-r6',
     date: '2024-11-15',
     category: 'service',
-    icon: 'ðŸ“¹',
-    title: 'AI Walkthrough #2 â€” Q4 2024',
-    detail: 'Monthly walkthrough video analyzed. AI analysis: âœ… No modifications, âš ï¸ AC filter appears dusty, âœ… Kitchen clean.',
+    icon: '📹',
+    title: 'AI Walkthrough #2 — Q4 2024',
+    detail: 'Monthly walkthrough video analyzed. AI analysis: ✅ No modifications, âš ï¸ AC filter appears dusty, ✅ Kitchen clean.',
     badge: 'Action Needed',
     badgeColor: 'text-amber-400',
   },
@@ -1351,8 +1351,8 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     id: 'tl-r7',
     date: '2025-01-15',
     category: 'service',
-    icon: 'ðŸ“¹',
-    title: 'AI Walkthrough #3 â€” Jan 2025',
+    icon: '📹',
+    title: 'AI Walkthrough #3 — Jan 2025',
     detail: 'AI detected: âš ï¸ AC filter still blocked (not addressed), âš ï¸ Wall paint scuff near sofa, âš ï¸ Kitchen cabinet door sag. Tenant notified.',
     badge: 'Issues Flagged',
     badgeColor: 'text-red-400',
@@ -1361,21 +1361,21 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     id: 'tl-r8',
     date: '2025-03-01',
     category: 'document',
-    icon: 'ðŸ§¾',
-    title: 'Rent Receipt Issued â€” March 2025',
-    detail: 'â‚¹24,000 received via UPI. TDS @10% applicable. Receipt #RT-2025-007 generated.',
+    icon: '🧾',
+    title: 'Rent Receipt Issued — March 2025',
+    detail: '₹24,000 received via UPI. TDS @10% applicable. Receipt #RT-2025-007 generated.',
     badge: 'Received',
     badgeColor: 'text-emerald-400',
   },
 ]
 
-// â”€â”€â”€ EMPTY SHELL â€” Vault Docs (purchase + planning stage only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ EMPTY SHELL — Vault Docs (purchase + planning stage only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_VAULT_DOCS_EMPTY: Record<string, VaultDoc[]> = {
   ownership: [
     {
       id: 'vde-1',
-      name: 'Sale Agreement â€” Plot 104, Green Meadows',
+      name: 'Sale Agreement — Plot 104, Green Meadows',
       type: 'pdf',
       size: 8_388_608,
       url: '',
@@ -1402,7 +1402,7 @@ export const DEMO_VAULT_DOCS_EMPTY: Record<string, VaultDoc[]> = {
       size: 2_097_152,
       url: '',
       ocr: false,
-      notes: 'Green Meadows Phase 3 â€” RERA Certificate for Plot 104. Developer: Greenland Infra Pvt Ltd.',
+      notes: 'Green Meadows Phase 3 — RERA Certificate for Plot 104. Developer: Greenland Infra Pvt Ltd.',
       category: 'ownership',
       createdAt: ts(28),
     },
@@ -1410,7 +1410,7 @@ export const DEMO_VAULT_DOCS_EMPTY: Record<string, VaultDoc[]> = {
   interior: [
     {
       id: 'vde-4',
-      name: 'Approved Building Plan â€” GHMC',
+      name: 'Approved Building Plan — GHMC',
       type: 'pdf',
       size: 15_728_640,
       url: '',
@@ -1421,12 +1421,12 @@ export const DEMO_VAULT_DOCS_EMPTY: Record<string, VaultDoc[]> = {
     },
     {
       id: 'vde-5',
-      name: 'Architect Quote â€” Prism Design Studio',
+      name: 'Architect Quote — Prism Design Studio',
       type: 'pdf',
       size: 3_145_728,
       url: '',
       ocr: false,
-      notes: 'Interior design + supervision quote. Total estimate â‚¹42L for 2400 sqft 3BHK.',
+      notes: 'Interior design + supervision quote. Total estimate ₹42L for 2400 sqft 3BHK.',
       category: 'interior',
       createdAt: ts(5),
     },
@@ -1437,22 +1437,22 @@ export const DEMO_VAULT_DOCS_EMPTY: Record<string, VaultDoc[]> = {
   warranties: [],
 }
 
-// â”€â”€â”€ EMPTY SHELL â€” Timeline Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ EMPTY SHELL — Timeline Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_TIMELINE_EMPTY: TimelineEvent[] = [
   {
     id: 'tl-e1',
     date: '2025-01-15',
     category: 'purchase',
-    icon: 'ðŸ ',
+    icon: '🏠',
     title: 'Plot Purchased',
-    detail: 'Plot 104, Green Meadows Phase 3 purchased for â‚¹85,00,000. Registration complete at SRO Shamshabad.',
+    detail: 'Plot 104, Green Meadows Phase 3 purchased for ₹85,00,000. Registration complete at SRO Shamshabad.',
   },
   {
     id: 'tl-e2',
     date: '2025-01-20',
     category: 'legal',
-    icon: 'ðŸ“',
+    icon: '📝',
     title: 'RERA Certificate Received',
     detail: 'RERA allotment certificate obtained. RERA No. P02400007891. Developer: Greenland Infra Pvt Ltd.',
     badge: 'Legal',
@@ -1463,7 +1463,7 @@ export const DEMO_TIMELINE_EMPTY: TimelineEvent[] = [
     id: 'tl-e3',
     date: '2025-02-10',
     category: 'document',
-    icon: 'ðŸ“',
+    icon: '📐',
     title: 'Building Plan Sanctioned by GHMC',
     detail: 'G+1 3BHK construction plan approved. Sanction No. GHMC-2024-BP-77231. Construction may begin.',
     badge: 'Approved',
@@ -1474,24 +1474,24 @@ export const DEMO_TIMELINE_EMPTY: TimelineEvent[] = [
     id: 'tl-e4',
     date: '2025-03-15',
     category: 'renovation',
-    icon: 'ðŸ—ï¸',
-    title: 'Architect Engaged â€” Prism Design Studio',
-    detail: 'Prism Design Studio engaged for interior design and site supervision. Quote â‚¹42L accepted. Work starts Q3 2025.',
+    icon: '🏗ï¸',
+    title: 'Architect Engaged — Prism Design Studio',
+    detail: 'Prism Design Studio engaged for interior design and site supervision. Quote ₹42L accepted. Work starts Q3 2025.',
     badge: 'In Planning',
     badgeColor: 'text-amber-400',
     linkedId: 'vde-5',
   },
 ]
 
-// â”€â”€â”€ EMPTY SHELL â€” Room Specs (bare shell only â€” no finishes yet) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ EMPTY SHELL — Room Specs (bare shell only — no finishes yet) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_ROOM_SPECS_EMPTY: Record<string, RoomSpec> = {
   'Living Room': {
     area: 350,
-    flooring: 'Bare concrete slab â€” not finished',
-    wallFinish: 'Raw brick / block â€” plastering pending',
+    flooring: 'Bare concrete slab — not finished',
+    wallFinish: 'Raw brick / block — plastering pending',
     paintColor: 'N/A',
-    ceiling: 'Bare RCC slab â€” no false ceiling',
+    ceiling: 'Bare RCC slab — no false ceiling',
     furniture: [],
     extras: ['Electrical conduits roughed in', 'Plumbing inlet points marked', 'Window openings complete'],
   },
@@ -1515,18 +1515,18 @@ export const DEMO_ROOM_SPECS_EMPTY: Record<string, RoomSpec> = {
   },
 }
 
-// â”€â”€â”€ CONSTRUCTION â€” Vault Docs (builder docs only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ CONSTRUCTION — Vault Docs (builder docs only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_VAULT_DOCS_CONSTRUCTION: Record<string, VaultDoc[]> = {
   ownership: [
     {
       id: 'vdc-1',
-      name: 'Builder Allotment Letter â€” C-801',
+      name: 'Builder Allotment Letter — C-801',
       type: 'pdf',
       size: 2_097_152,
       url: '',
       ocr: true,
-      notes: 'Allotment letter from Nexus Realty for C-801, Tower C, Floor 8. Price: â‚¹1.12 Cr.',
+      notes: 'Allotment letter from Nexus Realty for C-801, Tower C, Floor 8. Price: ₹1.12 Cr.',
       category: 'ownership',
       createdAt: ts(60),
     },
@@ -1537,7 +1537,7 @@ export const DEMO_VAULT_DOCS_CONSTRUCTION: Record<string, VaultDoc[]> = {
       size: 12_582_912,
       url: '',
       ocr: true,
-      notes: 'Registered agreement. Possession ETA: Dec 2025. Penalty clause: â‚¹5/sq.ft/month delay.',
+      notes: 'Registered agreement. Possession ETA: Dec 2025. Penalty clause: ₹5/sq.ft/month delay.',
       category: 'ownership',
       createdAt: ts(55),
     },
@@ -1545,7 +1545,7 @@ export const DEMO_VAULT_DOCS_CONSTRUCTION: Record<string, VaultDoc[]> = {
   interior: [
     {
       id: 'vdc-3',
-      name: 'Architect Floor Plan â€” 3BHK Type C',
+      name: 'Architect Floor Plan — 3BHK Type C',
       type: 'pdf',
       size: 8_388_608,
       url: '',
@@ -1573,13 +1573,13 @@ export const DEMO_VAULT_DOCS_CONSTRUCTION: Record<string, VaultDoc[]> = {
   warranties: [],
 }
 
-// â”€â”€â”€ CONSTRUCTION â€” Snags (all construction-phase structural defects) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ CONSTRUCTION — Snags (all construction-phase structural defects) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_SNAGS_CONSTRUCTION: Snag[] = [
   {
     id: 'sn-c1',
     title: 'Hairline crack in load-bearing column',
-    location: 'Living Room â€” Column C3',
+    location: 'Living Room — Column C3',
     category: 'Structural',
     urgency: 'high',
     status: 'open',
@@ -1644,16 +1644,16 @@ export const DEMO_SNAGS_CONSTRUCTION: Snag[] = [
   },
 ]
 
-// â”€â”€â”€ CONSTRUCTION â€” Timeline Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ CONSTRUCTION — Timeline Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_TIMELINE_CONSTRUCTION: TimelineEvent[] = [
   {
     id: 'tl-c1',
     date: '2024-04-10',
     category: 'purchase',
-    icon: 'ðŸ—ï¸',
-    title: 'Unit Booked â€” C-801 Nexus Towers',
-    detail: 'Booking amount â‚¹5,60,000 (5%) paid. Allotment letter received. RERA No: P02400008231.',
+    icon: '🏗ï¸',
+    title: 'Unit Booked — C-801 Nexus Towers',
+    detail: 'Booking amount ₹5,60,000 (5%) paid. Allotment letter received. RERA No: P02400008231.',
     badge: 'Booked',
     badgeColor: 'text-gold-400',
     linkedId: 'vdc-1',
@@ -1662,7 +1662,7 @@ export const DEMO_TIMELINE_CONSTRUCTION: TimelineEvent[] = [
     id: 'tl-c2',
     date: '2024-05-15',
     category: 'legal',
-    icon: 'ðŸ“',
+    icon: '📝',
     title: 'Builder-Buyer Agreement Signed',
     detail: 'Registered agreement executed at SRO Financial District. Tranche linked to construction milestones.',
     badge: 'Legal',
@@ -1673,28 +1673,28 @@ export const DEMO_TIMELINE_CONSTRUCTION: TimelineEvent[] = [
     id: 'tl-c3',
     date: '2024-07-01',
     category: 'renovation',
-    icon: 'ðŸ—ï¸',
+    icon: '🏗ï¸',
     title: 'Foundation Slab Completed',
-    detail: 'Milestone 2 achieved. Foundation and podium slab complete. Payment tranche 2 (â‚¹11,20,000) paid.',
-    badge: 'âœ… Done',
+    detail: 'Milestone 2 achieved. Foundation and podium slab complete. Payment tranche 2 (₹11,20,000) paid.',
+    badge: '✅ Done',
     badgeColor: 'text-emerald-400',
   },
   {
     id: 'tl-c4',
     date: '2024-10-20',
     category: 'renovation',
-    icon: 'ðŸ§±',
-    title: 'Brickwork â€” Floors 1-5 Complete',
-    detail: 'Milestone 3 complete. Brickwork, plastering, and roughing-in up to Floor 5. Tranche 3 (â‚¹16,80,000) paid.',
-    badge: 'âœ… Done',
+    icon: '🧱',
+    title: 'Brickwork — Floors 1-5 Complete',
+    detail: 'Milestone 3 complete. Brickwork, plastering, and roughing-in up to Floor 5. Tranche 3 (₹16,80,000) paid.',
+    badge: '✅ Done',
     badgeColor: 'text-emerald-400',
   },
   {
     id: 'tl-c5',
     date: '2025-02-10',
     category: 'renovation',
-    icon: 'ðŸ”§',
-    title: 'Fit-out Phase Started â€” Floor 8',
+    icon: '🔧',
+    title: 'Fit-out Phase Started — Floor 8',
     detail: 'Internal fit-out begun on Floor 8. False ceiling, flooring, electrical roughing, plumbing fit-out underway.',
     badge: 'In Progress',
     badgeColor: 'text-amber-400',
@@ -1703,15 +1703,15 @@ export const DEMO_TIMELINE_CONSTRUCTION: TimelineEvent[] = [
     id: 'tl-c6',
     date: '2025-03-15',
     category: 'snag',
-    icon: 'ðŸ”´',
-    title: 'Site Inspection â€” 6 Snags Logged',
+    icon: '🔴',
+    title: 'Site Inspection — 6 Snags Logged',
     detail: 'First snagging inspection conducted. Found: column hairline crack (H), false ceiling misalignment (H), tile lippage (M), conduit protrusion (M), window putty (M), balcony waterproofing (H).',
     badge: 'Action Needed',
     badgeColor: 'text-red-400',
   },
 ]
 
-// â”€â”€â”€ VILLA â€” G+2 Floor Room Specs (expanded) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ VILLA — G+2 Floor Room Specs (expanded) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
   // Ground Floor
@@ -1719,7 +1719,7 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 480,
     flooring: 'Italian marble (900x900mm, Statuario Venato)',
     wallFinish: 'Textured wallpaper (Nilaya by Asian Paints) + feature wall slate cladding',
-    paintColor: 'Warm Ivory â€” Asian Paints Royale Shyne #7724',
+    paintColor: 'Warm Ivory — Asian Paints Royale Shyne #7724',
     ceiling: 'Coffered gypsum ceiling with recessed LED coves, 14 ft',
     furniture: ['L-shaped sectional sofa (Natuzzi, 3+2+2 seater)', 'Teak wood coffee table', 'Samsung 65" QLED wall-mounted', 'Zebrano wood TV unit with media storage'],
     extras: ['Central AC with plenum ducting (Daikin VRV)', 'Home automation panel (Schneider)', 'Floor-to-ceiling glass sliding door to garden'],
@@ -1728,16 +1728,16 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 220,
     flooring: 'Anti-skid ceramic tiles (600x600mm, Dark Slate)',
     wallFinish: 'Full-height subway tile backsplash + SS splash back on hob',
-    paintColor: 'N/A â€” full tile finish',
+    paintColor: 'N/A — full tile finish',
     ceiling: 'Pop false ceiling with under-cabinet LED strip',
-    furniture: ['Modular kitchen â€” Hettich fittings, Acrylic finish shutters', 'Bosch Series 8 induction hob (built-in)', 'Bosch dishwasher (built-in)', 'Gaggenau oven (built-in)', 'LG refrigerator side-by-side 687L'],
+    furniture: ['Modular kitchen — Hettich fittings, Acrylic finish shutters', 'Bosch Series 8 induction hob (built-in)', 'Bosch dishwasher (built-in)', 'Gaggenau oven (built-in)', 'LG refrigerator side-by-side 687L'],
     extras: ['SS utility sink', 'Franke waste disposal', 'Kitchen island with breakfast counter (4 seater)'],
   },
   'Dining Room': {
     area: 180,
     flooring: 'Italian marble (continuation)',
-    wallFinish: 'Painted â€” warm ivory',
-    paintColor: 'Warm Ivory â€” Asian Paints Royale Shyne #7724',
+    wallFinish: 'Painted — warm ivory',
+    paintColor: 'Warm Ivory — Asian Paints Royale Shyne #7724',
     ceiling: 'Gypsum recessed with pendant chandelier (Flos)',
     furniture: ['8-seater dining table (teak + glass)', 'Upholstered dining chairs (8)'],
     extras: ['Wine rack (36 bottle, built-in)', 'Bar counter with under-cabinet storage'],
@@ -1746,7 +1746,7 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 180,
     flooring: 'Engineered wood (8mm Kronotex, Walnut)',
     wallFinish: 'Painted smooth',
-    paintColor: 'Soft Sage â€” Asian Paints Royale #5437',
+    paintColor: 'Soft Sage — Asian Paints Royale #5437',
     ceiling: 'Gypsum border with spotlight track',
     furniture: ['Queen bed (Duroflex)', 'Bedside tables (2)', '4-door wardrobe (Hettich)'],
     extras: ['Attached bathroom with rain shower', 'AC (Daikin 1T)'],
@@ -1755,17 +1755,17 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
   'Master Bedroom': {
     area: 320,
     flooring: 'Imported hardwood (Jatoba, Brazilian Cherry)',
-    wallFinish: 'Velvet texture wallpaper â€” feature wall behind bed',
-    paintColor: 'Charcoal Whisper â€” Asian Paints Royale #8812',
+    wallFinish: 'Velvet texture wallpaper — feature wall behind bed',
+    paintColor: 'Charcoal Whisper — Asian Paints Royale #8812',
     ceiling: 'Cove LED ceiling with dimmable warm whites',
-    furniture: ['King bed (Sleep Country, 6x7 ft teak frame)', 'Bedside tables â€” Italian marble top (2)', '8-door sliding wardrobe (Italian laminates)', 'Dressing table with vanity mirror'],
+    furniture: ['King bed (Sleep Country, 6x7 ft teak frame)', 'Bedside tables — Italian marble top (2)', '8-door sliding wardrobe (Italian laminates)', 'Dressing table with vanity mirror'],
     extras: ['Walk-in wardrobe (180 sqft, custom)', 'En-suite bathroom with jacuzzi + steam shower', 'AC (Panasonic 1.5T inverter)', 'Balcony access'],
   },
   'Bedroom 2': {
     area: 200,
     flooring: 'Laminate wood (8mm, Light Oak)',
     wallFinish: 'Painted',
-    paintColor: 'Sky Mist â€” Asian Paints Royale #3201',
+    paintColor: 'Sky Mist — Asian Paints Royale #3201',
     ceiling: 'Gypsum flat with recessed LED',
     furniture: ['Queen bed (Springfit)', 'Study desk + ergonomic chair', '4-door wardrobe (Hafele)'],
     extras: ['Attached bathroom', 'AC (LG 1T)'],
@@ -1774,7 +1774,7 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 190,
     flooring: 'Laminate wood (8mm, Walnut)',
     wallFinish: 'Painted',
-    paintColor: 'Dusty Rose â€” Asian Paints Royale #4422',
+    paintColor: 'Dusty Rose — Asian Paints Royale #4422',
     ceiling: 'Gypsum flat',
     furniture: ["Children's bunk bed (Flexa)", 'Study table (2-seater)', 'Storage wardrobe (Hettich)'],
     extras: ['AC (Daikin 1T)', 'Window seat with storage below'],
@@ -1783,7 +1783,7 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 240,
     flooring: 'Patterned carpet (wall-to-wall, Axminster)',
     wallFinish: 'Wood panelling on one wall, painted rest',
-    paintColor: 'Deep Navy â€” Asian Paints Royale #9201',
+    paintColor: 'Deep Navy — Asian Paints Royale #9201',
     ceiling: 'Coffered with exposed wood beams',
     furniture: ['3-seater sofa + 2 accent chairs', 'Console table', 'LG OLED 55" TV (second display)'],
     extras: ['Home theatre speaker setup (Bose 5.1)', 'Game console setup (PlayStation 5)', 'Reading nook with built-in shelves'],
@@ -1793,8 +1793,8 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 800,
     flooring: 'Anti-skid terrace tiles (Matte WoodLook, 800x200mm)',
     wallFinish: 'Parapet wall with stone cladding',
-    paintColor: 'N/A â€” exterior',
-    ceiling: 'Open sky â€” steel pergola structure with shade sails',
+    paintColor: 'N/A — exterior',
+    ceiling: 'Open sky — steel pergola structure with shade sails',
     furniture: ['Outdoor L-sofa (teak + waterproof cushions)', 'Dining table + 6 chairs (teak)', 'BBQ grill island (Weber)'],
     extras: ['Landscaped planters', 'Outdoor shower point', 'Water feature (wall-mounted)', 'Utility store room (120 sqft)'],
   },
@@ -1802,14 +1802,14 @@ export const DEMO_ROOM_SPECS_VILLA: Record<string, RoomSpec> = {
     area: 140,
     flooring: 'Engineered wood (Oak)',
     wallFinish: 'Built-in bookshelves on three walls',
-    paintColor: 'Forest Green â€” Asian Paints Royale #6631',
+    paintColor: 'Forest Green — Asian Paints Royale #6631',
     ceiling: 'Exposed book architecture + spotlight track',
     furniture: ['Executive desk (teak, 8 ft)', 'Ergonomic chair (Herman Miller Aeron)', 'Built-in bookshelves (floor-to-ceiling)'],
     extras: ['AC (Daikin 1T)', 'Dual monitor arm setup', 'Hidden cable management'],
   },
 }
 
-// â”€â”€â”€ VILLA â€” enhanced snags (sn-5 gets window seal photo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ VILLA — enhanced snags (sn-5 gets window seal photo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const DEMO_SNAGS_VILLA: Snag[] = [
   ...DEMO_SNAGS.filter(s => s.id !== 'sn-4' && s.id !== 'sn-5'),
@@ -1869,9 +1869,9 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
       {
         id: 'ev-rental-1',
         type: 'upload',
-        title: 'AI Walkthrough Completed â€” Jan 2025',
+        title: 'AI Walkthrough Completed — Jan 2025',
         subtitle: 'Arjun submitted Q1 video. 3 issues flagged by AI.',
-        icon: 'ðŸ¤–',
+        icon: '🤖',
         createdAt: ts(2),
       },
       {
@@ -1887,7 +1887,7 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
   },
   p_empty: {
     property: p_empty,
-    assets: [],    // Nothing yet â€” no appliances, no furniture, bare shell
+    assets: [],    // Nothing yet — no appliances, no furniture, bare shell
     snags: [],     // No defects yet, construction hasn't started
     vault: DEMO_VAULT_DOCS_EMPTY,
     stats: { assetCount: 0, expiringSoonCount: 0, openSnagCount: 0 },
@@ -1899,15 +1899,15 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
         type: 'vault_upload',
         title: 'GHMC Building Plan Approved',
         subtitle: 'Construction can begin Q3 2025',
-        icon: 'âœ…',
+        icon: '✅',
         createdAt: ts(10),
       },
       {
         id: 'ev-empty-2',
         type: 'snag_opened',
         title: 'Architect Quote Received',
-        subtitle: 'â‚¹42L estimate for 3BHK fit-out',
-        icon: 'ðŸ“',
+        subtitle: '₹42L estimate for 3BHK fit-out',
+        icon: '📐',
         createdAt: ts(5),
       },
     ],
@@ -1915,7 +1915,7 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
   },
   p_construction: {
     property: p_construction,
-    assets: [],    // No appliances â€” building under construction, nothing installed yet
+    assets: [],    // No appliances — building under construction, nothing installed yet
     snags: DEMO_SNAGS_CONSTRUCTION,
     vault: DEMO_VAULT_DOCS_CONSTRUCTION,
     stats: {
@@ -1931,7 +1931,7 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
         type: 'upload',
         title: 'Fit-out Phase Started',
         subtitle: 'Floor 8 brickwork + false ceiling underway',
-        icon: 'ðŸ—ï¸',
+        icon: '🏗ï¸',
         createdAt: ts(3),
       },
       {
@@ -1939,7 +1939,7 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
         type: 'maintenance',
         title: '6 Snags from Inspection',
         subtitle: '3 High urgency items need builder action',
-        icon: 'ðŸ”´',
+        icon: '🔴',
         createdAt: ts(2),
       },
     ],
