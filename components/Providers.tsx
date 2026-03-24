@@ -57,6 +57,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const params = new URLSearchParams(window.location.search)
     const ref = params.get('ref')
     if (ref && ref.trim()) {
+      // Strip ?ref= from the address bar immediately so recipients can't copy a tagged URL
+      window.history.replaceState({}, '', window.location.pathname)
       trackRef(ref.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-'))
     }
 
