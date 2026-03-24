@@ -251,6 +251,64 @@ export default function VaultPage() {
           Upload pictures of papers directly from your phone to instantly digitize your records.
         </PageGuide>
 
+        {/* Per-property pinned docs banner */}
+        {isDemo && (() => {
+          const occ = demoContext.property?.occupancy
+          const configs: Record<string, { docs: { icon: string; label: string; sub: string; cat: string }[]; accentColor: string; accentBg: string; heading: string }> = {
+            rented: {
+              heading: '📌 Key Rental Documents',
+              accentColor: 'text-blue-400', accentBg: 'bg-blue-500/10 border-blue-500/20',
+              docs: [
+                { icon: '📋', label: 'Lease Agreement', sub: 'Arjun & Priya · 11-month · Sep 2024', cat: 'ownership' },
+                { icon: '💰', label: 'Security Deposit Receipt', sub: '₹72,000 · NSE 2024', cat: 'maintenance' },
+              ],
+            },
+            renovation: {
+              heading: '📌 Builder Documents',
+              accentColor: 'text-amber-400', accentBg: 'bg-amber-500/10 border-amber-500/20',
+              docs: [
+                { icon: '📝', label: 'Builder-Buyer Agreement', sub: 'Nexus Realty · Apr 2024', cat: 'ownership' },
+                { icon: '🏗️', label: 'RERA Certificate', sub: 'P02400008231 · Valid until Dec 2026', cat: 'ownership' },
+              ],
+            },
+            empty: {
+              heading: '📌 Key Property Documents',
+              accentColor: 'text-zinc-400', accentBg: 'bg-zinc-500/10 border-zinc-500/20',
+              docs: [
+                { icon: '🏠', label: 'Sale Deed', sub: 'Plot 104 · Reg. Aug 2024', cat: 'ownership' },
+                { icon: '📐', label: 'Architect Quote', sub: 'Prism Design Studio · ₹42L Premium Plan', cat: 'interior' },
+              ],
+            },
+          }
+          const cfg = occ ? configs[occ] : null
+          if (!cfg) return (
+            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+              <span className="text-[10px] text-vault-text-muted font-bold uppercase tracking-widest">📌 Key Documents</span>
+              <span className="text-[10px] text-vault-text-muted">Khata · Property Tax · Sale Deed</span>
+            </div>
+          )
+          return (
+            <div className="mt-2 mb-1">
+              <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${cfg.accentColor}`}>{cfg.heading}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {cfg.docs.map((d) => (
+                  <button
+                    key={d.label}
+                    onClick={() => setActiveFilter(d.cat)}
+                    className={`flex items-start gap-2 p-2.5 rounded-xl border text-left transition-all hover:opacity-80 ${cfg.accentBg}`}
+                  >
+                    <span className="text-base flex-shrink-0 mt-0.5">{d.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-white leading-tight truncate">{d.label}</p>
+                      <p className="text-[9px] text-vault-text-muted mt-0.5 leading-tight">{d.sub}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Storage meter */}
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">

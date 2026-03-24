@@ -261,6 +261,64 @@ export default function DashboardPage() {
                 Set up your property →
               </Link>
             )}
+
+            {/* Per-property context strip */}
+            {isDemo && (() => {
+              const occ = demoProperty.occupancy
+              if (occ === 'rented') return (
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">
+                    👤 Arjun & Priya Sharma
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400">
+                    ₹24,000/mo
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-vault-muted/20 border border-vault-border text-[10px] text-vault-text-muted">
+                    🗓 8 months
+                  </span>
+                </div>
+              )
+              if (occ === 'renovation') return (
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 text-[10px] font-bold text-gold-400">
+                    🏗️ 67% Complete
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-400">
+                    Fit-out Stage
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-vault-muted/20 border border-vault-border text-[10px] text-vault-text-muted">
+                    📅 Dec 2025
+                  </span>
+                </div>
+              )
+              if (occ === 'empty') return (
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-500/10 border border-zinc-500/20 text-[10px] font-bold text-zinc-400">
+                    🪟 Bare Shell
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 text-[10px] font-bold text-gold-400">
+                    Architect Engaged
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-vault-muted/20 border border-vault-border text-[10px] text-vault-text-muted">
+                    Est. ₹42L Reno
+                  </span>
+                </div>
+              )
+              // Villa / residing
+              return (
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400">
+                    🏠 Owner Occupied
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 text-[10px] font-bold text-gold-400">
+                    {demoStats.assetCount} Assets
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-vault-muted/20 border border-vault-border text-[10px] text-vault-text-muted">
+                    {demoProperty.area?.toLocaleString()} sq ft
+                  </span>
+                </div>
+              )
+            })()}
           </div>
           <div className="flex items-center gap-2 mt-1">
             <PWAInstallButton />

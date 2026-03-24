@@ -106,7 +106,7 @@ export default function HomePlanPage() {
           <div>
             <h1 className="text-base font-bold text-white">Home Plan</h1>
             <p className="text-xs text-vault-text-muted">
-              {effectiveProperty?.name} · {effectiveProperty?.unit ?? ''}
+              {effectiveProperty?.unitTypeLabel ?? effectiveProperty?.unit ?? ''}
               {isDemo && <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded-full bg-gold-500/10 text-gold-500 border border-gold-500/20">Demo</span>}
             </p>
           </div>
@@ -129,9 +129,14 @@ export default function HomePlanPage() {
 
       {/* Canvas area */}
       <div className="flex-1 px-4 pb-32 pt-2">
-        <PageGuide id="home-plan" title="Interactive Blueprint">
-          Tap any room on the floor plan to view exact dimensions, linked paint colors, and fixed assets 
-          like appliances or sanitary ware specific to that space.
+        <PageGuide id="home-plan" title={isDemo && demoContext.property?.occupancy === 'rented' ? 'Rental Property Room Map' : isDemo && demoContext.property?.occupancy === 'renovation' ? 'Construction — Planned Layout' : isDemo && demoContext.property?.occupancy === 'empty' ? 'Bare Shell — Planning Mode' : 'Interactive Blueprint'}>
+          {isDemo && demoContext.property?.occupancy === 'rented'
+            ? 'Shows the fixed-fitting layout of the property. Tenant furniture is not tracked — only owner-installed appliances, ACs, and sanitary fixtures are recorded here.'
+            : isDemo && demoContext.property?.occupancy === 'renovation'
+            ? 'Based on the approved architectural drawing for C-801. Rooms reflect the planned layout — actual finishes will be updated post-possession.'
+            : isDemo && demoContext.property?.occupancy === 'empty'
+            ? 'The bare shell interior floor plan. Rooms will be fitted during renovation. Tap each space to plan future fixtures and finishes.'
+            : 'Tap any room to view exact dimensions, linked paint colors, and fixed assets like appliances or sanitary ware specific to that space.'}
         </PageGuide>
 
         {hasRooms ? (
@@ -140,11 +145,17 @@ export default function HomePlanPage() {
             <div className="flex items-center gap-1.5 mb-3">
               <HelpCircle size={12} className="text-vault-text-muted" />
               <p className="text-xs text-vault-text-muted">
-                {isDemo 
-                  ? 'Tap any room to explore details and tracking'
-                  : selectedItem 
-                     ? 'Item selected — edit below' 
-                     : 'Tap a room or furniture item'}
+                {isDemo && demoContext.property?.occupancy === 'rented'
+                  ? `${rooms.length} rooms — only owner-installed fixtures tracked`
+                  : isDemo && demoContext.property?.occupancy === 'renovation'
+                  ? `${rooms.length} planned rooms — based on architectural drawing`
+                  : isDemo && demoContext.property?.occupancy === 'empty'
+                  ? `${rooms.length} bare shell spaces — tap to plan finishes`
+                  : isDemo
+                  ? `${rooms.length} rooms across ${effectiveProperty?.floorPlanType ?? 'G+2'} — tap to explore`
+                  : selectedItem
+                  ? 'Item selected — edit below'
+                  : 'Tap a room or furniture item'}
               </p>
             </div>
 
