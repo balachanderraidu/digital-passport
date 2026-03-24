@@ -62,6 +62,20 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // TRACKING METRICS (Share link analytics)
+    //
+    // Anyone can increment a counter for a ?ref= tag.
+    // Only `count`, `firstSeen`, and `lastSeen` fields are allowed.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /tracking_metrics/{ref} {
+      allow read: if true;
+      // Allow unauthenticated writes — but only specific fields (count, firstSeen, lastSeen)
+      allow create: if request.resource.data.keys().hasOnly(['count', 'firstSeen', 'lastSeen', 'ref']);
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count', 'lastSeen']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // DEFAULT: deny everything else
     // ─────────────────────────────────────────────────────────────────────────
 
