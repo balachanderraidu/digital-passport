@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { VideoSplash } from '@/components/VideoSplash'
+import { IOSInstallGuide } from '@/components/IOSInstallGuide'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -15,9 +16,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }))
 
   const [showSplash, setShowSplash] = useState(false)
+  const [showIOSGuide, setShowIOSGuide] = useState(false)
 
   useEffect(() => {
-    // Only show on the first session visit
+    // Only show splash on first session visit
     if (!sessionStorage.getItem('splashSeen')) {
       setShowSplash(true)
     }
@@ -27,9 +29,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('openSplash', onOpen)
   }, [])
 
+  function handleSplashDismiss() {
+    setShowSplash(false)
+    // Show iOS install guide once per install (not just per session)
+    if (!localStorage.getItem('iosGuideShown')) {
+      setShowIOSGuide(true)
+    }
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
-      {showSplash && <VideoSplash onDismiss={() => setShowSplash(false)} />}
+      {showSplash && <VideoSplash onDismiss={handleSplashDismiss} />}
+      {showIOSGuide && (
+        <IOSInstallGuide onDismiss={() => {
+          setShowIOSGuide(false)
+          localStorage.setItem('iosGuideShown', '1')
+        }} />
+      )}
       {children}
     </QueryClientProvider>
   )
