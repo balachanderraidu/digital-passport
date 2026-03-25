@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { KeyRound } from 'lucide-react'
+import { KeyRound, Volume2, VolumeX } from 'lucide-react'
 
 const VIDEO_SRC = '/explainer.mp4'
 const VIDEO_DURATION_S = 104     // 1 min 44 sec
@@ -22,6 +22,7 @@ export function VideoSplash({ onDismiss }: VideoSplashProps) {
   const [snapping, setSnapping] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [duration, setDuration] = useState(VIDEO_DURATION_S)
+  const [muted, setMuted] = useState(true)
 
   const startYRef = useRef(0)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -53,6 +54,7 @@ export function VideoSplash({ onDismiss }: VideoSplashProps) {
       setCanSkip(false)
       setSnapping(false)
       setElapsed(0)
+      setMuted(true)
       setTimeout(() => {
         if (videoRef.current) { videoRef.current.currentTime = 0; videoRef.current.play() }
       }, 50)
@@ -140,6 +142,7 @@ export function VideoSplash({ onDismiss }: VideoSplashProps) {
         src={VIDEO_SRC}
         className="w-full h-full object-contain bg-black"
         autoPlay
+        muted={muted}
         playsInline
         preload="auto"
         controls={false}
@@ -241,6 +244,19 @@ export function VideoSplash({ onDismiss }: VideoSplashProps) {
           className="absolute top-14 left-5 text-white/50 text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15 hover:bg-white/10 transition-colors pointer-events-auto hidden sm:flex items-center gap-1.5"
         >
           Skip
+        </button>
+      )}
+
+      {/* Unmute pill — bottom-centre, always visible while video plays */}
+      {videoReady && (
+        <button
+          onClick={() => setMuted(m => !m)}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm pointer-events-auto transition-all duration-300 active:scale-95"
+          style={{ opacity: overlayOpacity }}
+        >
+          {muted
+            ? <><VolumeX size={13} className="text-white/60" /><span className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Tap for audio</span></>
+            : <Volume2 size={14} className="text-[#D4AF37]" />}
         </button>
       )}
 
