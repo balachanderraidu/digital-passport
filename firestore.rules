@@ -76,6 +76,16 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // WAITLIST (Beta access sign-ups)
+    // Anyone can write their own email document. No read access from client.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /waitlist/{email} {
+      allow create, update: if request.resource.data.keys().hasOnly(['email', 'joinedAt']);
+      allow read: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // DEFAULT: deny everything else
     // ─────────────────────────────────────────────────────────────────────────
 

@@ -16,6 +16,19 @@ import { KeyRound, Phone, Loader2, RefreshCw, CheckCircle2, Share } from 'lucide
 import { PWAInstallButton } from '@/components/PWAInstallButton'
 import { cn } from '@/lib/utils'
 
+async function saveToWaitlist(email: string) {
+  try {
+    const { getFirestore, doc, setDoc, serverTimestamp } = await import('firebase/firestore')
+    const app = (await import('@/lib/firebase')).default
+    if (!app) return
+    const db = getFirestore(app)
+    await setDoc(doc(db, 'waitlist', email.toLowerCase().trim()), {
+      email: email.toLowerCase().trim(),
+      joinedAt: serverTimestamp(),
+    }, { merge: true })
+  } catch { /* fail silently — still show success to user */ }
+}
+
 async function routeAfterSignIn(
   uid: string,
   email: string | null,
@@ -518,7 +531,7 @@ export default function LoginPage() {
                   onChange={(e) => setWaitlistEmail(e.target.value)}
                 />
                 <button
-                  onClick={() => setWaitlistJoined(true)}
+                  onClick={async () => { await saveToWaitlist(waitlistEmail); setWaitlistJoined(true) }}
                   disabled={!waitlistEmail.includes('@')}
                   className="py-3 px-4 bg-gold-500 text-charcoal-300 rounded-xl text-xs font-bold hover:bg-gold-400 disabled:opacity-50 disabled:bg-vault-muted disabled:text-vault-text-muted transition-all"
                 >

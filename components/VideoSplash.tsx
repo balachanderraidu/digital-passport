@@ -45,6 +45,13 @@ export function VideoSplash({ onDismiss }: VideoSplashProps) {
     return () => clearTimeout(t)
   }, [])
 
+  // Explicitly play on every mount — autoPlay alone doesn't re-trigger on remount
+  useEffect(() => {
+    const vid = videoRef.current
+    if (!vid) return
+    vid.play().catch(() => { /* blocked — video stays paused until user taps unmute */ })
+  }, [])
+
   // Re-open via custom event — Providers.tsx also listens but VideoSplash handles its own reset
   useEffect(() => {
     function onOpen() {

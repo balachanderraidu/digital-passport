@@ -65,6 +65,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('openSplash', onOpen)
   }, [])
 
+  // ── Auto-reload when a new Service Worker takes control ──
+  // Fixes stale CSS/JS from old SW caches. Runs once per SW update.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    let reloading = false
+    function onControllerChange() {
+      if (reloading) return
+      reloading = true
+      window.location.reload()
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+  }, [])
+
   function handleSplashDismiss() {
     setShowSplash(false)
     // Show iOS install guide once per device install
