@@ -30,10 +30,13 @@ export function PWAInstallButton() {
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  if (installed || !installEvent) return null
+  if (installed) return null
 
   const handleInstall = async () => {
-    if (!installEvent) return
+    if (!installEvent) {
+      alert('To install Digital Passport:\\n\\n• Android: Tap the browser menu (⋮) and select "Add to Home screen" or "Install App".\\n• iPhone: Tap the Share icon and select "Add to Home Screen".')
+      return
+    }
     await installEvent.prompt()
     const { outcome } = await installEvent.userChoice
     if (outcome === 'accepted') setInstalled(true)
