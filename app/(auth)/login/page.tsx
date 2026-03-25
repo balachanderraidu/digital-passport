@@ -268,6 +268,19 @@ export default function LoginPage() {
           </div>
         </button>
 
+        {/* ─── Install App — prominent, right below Demo CTA ─── */}
+        <div className="mb-6 p-4 rounded-2xl border border-gold-500/30 bg-gold-500/5">
+          <p className="text-[10px] font-bold text-gold-500/70 uppercase tracking-widest text-center mb-3">Install Digital Passport</p>
+          <div className="flex justify-center mb-2">
+            <PWAInstallButton />
+          </div>
+          <div className="flex items-center justify-center gap-2 text-[10px] text-vault-text-muted">
+            <span>On iPhone: tap</span>
+            <Share size={11} className="text-white/40" />
+            <span>→ <span className="font-semibold text-white/50">Add to Home Screen</span></span>
+          </div>
+        </div>
+
         {/* ─── Sign-in (admin/beta only) ─── */}
         {isAdmin && (
           <div className="animate-fade-in">
@@ -516,20 +529,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ─── Install App ─── */}
-        <div className="mt-6 pt-5 border-t border-vault-border pb-8">
-          <p className="text-[10px] font-bold text-vault-text-muted uppercase tracking-widest text-center mb-3">Install Digital Passport</p>
-          {/* Android: native install prompt */}
-          <div className="flex justify-center mb-3">
-            <PWAInstallButton />
-          </div>
-          {/* iOS: manual share hint */}
-          <div className="flex items-center justify-center gap-2 text-[10px] text-vault-text-muted">
-            <span>On iPhone: tap</span>
-            <Share size={11} className="text-white/40" />
-            <span>→ <span className="font-semibold text-white/50">Add to Home Screen</span></span>
-          </div>
-        </div>
       </div>
     </div>
   )
