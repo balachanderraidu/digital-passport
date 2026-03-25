@@ -56,6 +56,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/* Preload the explainer video so it’s ready when VideoSplash mounts */}
         <link rel="preload" as="video" href="/explainer.mp4" type="video/mp4" />
+        {/* Inline critical CSS: prevent white FOUC before Tailwind stylesheet loads */}
+        <style dangerouslySetInnerHTML={{ __html: 'html,body{background:#0D0D0D;margin:0}' }} />
       </head>
       <body className={`${spaceGrotesk.variable} font-sans bg-vault-bg text-vault-text antialiased`}>
         <Providers>

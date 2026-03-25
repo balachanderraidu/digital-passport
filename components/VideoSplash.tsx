@@ -76,7 +76,6 @@ export function VideoSplash({ onDismiss }: VideoSplashProps) {
     setDragY(window.innerHeight)
     setTimeout(() => {
       setVisible(false)
-      sessionStorage.setItem('splashSeen', '1')
       onDismiss?.()
     }, 440)
   }, [onDismiss])
