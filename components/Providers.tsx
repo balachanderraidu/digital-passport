@@ -42,11 +42,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     },
   }))
 
-  const [showSplash, setShowSplash] = useState(true)
+  const [showSplash, setShowSplash] = useState(false)
   const [showIOSGuide, setShowIOSGuide] = useState(false)
 
   useEffect(() => {
     // ── Video splash — always show on every new page load ──
+    setShowSplash(true)
     function onOpen() { setShowSplash(true) }
     window.addEventListener('openSplash', onOpen)
 
