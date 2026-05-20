@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Calendar, ShieldCheck, ShieldAlert, ShieldOff,
-  Zap, Info, Bell, Phone, FileText, Trash2, Loader2,
+  Zap, Info, Bell, Phone, FileText, Trash2, Loader2, Share2,
 } from 'lucide-react'
 import { cn, formatDate, getWarrantyStatus, getDaysUntil } from '@/lib/utils'
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import { subscribeWarrantyAssets, deleteWarrantyAsset, type WarrantyAsset } from '@/lib/firestore'
 import { DEMO_WARRANTY_ASSETS, DEMO_ITEM_LINKS } from '@/lib/demo-data'
+import { showDemoToast } from '@/components/DemoToast'
 
 export default function WarrantyDetailClient({ id }: { id: string }) {
   const router = useRouter()
@@ -51,6 +52,36 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
       router.replace('/warranty')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  function handleSetReminder() {
+    if (isDemo) {
+      showDemoToast('Reminder set! You\'ll be notified 30 days before expiry.', '🔔')
+      return
+    }
+    // TODO: real reminder logic
+  }
+
+  function handleBookService() {
+    if (isDemo) {
+      showDemoToast('Service booking request sent to authorised technician.', '📞')
+      return
+    }
+    // TODO: real booking logic
+  }
+
+  // #12: Share warranty info card
+  async function handleShare() {
+    if (!asset) return
+    const status = getWarrantyStatus(asset.warrantyExpiry)
+    const days = getDaysUntil(asset.warrantyExpiry)
+    const text = `${asset.icon} ${asset.name} (${asset.brand}) — ${status === 'active' ? `${days}d warranty left` : status === 'expiring' ? `⚠️ Expiring in ${days} days` : 'Warranty expired'}`
+    if (navigator.share) {
+      await navigator.share({ title: asset.name, text })
+    } else {
+      await navigator.clipboard.writeText(text)
+      showDemoToast('Asset details copied to clipboard!', '📋')
     }
   }
 
@@ -98,7 +129,7 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
       <div className="px-5 pt-14 pb-4 bg-gradient-to-b from-vault-surface to-vault-bg">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="w-9 h-9 rounded-xl glass flex items-center justify-center flex-shrink-0">
+            <button onClick={() => router.replace('/warranty')} className="w-9 h-9 rounded-xl glass flex items-center justify-center flex-shrink-0">
               <ArrowLeft size={18} className="text-vault-text-muted" />
             </button>
             <h1 className="text-lg font-bold text-white">Asset Detail</h1>
@@ -183,58 +214,33 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
         </div>
 
         {/* CTA buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <button className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all">
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            onClick={handleSetReminder}
+            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all"
+          >
             <Bell size={16} />
             Set Reminder
           </button>
-          <button className="flex items-center justify-center gap-2 py-3.5 rounded-2xl glass gold-border text-vault-text font-semibold text-sm hover:gold-border-active transition-all">
+          <button
+            onClick={handleBookService}
+            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl glass gold-border text-vault-text font-semibold text-sm hover:gold-border-active transition-all"
+          >
             <Phone size={16} className="text-gold-500" />
             Book Service
           </button>
         </div>
+        {/* #12: Share asset info */}
+        <button
+          onClick={handleShare}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl glass border border-vault-border text-vault-text-muted font-semibold text-sm hover:text-white hover:border-vault-text-muted transition-all mb-6"
+        >
+          <Share2 size={14} />
+          Share Asset Details
+        </button>
 
-        {/* Service History — from DEMO_ITEM_LINKS keyed by asset name */}
-        {(() => {
-          const itemKey = Object.keys(DEMO_ITEM_LINKS).find(k =>
-            asset.name.toLowerCase().includes(k.split(' ')[0].toLowerCase()) ||
-            k.toLowerCase().includes(asset.name.split(' ')[0].toLowerCase())
-          )
-          const link = itemKey ? DEMO_ITEM_LINKS[itemKey] : null
-          const history = link?.serviceHistory ?? []
-          if (history.length === 0) return null
-          const SERVICE_ICON: Record<string, string> = {
-            'Installation': '🔌', 'Annual Service': '🔧', 'Repair': '🛠️', 'Inspection': '🔍', 'Cleaning': '🧹',
-          }
-          return (
-            <div className="mb-6">
-              <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-widest">Service History</h3>
-              <div className="ml-1 pl-3 border-l border-vault-border space-y-3.5">
-                {[...history].reverse().map((ev, i) => (
-                  <div key={i} className="relative">
-                    <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-vault-muted border border-vault-border flex items-center justify-center">
-                      <span className="text-[6px]">{SERVICE_ICON[ev.type] ?? '•'}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold text-vault-text">{ev.type}</span>
-                      {ev.cost !== undefined && ev.cost > 0 && <span className="text-[9px] text-vault-text-muted">₹{ev.cost.toLocaleString()}</span>}
-                      {ev.cost === 0 && <span className="text-[9px] font-bold text-green-500">Free / Warranty</span>}
-                      {ev.invoiceRef && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold-500/10 border border-gold-500/20 text-gold-400 font-mono">#{ev.invoiceRef}</span>
-                      )}
-                    </div>
-                    <p className="text-[9px] text-vault-text-muted mt-0.5">
-                      {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      {' · '}<span className="font-semibold text-vault-text">{ev.tech}</span>
-                    </p>
-                    {ev.contact && <p className="text-[9px] text-blue-400 mt-0.5">{ev.contact}</p>}
-                    <p className="text-[10px] text-vault-text mt-1 leading-relaxed">{ev.notes}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
+        {/* Service History */}
+        <ServiceHistorySection asset={asset} />
       </div>
 
       {/* Delete confirmation */}
@@ -262,6 +268,51 @@ export default function WarrantyDetailClient({ id }: { id: string }) {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// ─── Service History Section (extracted from IIFE) ─────────────────────────────
+
+const SERVICE_ICON: Record<string, string> = {
+  'Installation': '🔌', 'Annual Service': '🔧', 'Repair': '🛠️', 'Inspection': '🔍', 'Cleaning': '🧹',
+}
+
+function ServiceHistorySection({ asset }: { asset: WarrantyAsset }) {
+  const itemKey = Object.keys(DEMO_ITEM_LINKS).find(k =>
+    asset.name.toLowerCase().includes(k.split(' ')[0].toLowerCase()) ||
+    k.toLowerCase().includes(asset.name.split(' ')[0].toLowerCase())
+  )
+  const link = itemKey ? DEMO_ITEM_LINKS[itemKey] : null
+  const history = link?.serviceHistory ?? []
+  if (history.length === 0) return null
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-widest">Service History</h3>
+      <div className="ml-1 pl-3 border-l border-vault-border space-y-3.5">
+        {[...history].reverse().map((ev) => (
+          <div key={`${ev.date}-${ev.type}`} className="relative">
+            <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-vault-muted border border-vault-border flex items-center justify-center">
+              <span className="text-[6px]">{SERVICE_ICON[ev.type] ?? '•'}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-bold text-vault-text">{ev.type}</span>
+              {ev.cost !== undefined && ev.cost > 0 && <span className="text-[9px] text-vault-text-muted">₹{ev.cost.toLocaleString()}</span>}
+              {ev.cost === 0 && <span className="text-[9px] font-bold text-green-500">Free / Warranty</span>}
+              {ev.invoiceRef && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold-500/10 border border-gold-500/20 text-gold-400 font-mono">#{ev.invoiceRef}</span>
+              )}
+            </div>
+            <p className="text-[9px] text-vault-text-muted mt-0.5">
+              {new Date(ev.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {' · '}<span className="font-semibold text-vault-text">{ev.tech}</span>
+            </p>
+            {ev.contact && <p className="text-[9px] text-blue-400 mt-0.5">{ev.contact}</p>}
+            <p className="text-[10px] text-vault-text mt-1 leading-relaxed">{ev.notes}</p>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

@@ -157,14 +157,14 @@ export interface RoomSpec {
 export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
   'Living Room': {
     area: 312,
-    flooring: 'Kajaria Porcelain (800Ã—800 mm), Light Beige',
+    flooring: 'Kajaria Porcelain (800×800 mm), Light Beige',
     wallFinish: 'Asian Paints Premium Emulsion, Matte',
     paintColor: 'Antique White (AP-0234)',
     ceiling: 'Gypsum false ceiling with LED coves, 10 ft height',
     furniture: [
       'L-shaped sofa (3+2 seater, Grey velvet)',
       'Tempered glass coffee table',
-      'Samsung 55â€³ QLED TV on wall mount',
+      'Samsung 55″ QLED TV on wall mount',
       'Wooden TV unit with storage',
       'Floor-to-ceiling bookshelf (west wall)',
       'Pendant lamp trio',
@@ -173,20 +173,20 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
   },
   'Dining Room': {
     area: 138,
-    flooring: 'Kajaria Porcelain (800Ã—800 mm), Light Beige (continuous with Living)',
+    flooring: 'Kajaria Porcelain (800×800 mm), Light Beige (continuous with Living)',
     wallFinish: 'Asian Paints Premium Emulsion, Matte',
     paintColor: 'Antique White (AP-0234)',
     ceiling: 'Plain POP finish, 10 ft',
     furniture: [
       '6-seater dining table (natural teak)',
-      'Upholstered dining chairs Ã—6 (Olive Green)',
+      'Upholstered dining chairs ×6 (Olive Green)',
       'Sideboard / buffet unit',
       'Pendant chandelier above table',
     ],
   },
   'Kitchen': {
     area: 130,
-    flooring: 'Anti-skid ceramic tile (300Ã—600 mm, Matt Grey)',
+    flooring: 'Anti-skid ceramic tile (300×600 mm, Matt Grey)',
     wallFinish: 'Subway glass tile backsplash (Metro White)',
     paintColor: 'Warm White (AP-0101) on exposed wall',
     ceiling: 'Grid false ceiling with exhaust vent, 9.5 ft',
@@ -202,14 +202,14 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
   },
   'Balcony': {
     area: 80,
-    flooring: 'Anti-skid vitrified tile (600Ã—600 mm, Terracotta)',
+    flooring: 'Anti-skid vitrified tile (600×600 mm, Terracotta)',
     wallFinish: 'Textured exterior paint (Apex Weatherproof)',
     paintColor: 'Sandstone (AP-9901)',
     ceiling: 'Open / exposed RCC slab, waterproofed',
     furniture: [
       'Teak outdoor bistro set (2 chairs + table)',
       'Modular planter shelf (3 tier)',
-      'Hanging macramÃ© planters Ã—4',
+      'Hanging macramé planters ×4',
     ],
     extras: ['SS railing (frameless glass panels)', 'Utility area with washing point'],
   },
@@ -222,7 +222,7 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
     furniture: [
       'King bed frame (upholstered, Dark Charcoal)',
       'Premium pocket-spring mattress (Duroflex)',
-      'Matching bedside tables Ã—2 with USB charging',
+      'Matching bedside tables ×2 with USB charging',
       'Walk-in wardrobe (6-door sliding, Italian laminate)',
       'Vanity dresser with oval mirror',
       'Lounge armchair + side table',
@@ -259,8 +259,8 @@ export const DEMO_ROOM_SPECS: Record<string, RoomSpec> = {
   },
   'Bathroom': {
     area: 56,
-    flooring: 'Anti-skid vitrified tile (300Ã—600 mm, Light Grey)',
-    wallFinish: 'Full-height vitrified tile (Marble pattern, 300Ã—600 mm)',
+    flooring: 'Anti-skid vitrified tile (300×600 mm, Light Grey)',
+    wallFinish: 'Full-height vitrified tile (Marble pattern, 300×600 mm)',
     paintColor: 'N/A — full tile coverage',
     ceiling: 'Calcium silicate board (moisture resistant), 8.5 ft',
     furniture: [
@@ -307,10 +307,10 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
       { date: '2025-03-10', type: 'Annual Service', tech: 'LG Authorised Service – Hyderabad', contact: '+91 98490 11223', notes: 'Full service done — coil cleaned, refrigerant topped up 150g, remote battery replaced. Warranty expires in 15 days; renewal advised.', invoiceRef: 'LG-SVC-2025-0214', cost: 1200 },
     ],
   },
-  'Samsung 55â€³ QLED TV on wall mount': {
+  'Samsung 55″ QLED TV on wall mount': {
     warrantyId: 'wa-2',
     serviceHistory: [
-      { date: '2024-08-22', type: 'Installation', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'TV wall-mounted (75Â° tilt bracket), calibrated for room ambient lighting conditions.', invoiceRef: 'SC-INST-2024-0445', cost: 0 },
+      { date: '2024-08-22', type: 'Installation', tech: 'Samsung SmartCare – Hyderabad', contact: 'smartcare.hyd@samsung.in', notes: 'TV wall-mounted (75° tilt bracket), calibrated for room ambient lighting conditions.', invoiceRef: 'SC-INST-2024-0445', cost: 0 },
     ],
   },
 
@@ -366,7 +366,7 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
     snagIds: [],
     serviceHistory: [
       { date: '2024-08-30', type: 'Installation', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Unit wall-mounted above shower point. Pressure relief valve tested (opens at 8 bar). Earthing loop verified with tester.', invoiceRef: 'RAC-INST-2024-0199', cost: 0 },
-      { date: '2025-01-10', type: 'Annual Service', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Magnesium anode rod inspected — 30% consumed, still healthy (replacement advised in ~18 months). Tank flushed of sediment. Thermostat recalibrated to 55Â°C.', invoiceRef: 'RAC-SVC-2025-0012', cost: 600 },
+      { date: '2025-01-10', type: 'Annual Service', tech: 'Racold Authorised – Hyderabad', contact: '+91 90000 55443', notes: 'Magnesium anode rod inspected — 30% consumed, still healthy (replacement advised in ~18 months). Tank flushed of sediment. Thermostat recalibrated to 55°C.', invoiceRef: 'RAC-SVC-2025-0012', cost: 600 },
     ],
   },
   'Dyson V11 Vacuum Cleaner': {
@@ -378,10 +378,10 @@ export const DEMO_ITEM_LINKS: Record<string, ItemLink> = {
   },
 
   // â”€â”€ Flooring snag cross-links â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  'Anti-skid vitrified tile (600Ã—600 mm, Terracotta)': {
+  'Anti-skid vitrified tile (600×600 mm, Terracotta)': {
     snagIds: ['sn-3'],   // Balcony waterproofing peeling near drain
   },
-  'Kajaria Porcelain (800Ã—800 mm), Light Beige': {
+  'Kajaria Porcelain (800×800 mm), Light Beige': {
     snagIds: ['sn-1'],   // Bathroom floor tiles cracked
   },
   'Frameless shower partition (8mm glass)': {
@@ -423,7 +423,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-coffee-1',
     name: 'Breville Barista Pro Espresso',
-    icon: 'â˜•',
+    icon: '☕',
     zone: 'Kitchen',
     brand: 'Breville',
     model: 'BES878',
@@ -439,7 +439,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-1',
     name: 'LG Split AC 1.5 Ton',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     zone: 'Living Area',
     brand: 'LG',
     model: 'RS-Q19JNXE',
@@ -534,7 +534,7 @@ export const DEMO_WARRANTY_ASSETS: WarrantyAsset[] = [
   {
     id: 'wa-7',
     name: 'Panasonic Split AC 1.5T',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     zone: 'Master Bedroom',
     brand: 'Panasonic',
     model: 'CS/CU-KU18ZKYF',
@@ -734,7 +734,7 @@ export const DEMO_EVENTS: AppEvent[] = [
     type: 'asset_added',
     title: 'LG AC warranty added',
     subtitle: 'Expires in 15 days. Set a service reminder.',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     createdAt: ts(5),
   },
   {
@@ -832,7 +832,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-5',
     date: '2024-03-18',
     category: 'installation',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     title: 'LG AC 1.5T Installed',
     detail: 'LG RS-Q19JNXE installed in living room by LG Authorised Service, Hyderabad. Invoice #LG-INST-2024-0012.',
     linkedId: 'wa-1',
@@ -842,8 +842,8 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     date: '2024-08-22',
     category: 'installation',
     icon: '📺',
-    title: 'Samsung 55â€³ QLED Mounted',
-    detail: 'TV wall-mounted (75Â° tilt bracket) by Samsung SmartCare. Invoice #SC-INST-2024-0445.',
+    title: 'Samsung 55″ QLED Mounted',
+    detail: 'TV wall-mounted (75° tilt bracket) by Samsung SmartCare. Invoice #SC-INST-2024-0445.',
     linkedId: 'wa-2',
   },
   {
@@ -869,7 +869,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-9',
     date: '2024-09-01',
     category: 'renovation',
-    icon: '🛏ï¸',
+    icon: '🛏️',
     title: 'Moved In',
     detail: 'Property handed over. Keys collected from Prestige site office. Passport status: Passive.',
     badge: 'Moved In',
@@ -888,7 +888,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-11',
     date: '2024-09-10',
     category: 'installation',
-    icon: '🍽ï¸',
+    icon: '🍽️',
     title: 'IFB Dishwasher Installed',
     detail: 'IFB under-counter dishwasher plumbed in by IFB Authorised, Hyderabad. Invoice #IFB-INST-2024-0203.',
     linkedId: 'wa-3',
@@ -906,7 +906,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-13',
     date: '2024-10-02',
     category: 'installation',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     title: 'Panasonic AC — Master Bed Installed',
     detail: 'Panasonic 1.5T inverter AC installed in master bedroom. Invoice #PAN-INST-2024-0088.',
     linkedId: 'wa-7',
@@ -948,14 +948,14 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     category: 'service',
     icon: '🔧',
     title: 'Racold Heater — Annual Service',
-    detail: 'Anode rod 30% consumed, tank flushed, thermostat at 55Â°C. Invoice #RAC-SVC-2025-0012. ₹600.',
+    detail: 'Anode rod 30% consumed, tank flushed, thermostat at 55°C. Invoice #RAC-SVC-2025-0012. ₹600.',
     linkedId: 'wa-6',
   },
   {
     id: 'tl-18',
     date: '2025-02-18',
     category: 'warranty',
-    icon: '🛡ï¸',
+    icon: '🛡️',
     title: 'IFB Dishwasher — Warranty Repair',
     detail: 'Inlet valve replaced under warranty (E3 error). Invoice #IFB-REP-2025-0041.',
     badge: 'Warranty Claim',
@@ -989,7 +989,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     icon: '🔧',
     title: 'LG AC — Second Annual Service',
     detail: 'Refrigerant topped up 150g, remote battery replaced. Invoice #LG-SVC-2025-0214. ₹1,200.',
-    badge: 'âš ï¸ Expiring Soon',
+    badge: '⚠️ Expiring Soon',
     badgeColor: 'text-amber-400',
     linkedId: 'wa-1',
   },
@@ -997,7 +997,7 @@ export const DEMO_TIMELINE_EVENTS: TimelineEvent[] = [
     id: 'tl-22',
     date: '2025-03-21',
     category: 'warranty',
-    icon: 'âš ï¸',
+    icon: '⚠️',
     title: 'LG AC Warranty — Expiring in 15 Days',
     detail: 'Warranty for LG RS-Q19JNXE expires soon. Consider AMC renewal with LG Authorised, Hyderabad (+91 98490 11223).',
     badge: 'Action Needed',
@@ -1094,7 +1094,7 @@ export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   {
     id: 'wa-r1',
     name: 'LG Split AC 1.5T — Living Room',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     zone: 'Living Area',
     brand: 'LG',
     model: 'RS-Q18JNXE',
@@ -1110,7 +1110,7 @@ export const DEMO_WARRANTY_ASSETS_RENTAL: WarrantyAsset[] = [
   {
     id: 'wa-r2',
     name: 'Daikin Split AC 1T — Bedroom',
-    icon: 'â„ï¸',
+    icon: 'â„️',
     zone: 'Master Bedroom',
     brand: 'Daikin',
     model: 'FTKF25TV',
@@ -1252,7 +1252,7 @@ export const DEMO_VAULT_DOCS_RENTAL: Record<string, VaultDoc[]> = {
 export const DEMO_SNAGS_RENTAL: Snag[] = [
   {
     id: 'sn-rental-1',
-    title: 'âš ï¸ AI Flagged: AC Filter Blocked',
+    title: '⚠️ AI Flagged: AC Filter Blocked',
     location: 'Master Bedroom',
     category: 'Maintenance',
     urgency: 'medium',
@@ -1263,7 +1263,7 @@ export const DEMO_SNAGS_RENTAL: Snag[] = [
   },
   {
     id: 'sn-rental-2',
-    title: 'âš ï¸ AI Flagged: Paint Scuff on Wall',
+    title: '⚠️ AI Flagged: Paint Scuff on Wall',
     location: 'Living Room',
     category: 'Maintenance',
     urgency: 'low',
@@ -1274,7 +1274,7 @@ export const DEMO_SNAGS_RENTAL: Snag[] = [
   },
   {
     id: 'sn-rental-3',
-    title: 'âš ï¸ AI Flagged: Kitchen Cabinet Sag',
+    title: '⚠️ AI Flagged: Kitchen Cabinet Sag',
     location: 'Kitchen',
     category: 'Carpentry',
     urgency: 'medium',
@@ -1343,7 +1343,7 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     category: 'service',
     icon: '📹',
     title: 'AI Walkthrough #2 — Q4 2024',
-    detail: 'Monthly walkthrough video analyzed. AI analysis: ✅ No modifications, âš ï¸ AC filter appears dusty, ✅ Kitchen clean.',
+    detail: 'Monthly walkthrough video analyzed. AI analysis: ✅ No modifications, ⚠️ AC filter appears dusty, ✅ Kitchen clean.',
     badge: 'Action Needed',
     badgeColor: 'text-amber-400',
   },
@@ -1353,7 +1353,7 @@ export const DEMO_TIMELINE_RENTAL: TimelineEvent[] = [
     category: 'service',
     icon: '📹',
     title: 'AI Walkthrough #3 — Jan 2025',
-    detail: 'AI detected: âš ï¸ AC filter still blocked (not addressed), âš ï¸ Wall paint scuff near sofa, âš ï¸ Kitchen cabinet door sag. Tenant notified.',
+    detail: 'AI detected: ⚠️ AC filter still blocked (not addressed), ⚠️ Wall paint scuff near sofa, ⚠️ Kitchen cabinet door sag. Tenant notified.',
     badge: 'Issues Flagged',
     badgeColor: 'text-red-400',
   },
@@ -1474,7 +1474,7 @@ export const DEMO_TIMELINE_EMPTY: TimelineEvent[] = [
     id: 'tl-e4',
     date: '2025-03-15',
     category: 'renovation',
-    icon: '🏗ï¸',
+    icon: '🏗️',
     title: 'Architect Engaged — Prism Design Studio',
     detail: 'Prism Design Studio engaged for interior design and site supervision. Quote ₹42L accepted. Work starts Q3 2025.',
     badge: 'In Planning',
@@ -1651,7 +1651,7 @@ export const DEMO_TIMELINE_CONSTRUCTION: TimelineEvent[] = [
     id: 'tl-c1',
     date: '2024-04-10',
     category: 'purchase',
-    icon: '🏗ï¸',
+    icon: '🏗️',
     title: 'Unit Booked — C-801 Nexus Towers',
     detail: 'Booking amount ₹5,60,000 (5%) paid. Allotment letter received. RERA No: P02400008231.',
     badge: 'Booked',
@@ -1673,7 +1673,7 @@ export const DEMO_TIMELINE_CONSTRUCTION: TimelineEvent[] = [
     id: 'tl-c3',
     date: '2024-07-01',
     category: 'renovation',
-    icon: '🏗ï¸',
+    icon: '🏗️',
     title: 'Foundation Slab Completed',
     detail: 'Milestone 2 achieved. Foundation and podium slab complete. Payment tranche 2 (₹11,20,000) paid.',
     badge: '✅ Done',
@@ -1879,7 +1879,7 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
         type: 'snag_opened',
         title: 'Snag: AC Filter Blocked',
         subtitle: 'Master Bedroom · AI flagged · Medium urgency',
-        icon: 'â„ï¸',
+        icon: 'â„️',
         createdAt: ts(2),
       },
     ],
@@ -1931,7 +1931,7 @@ export const DEMO_DATA_CATALOG: Record<string, any> = {
         type: 'upload',
         title: 'Fit-out Phase Started',
         subtitle: 'Floor 8 brickwork + false ceiling underway',
-        icon: '🏗ï¸',
+        icon: '🏗️',
         createdAt: ts(3),
       },
       {

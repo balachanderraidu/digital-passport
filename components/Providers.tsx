@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { VideoSplash } from '@/components/VideoSplash'
 import { IOSInstallGuide } from '@/components/IOSInstallGuide'
+import { logPageView, logDemoVisit } from '@/lib/analytics'
 
 // ─── Share link tracking ──────────────────────────────────────────────────────
 // Usage: share yourapp.com/?ref=john-sharma or ?ref=sequoia-pitch
@@ -51,13 +52,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
     function onOpen() { setShowSplash(true) }
     window.addEventListener('openSplash', onOpen)
 
+    // ── Page view analytics ──
+    logPageView(window.location.pathname)
+
     // ── Share link tracking ──
     const params = new URLSearchParams(window.location.search)
     const ref = params.get('ref')
     if (ref && ref.trim()) {
+      const cleanRef = ref.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-')
       // Strip ?ref= from the address bar immediately so recipients can't copy a tagged URL
       window.history.replaceState({}, '', window.location.pathname)
-      trackRef(ref.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-'))
+      // Log to Firestore counter (existing) + Firebase Analytics (GA4)
+      trackRef(cleanRef)
+      logDemoVisit(cleanRef)
     }
 
     return () => window.removeEventListener('openSplash', onOpen)

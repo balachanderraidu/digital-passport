@@ -3,6 +3,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Send, Sparkles, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+/** Renders **bold** and newlines from AI replies */
+function renderMarkdown(text: string) {
+  return text.split('\n').map((line, i, arr) => {
+    const parts = line.split(/\*\*(.+?)\*\*/).map((chunk, j) =>
+      j % 2 === 1 ? <strong key={j} className="text-white font-bold">{chunk}</strong> : chunk
+    )
+    return (
+      <span key={i}>
+        {parts}
+        {i < arr.length - 1 && <br />}
+      </span>
+    )
+  })
+}
 import { useAuth } from '@/lib/useAuth'
 import { useProperty } from '@/lib/useProperty'
 import {
@@ -25,6 +40,7 @@ interface Message {
   role: 'user' | 'assistant'
   text: string
   timestamp: Date
+  followUps?: { label: string; query: string }[]  // #11: contextual chips after AI reply
 }
 
 const BASE_CHIPS = [
@@ -193,7 +209,8 @@ export default function AssistantPage() {
   const { user, loading: authLoading } = useAuth()
   const { activePropertyId } = useProperty()
   const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
-  const demoCtx = useDemoDataHook(activePropertyId)
+  // Fix #16: only call useDemoDataHook when in demo mode to avoid unnecessary work
+  const demoCtx = useDemoDataHook(isDemo ? activePropertyId : null)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -241,7 +258,34 @@ export default function AssistantPage() {
     await new Promise((r) => setTimeout(r, 500 + Math.random() * 500))
 
     const reply = generateReply(text, assets, snags, property, isDemo)
-    const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: reply, timestamp: new Date() }
+
+    // Fix #11: generate contextual follow-up chips based on query
+    const q = text.toLowerCase()
+    let followUps: { label: string; query: string }[] = []
+    if (q.includes('warrant') || q.includes('expir')) {
+      followUps = [
+        { label: '🔔 Set a reminder', query: 'Set a reminder for expiring warranties' },
+        { label: '📋 Full summary', query: 'Give me a full home summary' },
+      ]
+    } else if (q.includes('snag') || q.includes('issue') || q.includes('defect')) {
+      followUps = [
+        { label: '📋 Full summary', query: 'Give me a full home summary' },
+        { label: '🏠 Property info', query: 'Tell me about my property' },
+      ]
+    } else if (q.includes('property') || q.includes('home') || q.includes('summary')) {
+      followUps = [
+        { label: '🛡️ Warranties', query: 'Which warranties are expiring soon?' },
+        { label: '🔨 Open snags', query: 'Show me all open snags' },
+        { label: '💰 Service costs', query: 'How much have I spent on service?' },
+      ]
+    } else if (q.includes('cost') || q.includes('spend') || q.includes('service')) {
+      followUps = [
+        { label: '🔧 Last service', query: 'What was the last service event?' },
+        { label: '📋 Full summary', query: 'Give me a full home summary' },
+      ]
+    }
+
+    const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', text: reply, timestamp: new Date(), followUps }
     setMessages((prev) => [...prev, aiMsg])
     setThinking(false)
   }
@@ -252,8 +296,8 @@ export default function AssistantPage() {
       setListening(false)
       return
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const GlobalWindow = window as unknown as { SpeechRecognition?: new () => any, webkitSpeechRecognition?: new () => any }
+    const SR = GlobalWindow.SpeechRecognition || GlobalWindow.webkitSpeechRecognition
     if (!SR) return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const r: any = new SR()
@@ -265,6 +309,8 @@ export default function AssistantPage() {
       if (transcript) sendMessage(transcript)
     }
     r.onend = () => setListening(false)
+    // Fix #3: reset listening if mic permission denied or any error occurs
+    r.onerror = () => setListening(false)
     r.start()
     recognitionRef.current = r
     setListening(true)
@@ -331,14 +377,28 @@ export default function AssistantPage() {
             )}
             <div
               className={cn(
-                'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap',
+                'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
                 msg.role === 'user'
                   ? 'bg-gold-500 text-charcoal-300 font-medium rounded-br-sm'
                   : 'card text-vault-text rounded-bl-sm'
               )}
             >
-              {msg.text}
+              {msg.role === 'assistant' ? renderMarkdown(msg.text) : msg.text}
             </div>
+            {/* Fix #11: contextual follow-up chips after assistant reply */}
+            {msg.role === 'assistant' && msg.followUps && msg.followUps.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2 ml-9">
+                {msg.followUps.map((chip) => (
+                  <button
+                    key={chip.label}
+                    onClick={() => sendMessage(chip.query)}
+                    className="px-2.5 py-1 rounded-full glass gold-border text-[10px] font-semibold text-vault-text hover:border-gold-500 hover:text-gold-500 transition-all"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
 

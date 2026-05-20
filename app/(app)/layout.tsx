@@ -3,6 +3,7 @@ import { DemoBanner } from '@/components/DemoBanner'
 import { AuthGuard } from '@/components/AuthGuard'
 import { ProfileReminderBanner } from '@/components/ProfileReminderBanner'
 import { PropertyProvider } from '@/components/PropertyProvider'
+import { DemoToastProvider } from '@/components/DemoToast'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-dvh bg-vault-bg">
           <DemoBanner />
           <ProfileReminderBanner />
+          <DemoToastProvider />
           <main className="safe-bottom">
             {children}
           </main>
@@ -20,3 +22,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </AuthGuard>
   )
 }
+

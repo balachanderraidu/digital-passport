@@ -56,8 +56,7 @@ function DocPreviewSheet({ doc, onClose }: { doc: VaultDoc | null; onClose: () =
     <>
       <div className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[55]" onClick={onClose} />
       <div
-        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl pb-safe"
-        style={{ animation: 'slideUp 0.25s cubic-bezier(0.32,0.72,0,1) forwards' }}
+        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl pb-safe animate-sheet-up"
       >
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-vault-muted rounded-full" />
@@ -138,8 +137,7 @@ function DemoUploadSheet({ onClose }: { onClose: () => void }) {
     <>
       <div className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[55]" onClick={onClose} />
       <div
-        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl px-6 pb-safe"
-        style={{ animation: 'slideUp 0.25s cubic-bezier(0.32,0.72,0,1) forwards' }}
+        className="fixed inset-x-0 bottom-0 z-[60] rounded-t-3xl bg-vault-surface border-t border-vault-border shadow-2xl px-6 pb-safe animate-sheet-up"
       >
         <div className="flex justify-center pt-3 pb-4">
           <div className="w-10 h-1 bg-vault-muted rounded-full" />

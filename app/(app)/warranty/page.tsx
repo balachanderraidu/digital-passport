@@ -12,6 +12,12 @@ import { useDemoDataHook, DEMO_ITEM_LINKS } from '@/lib/demo-data'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
 import { PageGuide } from '@/components/PageGuide'
 
+const DEMO_ITEM_ENTRIES = Object.entries(DEMO_ITEM_LINKS).map(([k, link]) => ({
+  keyPrefix: k.split(' ')[0].toLowerCase(),
+  keyLower: k.toLowerCase(),
+  link
+}))
+
 type FilterTab = 'all' | 'active' | 'expiring' | 'expired'
 
 const ZONES = ['Living Area', 'Kitchen', 'Master Bedroom', 'Room 2', 'Study', 'Utility', 'Balcony']
@@ -332,11 +338,13 @@ export default function WarrantyPage() {
 
                         {/* Service metadata — demo mode */}
                         {(() => {
-                          const key = Object.keys(DEMO_ITEM_LINKS).find(k =>
-                            asset.name.toLowerCase().includes(k.split(' ')[0].toLowerCase()) ||
-                            k.toLowerCase().includes(asset.name.split(' ')[0].toLowerCase())
+                          const assetNameLower = asset.name.toLowerCase()
+                          const assetNamePrefix = asset.name.split(' ')[0].toLowerCase()
+                          const found = DEMO_ITEM_ENTRIES.find(e => 
+                            assetNameLower.includes(e.keyPrefix) ||
+                            e.keyLower.includes(assetNamePrefix)
                           )
-                          const link = key ? DEMO_ITEM_LINKS[key] : null
+                          const link = found?.link || null
                           const history = link?.serviceHistory ?? []
                           if (history.length === 0) return null
                           const lastSvc = [...history].sort((a, b) => b.date.localeCompare(a.date))[0]

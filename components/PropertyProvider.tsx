@@ -43,13 +43,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     }
 
     const u1 = subscribeAllProperties(user.uid, (props) => {
-      // Inject Demo Sandbox items into the authenticated user's portfolio
-      const merged = [...props, ...DEMO_PROPERTIES]
-      setAllProperties(merged)
+      // Authenticated users only see their own real properties
+      setAllProperties(props)
       
       // Auto-fallback if the user has no properties but is somehow explicitly selecting a non-existent one
-      if (merged.length > 0 && !merged.find((p) => p.id === activePropertyId)) {
-        setActivePropertyIdState(merged[0].id)
+      if (props.length > 0 && !props.find((p) => p.id === activePropertyId)) {
+        setActivePropertyIdState(props[0].id)
       }
       setIsLoading(false)
     })

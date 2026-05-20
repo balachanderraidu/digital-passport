@@ -8,7 +8,7 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -36,12 +36,28 @@ const CATEGORY_BG: Record<string, string> = {
   document:     'bg-vault-muted/20 border-vault-border',
 }
 
-// Decide whether a linkedId is a warranty, snag, or vault doc
+// Fix #3: Clean lookup object instead of a fragile ternary chain
+const BADGE_CLASS: Record<string, string> = {
+  'text-gold-400':    'bg-gold-500/15 border-gold-500/30 text-gold-400',
+  'text-amber-400':   'bg-amber-500/15 border-amber-500/30 text-amber-400',
+  'text-red-400':     'bg-red-500/15 border-red-500/30 text-red-400',
+  'text-emerald-400': 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+  'text-blue-400':    'bg-blue-500/15 border-blue-500/30 text-blue-400',
+  'text-purple-400':  'bg-purple-500/15 border-purple-500/30 text-purple-400',
+}
+const BADGE_FALLBACK = 'bg-vault-muted/20 border-vault-border text-vault-text-muted'
+
+// Fix #4/#13: Handle all vault ID prefixes (vd-, vdr-, vde-, vdc-)
 function resolveLink(linkedId?: string): string | null {
   if (!linkedId) return null
   if (linkedId.startsWith('wa-')) return `/warranty/${linkedId}`
   if (linkedId.startsWith('sn-')) return `/snags/${linkedId}`
-  if (linkedId.startsWith('vd-')) return `/vault`
+  if (
+    linkedId.startsWith('vd-')  ||
+    linkedId.startsWith('vdr-') ||
+    linkedId.startsWith('vde-') ||
+    linkedId.startsWith('vdc-')
+  ) return '/vault'
   return null
 }
 
@@ -53,8 +69,11 @@ interface Props {
 export function PropertyTimeline({ events, defaultExpanded = false }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
 
-  // Sort newest → oldest for display
-  const sorted = [...events].sort((a, b) => b.date.localeCompare(a.date))
+  // Fix #7: memoize sort so it doesn't run on every render
+  const sorted = useMemo(
+    () => [...events].sort((a, b) => b.date.localeCompare(a.date)),
+    [events]
+  )
   const visible = expanded ? sorted : sorted.slice(0, 5)
 
   // Group by year for the year dividers
@@ -99,13 +118,7 @@ export function PropertyTimeline({ events, defaultExpanded = false }: Props) {
                         {ev.badge && (
                           <span className={cn(
                             'text-[8px] font-bold px-1.5 py-0.5 rounded-full border tracking-wide',
-                            ev.badgeColor === 'text-gold-400'     ? 'bg-gold-500/15 border-gold-500/30 text-gold-400'      :
-                            ev.badgeColor === 'text-amber-400'    ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'   :
-                            ev.badgeColor === 'text-red-400'      ? 'bg-red-500/15 border-red-500/30 text-red-400'         :
-                            ev.badgeColor === 'text-emerald-400'  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' :
-                            ev.badgeColor === 'text-blue-400'     ? 'bg-blue-500/15 border-blue-500/30 text-blue-400'      :
-                            ev.badgeColor === 'text-purple-400'   ? 'bg-purple-500/15 border-purple-500/30 text-purple-400':
-                                                                    'bg-vault-muted/20 border-vault-border text-vault-text-muted'
+                            ev.badgeColor ? (BADGE_CLASS[ev.badgeColor] ?? BADGE_FALLBACK) : BADGE_FALLBACK
                           )}>
                             {ev.badge}
                           </span>

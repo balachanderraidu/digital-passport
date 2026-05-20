@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app'
 import { getAuth, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore, type Firestore } from 'firebase/firestore'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -10,6 +10,9 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  // GA4 Measurement ID — required for Firebase Analytics
+  // Get from: Firebase Console → Project Settings → Your Apps → Web App → Config
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
 // Only initialize Firebase if we have a valid API key (avoids server-side crash in dev)
@@ -21,7 +24,13 @@ let storage: FirebaseStorage | null = null
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'your-api-key') {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig)
   auth = getAuth(app)
-  db = getFirestore(app)
+  if (typeof window !== 'undefined') {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    })
+  } else {
+    db = getFirestore(app)
+  }
   storage = getStorage(app)
 }
 

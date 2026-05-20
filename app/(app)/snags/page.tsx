@@ -10,6 +10,7 @@ import { subscribeSnags, type Snag } from '@/lib/firestore'
 import { useDemoDataHook } from '@/lib/demo-data'
 import { PageGuide } from '@/components/PageGuide'
 import { PassportModeBadge } from '@/components/PassportModeBadge'
+import { showDemoToast } from '@/components/DemoToast'
 
 type Urgency = 'low' | 'medium' | 'high'
 type SnagStatus = 'open' | 'in-progress' | 'fixed'
@@ -28,12 +29,20 @@ const STATUS_CONFIG: Record<SnagStatus, { label: string; color: string }> = {
 
 type Tab = 'open' | 'in-progress' | 'fixed'
 
+/** #14: All unique locations from the snag list */
+function useSnagLocations(snags: Snag[]) {
+  return Array.from(new Set(snags.map(s => s.location).filter(Boolean))).sort()
+}
+
 export default function SnagsPage() {
   const { user, loading: authLoading } = useAuth()
   const { activePropertyId, activeProperty } = useProperty()
   const [activeTab, setActiveTab] = useState<Tab>('open')
   const [snags, setSnags] = useState<Snag[]>([])
   const [loading, setLoading] = useState(true)
+  // #14: location filter
+  const [locationFilter, setLocationFilter] = useState<string>('all')
+  const locations = useSnagLocations(snags)
 
   const isDemo = (!authLoading && !user) || !!(activePropertyId && activePropertyId.startsWith('p_'))
   const demoContext = useDemoDataHook(activePropertyId)
@@ -59,7 +68,10 @@ export default function SnagsPage() {
   const total = snags.length
   const fixed = snags.filter((s) => s.status === 'fixed').length
   const progressPct = total > 0 ? Math.round((fixed / total) * 100) : 0
-  const filteredSnags = snags.filter((s) => s.status === activeTab)
+  // #14: apply both tab + location filters
+  const filteredSnags = snags
+    .filter((s) => s.status === activeTab)
+    .filter((s) => locationFilter === 'all' || s.location === locationFilter)
 
   if (authLoading) {
     return (
@@ -81,13 +93,24 @@ export default function SnagsPage() {
               <PassportModeBadge occupancy={isDemo ? demoContext.property.occupancy : activeProperty?.occupancy} />
             </div>
           </div>
-          <Link
-            href="/snags/new"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all"
-          >
-            <Plus size={15} />
-            Log Snag
-          </Link>
+          {/* Fix #1: guard in demo — don't navigate to /snags/new, show toast instead */}
+          {isDemo ? (
+            <button
+              onClick={() => showDemoToast('Sign in to log snags on your own property.', '🔐')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all"
+            >
+              <Plus size={15} />
+              Log Snag
+            </button>
+          ) : (
+            <a
+              href="/snags/new"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-charcoal-300 font-bold text-sm hover:shadow-gold-glow transition-all"
+            >
+              <Plus size={15} />
+              Log Snag
+            </a>
+          )}
         </div>
 
         <div className="mt-4">
@@ -138,22 +161,65 @@ export default function SnagsPage() {
 
       {/* Tabs */}
       <div className="px-5 mt-2">
-        <div className="flex gap-1 p-1 glass rounded-xl mb-4">
-          {(['open', 'in-progress', 'fixed'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                'flex-1 py-2 rounded-lg text-xs font-bold transition-all capitalize',
-                activeTab === tab
-                  ? 'bg-gold-500 text-charcoal-300 shadow-gold-glow-sm'
-                  : 'text-vault-text-muted hover:text-vault-text'
-              )}
-            >
-              {tab === 'in-progress' ? 'In Progress' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+        {/* Fix #8: tab count badges */}
+        <div className="flex gap-1 p-1 glass rounded-xl mb-3">
+          {(['open', 'in-progress', 'fixed'] as Tab[]).map((tab) => {
+            const count = snags.filter(s => s.status === tab).length
+            const label = tab === 'in-progress' ? 'In Progress' : tab.charAt(0).toUpperCase() + tab.slice(1)
+            return (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); setLocationFilter('all') }}
+                className={cn(
+                  'flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+                  activeTab === tab
+                    ? 'bg-gold-500 text-charcoal-300 shadow-gold-glow-sm'
+                    : 'text-vault-text-muted hover:text-vault-text'
+                )}
+              >
+                {label}
+                {count > 0 && (
+                  <span className={cn(
+                    'text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] text-center',
+                    activeTab === tab
+                      ? 'bg-charcoal-300/30 text-charcoal-300'
+                      : 'bg-vault-border text-vault-text-muted'
+                  )}>{count}</span>
+                )}
+              </button>
+            )
+          })}
         </div>
+
+        {/* #14: Location filter row */}
+        {locations.length > 1 && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold text-vault-text-muted uppercase tracking-widest flex-shrink-0">Room</span>
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar flex-1">
+              <button
+                onClick={() => setLocationFilter('all')}
+                className={cn(
+                  'px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap flex-shrink-0 transition-all',
+                  locationFilter === 'all'
+                    ? 'bg-gold-500/20 border-gold-500/40 text-gold-400'
+                    : 'border-vault-border text-vault-text-muted hover:border-gold-500/30'
+                )}
+              >All</button>
+              {locations.map(loc => (
+                <button
+                  key={loc}
+                  onClick={() => setLocationFilter(loc)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap flex-shrink-0 transition-all',
+                    locationFilter === loc
+                      ? 'bg-gold-500/20 border-gold-500/40 text-gold-400'
+                      : 'border-vault-border text-vault-text-muted hover:border-gold-500/30'
+                  )}
+                >{loc}</button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {loading && (
           <div className="flex flex-col items-center py-12 gap-3">
@@ -163,22 +229,19 @@ export default function SnagsPage() {
         )}
 
         <div className="pb-28">
-          {!loading && filteredSnags.length === 0 && (() => {
-            const occupancy = isDemo ? demoContext.property?.occupancy : undefined
-            if (occupancy === 'empty' && activeTab === 'open') return (
-              <div className="text-center py-12 text-vault-text-muted">
-                <span className="text-4xl block mb-3">🪟</span>
-                <p className="text-sm font-bold text-white">No defects logged yet</p>
-                <p className="text-xs mt-1">Property is a bare shell awaiting renovation.<br />Log snags after construction begins.</p>
-              </div>
-            )
-            return (
-              <div className="text-center py-12 text-vault-text-muted">
-                <CheckCircle2 size={40} className="mx-auto mb-3 text-green-500/40" />
-                <p className="text-sm font-medium">No snags in this category</p>
-              </div>
-            )
-          })()}
+          {/* Fix #2: extracted from IIFE to inline conditional */}
+          {!loading && filteredSnags.length === 0 && (
+            isDemo && demoContext.property?.occupancy === 'empty' && activeTab === 'open'
+              ? <div className="text-center py-12 text-vault-text-muted">
+                  <span className="text-4xl block mb-3">🪟</span>
+                  <p className="text-sm font-bold text-white">No defects logged yet</p>
+                  <p className="text-xs mt-1">Property is a bare shell awaiting renovation.<br />Log snags after construction begins.</p>
+                </div>
+              : <div className="text-center py-12 text-vault-text-muted">
+                  <CheckCircle2 size={40} className="mx-auto mb-3 text-green-500/40" />
+                  <p className="text-sm font-medium">No snags in this category</p>
+                </div>
+          )}
 
           {/* Urgency groups: High → Medium → Low */}
           {!loading && (['high', 'medium', 'low'] as Urgency[]).map((urgency) => {
@@ -198,7 +261,7 @@ export default function SnagsPage() {
                   <div className="flex-1 h-px bg-vault-border" />
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2.5 stagger-list">
                   {group.map((snag) => (
                     <Link key={snag.id} href={`/snags/${snag.id}`} className="card p-4 card-hover block">
                       <div className="flex items-start gap-3">

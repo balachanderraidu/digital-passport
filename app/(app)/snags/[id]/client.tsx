@@ -41,7 +41,7 @@ export default function SnagDetailClient({ id }: { id: string }) {
     const allDemoSnags = [
       ...DEMO_SNAGS,
       ...DEMO_SNAGS_ACTIVE,
-      ...Object.values(DEMO_DATA_CATALOG).flatMap((c: any) => c.snags ?? []),
+      ...Object.values(DEMO_DATA_CATALOG).flatMap((c: { snags?: Snag[] }) => c.snags ?? []),
     ]
     const found = allDemoSnags.find((s) => s.id === id) ?? null
     setSnag(found)

@@ -16,10 +16,8 @@ interface ExportSnag {
 
 // Dynamically import jspdf to avoid SSR issues
 async function getJsPDF() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { default: jsPDF } = await import('jspdf') as any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await import('jspdf-autotable') as any
+  const { default: jsPDF } = await import('jspdf')
+  await import('jspdf-autotable')
   return jsPDF
 }
 
@@ -43,7 +41,6 @@ export interface PassportExportData {
 }
 
 export async function exportPassportPDF(data: PassportExportData): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const JsPDF = await getJsPDF()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doc = new JsPDF('p', 'mm', 'a4') as any

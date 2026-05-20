@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FlaskConical, X, PlayCircle } from 'lucide-react'
+import { FlaskConical, X, PlayCircle, Share2 } from 'lucide-react'
 import Link from 'next/link'
+import { showDemoToast } from '@/components/DemoToast'
 
 export function DemoBanner() {
   const [isDemo, setIsDemo] = useState(false)
@@ -10,14 +11,31 @@ export function DemoBanner() {
 
   useEffect(() => {
     setIsDemo(sessionStorage.getItem('demo_mode') === 'true')
+    setDismissed(sessionStorage.getItem('demoBannerDismissed') === 'true')
   }, [])
-
-  if (!isDemo || dismissed) return null
 
   function handleRewatch() {
     sessionStorage.removeItem('splashSeen')
     window.dispatchEvent(new Event('openSplash'))
   }
+
+  function handleDismiss() {
+    sessionStorage.setItem('demoBannerDismissed', 'true')
+    setDismissed(true)
+  }
+
+  // Fix #10: share the demo URL with ?ref tracking
+  async function handleShare() {
+    const url = `${window.location.origin}/?ref=demo-share`
+    if (navigator.share) {
+      await navigator.share({ title: 'Digital Passport', text: 'Check out my Digital Passport demo!', url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      showDemoToast('Share link copied to clipboard!', '🔗')
+    }
+  }
+
+  if (!isDemo || dismissed) return null
 
   return (
     <div className="relative z-40 bg-gold-500/10 border-b border-gold-500/25 px-3 py-2 flex items-center gap-2">
@@ -29,6 +47,15 @@ export function DemoBanner() {
         </Link>
       </p>
 
+      {/* Share Demo button */}
+      <button
+        onClick={handleShare}
+        className="flex items-center gap-1 text-[11px] font-semibold text-gold-500/70 hover:text-gold-500 transition-colors flex-shrink-0"
+        aria-label="Share demo link"
+      >
+        <Share2 size={12} />
+      </button>
+
       {/* Prominent Watch Intro button */}
       <button
         onClick={handleRewatch}
@@ -38,7 +65,11 @@ export function DemoBanner() {
         Watch Intro
       </button>
 
-      <button onClick={() => setDismissed(true)} className="text-gold-500/50 hover:text-gold-500 transition-colors flex-shrink-0 ml-0.5">
+      <button
+        onClick={handleDismiss}
+        aria-label="Dismiss demo banner"
+        className="text-gold-500/50 hover:text-gold-500 transition-colors flex-shrink-0 ml-0.5"
+      >
         <X size={13} />
       </button>
     </div>

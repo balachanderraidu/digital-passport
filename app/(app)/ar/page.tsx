@@ -17,10 +17,22 @@ export default function ARVisionPage() {
   const demoContext = useDemoDataHook(activePropertyId)
 
   const [isScanning, setIsScanning] = useState(false)
-  const [scanResult, setScanResult] = useState<any>(null)
+  const [scanResult, setScanResult] = useState<null | {
+    icon: React.ElementType
+    iconColor: string
+    iconBg: string
+    title: string
+    subtitle: string
+    badgeText: string
+    badgeColor: string
+    subText: string
+    actionText: string
+  }>(null)
   const [error, setError] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  // Fix #4: keep a ref to the scan timer so we can cancel it on close
+  const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Stop camera when closing
   function stopCamera() {
@@ -32,12 +44,15 @@ export default function ARVisionPage() {
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => stopCamera()
+    return () => {
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current)
+      stopCamera()
+    }
   }, [])
 
   async function launchScanner() {
     setIsScanning(true)
-    setScanResult(false)
+    setScanResult(null)  // Fix #4: was setScanResult(false), use null for type safety
     setError('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -49,7 +64,7 @@ export default function ARVisionPage() {
       }
 
       // Simulate a scan result after 3.5 seconds
-      setTimeout(() => {
+      scanTimerRef.current = setTimeout(() => {
         if (!streamRef.current) return
         
         let resultData = {
@@ -86,12 +101,17 @@ export default function ARVisionPage() {
 
         setScanResult(resultData)
       }, 3500)
-    } catch (err) {
+    } catch {
       setError('Camera access denied or unavailable.')
     }
   }
 
   function closeScanner() {
+    // Fix #4: cancel the pending scan timer before closing
+    if (scanTimerRef.current) {
+      clearTimeout(scanTimerRef.current)
+      scanTimerRef.current = null
+    }
     stopCamera()
     setIsScanning(false)
     setScanResult(null)
@@ -138,8 +158,7 @@ export default function ARVisionPage() {
               
               {!scanResult && (
                 <div 
-                  className="absolute left-0 right-0 h-[2px] bg-gold-500 shadow-[0_0_15px_rgba(255,215,0,0.8)]"
-                  style={{ animation: 'scan 2s ease-in-out infinite alternate' }}
+                  className="absolute left-0 right-0 h-[2px] bg-gold-500 shadow-[0_0_15px_rgba(255,215,0,0.8)] ar-scan-line"
                 />
               )}
             </div>
@@ -179,15 +198,6 @@ export default function ARVisionPage() {
             )}
           </>
         )}
-
-        <style>{`
-          @keyframes scan {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-          }
-        `}</style>
       </div>
     )
   }
